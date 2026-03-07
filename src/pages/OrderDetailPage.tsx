@@ -306,6 +306,22 @@ export default function OrderDetailPage() {
     setEditingFinance(false);
   }
 
+  function handleDownloadPDF() {
+    if (!order) return;
+    const doc = generateOrderPDF({ order, orderItems, financials });
+    doc.save(`${order.order_number.replace(/\//g, "-")}.pdf`);
+    toast.success("PDF pobrany");
+  }
+
+  function handlePrintPDF() {
+    if (!order) return;
+    const doc = generateOrderPDF({ order, orderItems, financials });
+    const blob = doc.output("blob");
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url);
+    win?.addEventListener("load", () => win.print());
+  }
+
   if (isLoading) return <p className="text-muted-foreground p-4">Ładowanie...</p>;
   if (!order) return <p className="text-muted-foreground p-4">Zlecenie nie znalezione</p>;
 
