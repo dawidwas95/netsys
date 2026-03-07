@@ -492,6 +492,121 @@ export type Database = {
           },
         ]
       }
+      documents: {
+        Row: {
+          client_id: string | null
+          contractor_name: string | null
+          contractor_nip: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          direction: Database["public"]["Enums"]["document_direction"]
+          document_number: string
+          document_type: Database["public"]["Enums"]["document_type"]
+          due_date: string | null
+          gross_amount: number
+          id: string
+          is_archived: boolean
+          issue_date: string
+          net_amount: number
+          notes: string | null
+          paid_amount: number
+          paid_at: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"] | null
+          payment_status: Database["public"]["Enums"]["document_payment_status"]
+          received_date: string | null
+          related_offer_id: string | null
+          related_order_id: string | null
+          sale_date: string | null
+          updated_at: string
+          updated_by: string | null
+          vat_amount: number
+          vat_rate: number
+        }
+        Insert: {
+          client_id?: string | null
+          contractor_name?: string | null
+          contractor_nip?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          direction?: Database["public"]["Enums"]["document_direction"]
+          document_number: string
+          document_type?: Database["public"]["Enums"]["document_type"]
+          due_date?: string | null
+          gross_amount?: number
+          id?: string
+          is_archived?: boolean
+          issue_date?: string
+          net_amount?: number
+          notes?: string | null
+          paid_amount?: number
+          paid_at?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_status?: Database["public"]["Enums"]["document_payment_status"]
+          received_date?: string | null
+          related_offer_id?: string | null
+          related_order_id?: string | null
+          sale_date?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          vat_amount?: number
+          vat_rate?: number
+        }
+        Update: {
+          client_id?: string | null
+          contractor_name?: string | null
+          contractor_nip?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          direction?: Database["public"]["Enums"]["document_direction"]
+          document_number?: string
+          document_type?: Database["public"]["Enums"]["document_type"]
+          due_date?: string | null
+          gross_amount?: number
+          id?: string
+          is_archived?: boolean
+          issue_date?: string
+          net_amount?: number
+          notes?: string | null
+          paid_amount?: number
+          paid_at?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_status?: Database["public"]["Enums"]["document_payment_status"]
+          received_date?: string | null
+          related_offer_id?: string | null
+          related_order_id?: string | null
+          sale_date?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          vat_amount?: number
+          vat_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_related_offer_id_fkey"
+            columns: ["related_offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_related_order_id_fkey"
+            columns: ["related_order_id"]
+            isOneToOne: false
+            referencedRelation: "service_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_items: {
         Row: {
           category: string | null
@@ -1167,6 +1282,15 @@ export type Database = {
         | "CAMERA"
         | "OTHER"
       device_status: "ACTIVE" | "IN_SERVICE" | "RETIRED"
+      document_direction: "INCOME" | "EXPENSE"
+      document_payment_status: "UNPAID" | "PARTIALLY_PAID" | "PAID" | "OVERDUE"
+      document_type:
+        | "PURCHASE_INVOICE"
+        | "SALES_INVOICE"
+        | "RECEIPT"
+        | "PROFORMA"
+        | "CORRECTION"
+        | "OTHER"
       intake_channel: "PHONE" | "EMAIL" | "IN_PERSON" | "REMOTE" | "OTHER"
       it_doc_category: "PASSWORD" | "NETWORK" | "LICENSE" | "NOTE"
       movement_source: "PURCHASE" | "SERVICE_ORDER" | "IT_WORK" | "MANUAL"
@@ -1349,6 +1473,16 @@ export const Constants = {
         "OTHER",
       ],
       device_status: ["ACTIVE", "IN_SERVICE", "RETIRED"],
+      document_direction: ["INCOME", "EXPENSE"],
+      document_payment_status: ["UNPAID", "PARTIALLY_PAID", "PAID", "OVERDUE"],
+      document_type: [
+        "PURCHASE_INVOICE",
+        "SALES_INVOICE",
+        "RECEIPT",
+        "PROFORMA",
+        "CORRECTION",
+        "OTHER",
+      ],
       intake_channel: ["PHONE", "EMAIL", "IN_PERSON", "REMOTE", "OTHER"],
       it_doc_category: ["PASSWORD", "NETWORK", "LICENSE", "NOTE"],
       movement_source: ["PURCHASE", "SERVICE_ORDER", "IT_WORK", "MANUAL"],
