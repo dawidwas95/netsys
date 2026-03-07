@@ -54,7 +54,7 @@ export default function KanbanPage() {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as ServiceOrderWithRelations[];
+      return (data ?? []) as unknown as ServiceOrderWithRelations[];
     },
   });
 

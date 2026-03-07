@@ -60,7 +60,7 @@ export default function ServiceOrdersPage() {
         .order("received_at", { ascending: false });
 
       if (statusFilter !== "all") {
-        query = query.eq("status", statusFilter);
+        query = query.eq("status", statusFilter as any);
       }
 
       if (search) {
