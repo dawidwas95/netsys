@@ -58,8 +58,9 @@ export default function CashRegisterPage() {
 
   const balance = useMemo(() => {
     return transactions.reduce((sum: number, t: any) => {
-      if (t.transaction_type === "IN") return sum + Number(t.amount);
-      if (t.transaction_type === "OUT") return sum - Number(t.amount);
+      const amt = t.display_amount || Number(t.amount);
+      if (t.transaction_type === "IN") return sum + amt;
+      if (t.transaction_type === "OUT") return sum - amt;
       return 0; // RESET
     }, 0);
   }, [transactions]);
