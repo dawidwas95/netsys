@@ -50,6 +50,92 @@ export type Database = {
         }
         Relationships: []
       }
+      billing_batch_items: {
+        Row: {
+          batch_id: string
+          id: string
+          it_work_entry_id: string
+        }
+        Insert: {
+          batch_id: string
+          id?: string
+          it_work_entry_id: string
+        }
+        Update: {
+          batch_id?: string
+          id?: string
+          it_work_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_batch_items_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "billing_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_batch_items_it_work_entry_id_fkey"
+            columns: ["it_work_entry_id"]
+            isOneToOne: false
+            referencedRelation: "it_work_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_batches: {
+        Row: {
+          batch_number: string
+          billed_at: string
+          client_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          invoice_number: string | null
+          notes: string | null
+          period_from: string
+          period_to: string
+          total_gross: number
+          total_net: number
+        }
+        Insert: {
+          batch_number: string
+          billed_at?: string
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          period_from: string
+          period_to: string
+          total_gross?: number
+          total_net?: number
+        }
+        Update: {
+          batch_number?: string
+          billed_at?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          period_from?: string
+          period_to?: string
+          total_gross?: number
+          total_net?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_batches_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_contacts: {
         Row: {
           client_id: string
@@ -275,6 +361,106 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      it_work_entries: {
+        Row: {
+          amount_gross: number
+          amount_net: number
+          assigned_user_id: string | null
+          billable_hours: number
+          billing_batch_id: string | null
+          client_id: string
+          cost_net: number
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string
+          device_id: string | null
+          entry_number: string
+          hourly_rate: number
+          id: string
+          is_archived: boolean
+          notes: string | null
+          service_category: Database["public"]["Enums"]["service_category"]
+          status: Database["public"]["Enums"]["billing_status"]
+          updated_at: string
+          updated_by: string | null
+          work_date: string
+          work_hours: number
+        }
+        Insert: {
+          amount_gross?: number
+          amount_net?: number
+          assigned_user_id?: string | null
+          billable_hours?: number
+          billing_batch_id?: string | null
+          client_id: string
+          cost_net?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description: string
+          device_id?: string | null
+          entry_number: string
+          hourly_rate?: number
+          id?: string
+          is_archived?: boolean
+          notes?: string | null
+          service_category?: Database["public"]["Enums"]["service_category"]
+          status?: Database["public"]["Enums"]["billing_status"]
+          updated_at?: string
+          updated_by?: string | null
+          work_date?: string
+          work_hours?: number
+        }
+        Update: {
+          amount_gross?: number
+          amount_net?: number
+          assigned_user_id?: string | null
+          billable_hours?: number
+          billing_batch_id?: string | null
+          client_id?: string
+          cost_net?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string
+          device_id?: string | null
+          entry_number?: string
+          hourly_rate?: number
+          id?: string
+          is_archived?: boolean
+          notes?: string | null
+          service_category?: Database["public"]["Enums"]["service_category"]
+          status?: Database["public"]["Enums"]["billing_status"]
+          updated_at?: string
+          updated_by?: string | null
+          work_date?: string
+          work_hours?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "it_work_entries_billing_batch_id_fkey"
+            columns: ["billing_batch_id"]
+            isOneToOne: false
+            referencedRelation: "billing_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "it_work_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "it_work_entries_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
             referencedColumns: ["id"]
           },
         ]
@@ -539,6 +725,7 @@ export type Database = {
     }
     Enums: {
       app_role: "ADMIN" | "MANAGER" | "EMPLOYEE" | "READONLY"
+      billing_status: "UNBILLED" | "BILLED" | "CANCELLED"
       client_type: "PRIVATE" | "COMPANY"
       device_category:
         | "DESKTOP"
@@ -567,6 +754,15 @@ export type Database = {
         | "CANCELLED"
       payment_method: "CASH" | "CARD" | "TRANSFER"
       sales_document_type: "RECEIPT" | "INVOICE" | "NONE"
+      service_category:
+        | "ADMINISTRATION"
+        | "NETWORK"
+        | "MONITORING"
+        | "ERP"
+        | "HELPDESK"
+        | "IMPLEMENTATION"
+        | "MAINTENANCE"
+        | "OTHER"
       service_type: "COMPUTER_SERVICE" | "PHONE_SERVICE"
     }
     CompositeTypes: {
@@ -696,6 +892,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["ADMIN", "MANAGER", "EMPLOYEE", "READONLY"],
+      billing_status: ["UNBILLED", "BILLED", "CANCELLED"],
       client_type: ["PRIVATE", "COMPANY"],
       device_category: [
         "DESKTOP",
@@ -726,6 +923,16 @@ export const Constants = {
       ],
       payment_method: ["CASH", "CARD", "TRANSFER"],
       sales_document_type: ["RECEIPT", "INVOICE", "NONE"],
+      service_category: [
+        "ADMINISTRATION",
+        "NETWORK",
+        "MONITORING",
+        "ERP",
+        "HELPDESK",
+        "IMPLEMENTATION",
+        "MAINTENANCE",
+        "OTHER",
+      ],
       service_type: ["COMPUTER_SERVICE", "PHONE_SERVICE"],
     },
   },
