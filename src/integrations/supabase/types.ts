@@ -230,6 +230,89 @@ export type Database = {
           },
         ]
       }
+      client_it_documents: {
+        Row: {
+          category: Database["public"]["Enums"]["it_doc_category"]
+          client_id: string
+          created_at: string
+          created_by: string | null
+          dns_servers: string | null
+          gateway: string | null
+          id: string
+          ip_address: string | null
+          is_archived: boolean
+          license_expires_at: string | null
+          license_key: string | null
+          notes: string | null
+          password_encrypted: string | null
+          seats: number | null
+          software_name: string | null
+          subnet_mask: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          url: string | null
+          username: string | null
+          vlan: string | null
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["it_doc_category"]
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          dns_servers?: string | null
+          gateway?: string | null
+          id?: string
+          ip_address?: string | null
+          is_archived?: boolean
+          license_expires_at?: string | null
+          license_key?: string | null
+          notes?: string | null
+          password_encrypted?: string | null
+          seats?: number | null
+          software_name?: string | null
+          subnet_mask?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          url?: string | null
+          username?: string | null
+          vlan?: string | null
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["it_doc_category"]
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          dns_servers?: string | null
+          gateway?: string | null
+          id?: string
+          ip_address?: string | null
+          is_archived?: boolean
+          license_expires_at?: string | null
+          license_key?: string | null
+          notes?: string | null
+          password_encrypted?: string | null
+          seats?: number | null
+          software_name?: string | null
+          subnet_mask?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          url?: string | null
+          username?: string | null
+          vlan?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_it_documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address_building: string | null
@@ -1085,6 +1168,7 @@ export type Database = {
         | "OTHER"
       device_status: "ACTIVE" | "IN_SERVICE" | "RETIRED"
       intake_channel: "PHONE" | "EMAIL" | "IN_PERSON" | "REMOTE" | "OTHER"
+      it_doc_category: "PASSWORD" | "NETWORK" | "LICENSE" | "NOTE"
       movement_source: "PURCHASE" | "SERVICE_ORDER" | "IT_WORK" | "MANUAL"
       movement_type: "IN" | "OUT" | "ADJUSTMENT" | "RESERVATION"
       offer_item_type: "SERVICE" | "PRODUCT" | "CUSTOM"
@@ -1266,6 +1350,7 @@ export const Constants = {
       ],
       device_status: ["ACTIVE", "IN_SERVICE", "RETIRED"],
       intake_channel: ["PHONE", "EMAIL", "IN_PERSON", "REMOTE", "OTHER"],
+      it_doc_category: ["PASSWORD", "NETWORK", "LICENSE", "NOTE"],
       movement_source: ["PURCHASE", "SERVICE_ORDER", "IT_WORK", "MANUAL"],
       movement_type: ["IN", "OUT", "ADJUSTMENT", "RESERVATION"],
       offer_item_type: ["SERVICE", "PRODUCT", "CUSTOM"],
