@@ -48,6 +48,7 @@ const serviceNav = [
 
 const financeNav = [
   { title: "Kasa gotówkowa", url: "/cash", icon: Wallet },
+  { title: "Rejestr dokumentów", url: "/documents", icon: Receipt },
 ];
 
 const systemNav = [
