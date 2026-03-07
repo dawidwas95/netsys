@@ -127,7 +127,10 @@ export function DeviceFormDialog({ clientId, onCreated, trigger, externalOpen, o
       onCreated?.(data.id);
       setOpen(false);
     },
-    onError: () => toast.error("Błąd dodawania urządzenia"),
+    onError: (err: any) => {
+      console.error("Device creation error:", err);
+      toast.error(err?.message || "Błąd dodawania urządzenia");
+    },
   });
 
   function getClientLabel(c: any) {
