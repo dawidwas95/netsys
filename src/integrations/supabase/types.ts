@@ -578,6 +578,133 @@ export type Database = {
           },
         ]
       }
+      offer_items: {
+        Row: {
+          description: string | null
+          id: string
+          item_type: Database["public"]["Enums"]["offer_item_type"]
+          name: string
+          offer_id: string
+          quantity: number
+          sort_order: number
+          total_gross: number
+          total_net: number
+          unit: string
+          unit_net: number
+          vat_rate: number
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          item_type?: Database["public"]["Enums"]["offer_item_type"]
+          name: string
+          offer_id: string
+          quantity?: number
+          sort_order?: number
+          total_gross?: number
+          total_net?: number
+          unit?: string
+          unit_net?: number
+          vat_rate?: number
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          item_type?: Database["public"]["Enums"]["offer_item_type"]
+          name?: string
+          offer_id?: string
+          quantity?: number
+          sort_order?: number
+          total_gross?: number
+          total_net?: number
+          unit?: string
+          unit_net?: number
+          vat_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_items_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offers: {
+        Row: {
+          accepted_at: string | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          follow_up_date: string | null
+          id: string
+          is_archived: boolean
+          issue_date: string
+          notes: string | null
+          offer_number: string
+          rejected_at: string | null
+          status: Database["public"]["Enums"]["offer_status"]
+          title: string
+          total_gross: number
+          total_net: number
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          follow_up_date?: string | null
+          id?: string
+          is_archived?: boolean
+          issue_date?: string
+          notes?: string | null
+          offer_number: string
+          rejected_at?: string | null
+          status?: Database["public"]["Enums"]["offer_status"]
+          title: string
+          total_gross?: number
+          total_net?: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          follow_up_date?: string | null
+          id?: string
+          is_archived?: boolean
+          issue_date?: string
+          notes?: string | null
+          offer_number?: string
+          rejected_at?: string | null
+          status?: Database["public"]["Enums"]["offer_status"]
+          title?: string
+          total_gross?: number
+          total_net?: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -914,6 +1041,15 @@ export type Database = {
       intake_channel: "PHONE" | "EMAIL" | "IN_PERSON" | "REMOTE" | "OTHER"
       movement_source: "PURCHASE" | "SERVICE_ORDER" | "IT_WORK" | "MANUAL"
       movement_type: "IN" | "OUT" | "ADJUSTMENT" | "RESERVATION"
+      offer_item_type: "SERVICE" | "PRODUCT" | "CUSTOM"
+      offer_status:
+        | "DRAFT"
+        | "SENT"
+        | "WAITING"
+        | "ACCEPTED"
+        | "REJECTED"
+        | "CANCELLED"
+        | "EXPIRED"
       order_priority: "LOW" | "NORMAL" | "HIGH" | "URGENT"
       order_status:
         | "NEW"
@@ -1084,6 +1220,16 @@ export const Constants = {
       intake_channel: ["PHONE", "EMAIL", "IN_PERSON", "REMOTE", "OTHER"],
       movement_source: ["PURCHASE", "SERVICE_ORDER", "IT_WORK", "MANUAL"],
       movement_type: ["IN", "OUT", "ADJUSTMENT", "RESERVATION"],
+      offer_item_type: ["SERVICE", "PRODUCT", "CUSTOM"],
+      offer_status: [
+        "DRAFT",
+        "SENT",
+        "WAITING",
+        "ACCEPTED",
+        "REJECTED",
+        "CANCELLED",
+        "EXPIRED",
+      ],
       order_priority: ["LOW", "NORMAL", "HIGH", "URGENT"],
       order_status: [
         "NEW",
