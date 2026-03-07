@@ -159,12 +159,26 @@ export default function DocumentsPage() {
     },
   });
 
+  // Computed from line items
+  const computedFromItems = lineItems.reduce((acc, item) => {
+    const qty = parseFloat(item.quantity) || 0;
+    const unitNet = parseFloat(item.unit_net) || 0;
+    const vatRate = parseFloat(item.vat_rate) || 23;
+    const totalNet = qty * unitNet;
+    const totalVat = totalNet * (vatRate / 100);
+    const totalGross = totalNet + totalVat;
+    return { net: acc.net + totalNet, vat: acc.vat + totalVat, gross: acc.gross + totalGross };
+  }, { net: 0, vat: 0, gross: 0 });
+
+  const hasLineItems = lineItems.some(i => i.name.trim() !== "");
+
   const saveMutation = useMutation({
     mutationFn: async (values: typeof form) => {
-      const netAmount = parseFloat(values.net_amount) || 0;
+      // If line items exist, compute from them; otherwise use manual entry
+      const netAmount = hasLineItems ? computedFromItems.net : (parseFloat(values.net_amount) || 0);
       const vatRate = parseFloat(values.vat_rate) || 23;
-      const vatAmount = netAmount * (vatRate / 100);
-      const grossAmount = netAmount + vatAmount;
+      const vatAmount = hasLineItems ? computedFromItems.vat : netAmount * (vatRate / 100);
+      const grossAmount = hasLineItems ? computedFromItems.gross : netAmount + vatAmount;
 
       const payload: Record<string, unknown> = {
         document_number: values.document_number,
@@ -188,14 +202,47 @@ export default function DocumentsPage() {
         notes: values.notes || null,
       };
 
+      let docId = editId;
       if (editId) {
         payload.updated_by = user?.id;
         const { error } = await supabase.from("documents").update(payload as any).eq("id", editId);
         if (error) throw error;
       } else {
         payload.created_by = user?.id;
-        const { error } = await supabase.from("documents").insert(payload as any);
+        const { data, error } = await supabase.from("documents").insert(payload as any).select("id").single();
         if (error) throw error;
+        docId = data.id;
+      }
+
+      // Save line items
+      if (docId && hasLineItems) {
+        // Delete old items
+        await supabase.from("document_items").delete().eq("document_id", docId);
+        // Insert new items
+        const items = lineItems.filter(i => i.name.trim()).map((item, idx) => {
+          const qty = parseFloat(item.quantity) || 1;
+          const unitNet = parseFloat(item.unit_net) || 0;
+          const vatR = parseFloat(item.vat_rate) || 23;
+          const totalNet = qty * unitNet;
+          const totalVat = totalNet * (vatR / 100);
+          const totalGross = totalNet + totalVat;
+          return {
+            document_id: docId!,
+            name: item.name,
+            quantity: qty,
+            unit: item.unit || "szt.",
+            unit_net: unitNet,
+            vat_rate: vatR,
+            total_net: totalNet,
+            total_vat: totalVat,
+            total_gross: totalGross,
+            sort_order: idx,
+          };
+        });
+        if (items.length) {
+          const { error: itemErr } = await supabase.from("document_items").insert(items);
+          if (itemErr) throw itemErr;
+        }
       }
     },
     onSuccess: () => {
@@ -203,7 +250,7 @@ export default function DocumentsPage() {
       toast.success(editId ? "Zaktualizowano dokument" : "Dodano dokument");
       resetForm();
     },
-    onError: () => toast.error("Błąd zapisu"),
+    onError: (err: any) => toast.error(err?.message || "Błąd zapisu"),
   });
 
   const deleteMutation = useMutation({
