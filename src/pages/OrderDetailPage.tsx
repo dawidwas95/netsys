@@ -219,12 +219,18 @@ export default function OrderDetailPage() {
             .eq("source_type", "SERVICE_ORDER")
             .limit(1);
 
+          const grossRevenue = revenue * 1.23;
+          const vatAmount = revenue * 0.23;
+
           if (!existing?.length) {
             await supabase.from("cash_transactions").insert({
               transaction_type: "IN" as any,
               source_type: "SERVICE_ORDER" as any,
               related_order_id: id!,
-              amount: revenue,
+              amount: grossRevenue,
+              gross_amount: grossRevenue,
+              vat_amount: vatAmount,
+              payment_method: "CASH",
               description: `Zlecenie ${order?.order_number} — płatność gotówką`,
               transaction_date: new Date().toISOString().split("T")[0],
               user_id: user?.id,
