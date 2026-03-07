@@ -19,9 +19,14 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   ArrowLeft, Send, Clock, User, Monitor, Plus, Trash2,
   DollarSign, TrendingUp, TrendingDown, Percent, FileDown, Printer,
-  CheckCircle, AlertTriangle, Save,
+  CheckCircle, AlertTriangle, Save, Archive, XCircle,
 } from "lucide-react";
 import { generateOrderPDF } from "@/lib/generateOrderPDF";
 import { toast } from "sonner";
