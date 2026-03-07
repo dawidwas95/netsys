@@ -225,7 +225,7 @@ export default function CashRegisterPage() {
                       {t.service_orders?.order_number || "—"}
                     </TableCell>
                     <TableCell className={`text-right tabular-nums font-medium ${t.transaction_type === "IN" ? "text-emerald-400" : "text-red-400"}`}>
-                      {t.transaction_type === "IN" ? "+" : "-"}{Number(t.amount).toFixed(2)} zł
+                      {t.transaction_type === "IN" ? "+" : "-"}{Number(t.display_amount || t.amount).toFixed(2)} zł
                     </TableCell>
                   </TableRow>
                 ))
