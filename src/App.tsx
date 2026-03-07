@@ -52,6 +52,7 @@ const App = () => (
             <Route path="/orders" element={<ServiceOrdersPage />} />
             <Route path="/orders/kanban" element={<KanbanPage />} />
             <Route path="/orders/:id" element={<OrderDetailPage />} />
+            <Route path="/it-work" element={<ITWorkPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
