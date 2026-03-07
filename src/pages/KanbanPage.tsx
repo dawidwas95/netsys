@@ -42,7 +42,7 @@ export default function KanbanPage() {
     queryFn: async () => {
       let query = supabase
         .from("service_orders")
-        .select("*, clients(display_name, phone), devices(manufacturer, model), profiles(full_name)")
+        .select("*, clients(display_name, phone), devices(manufacturer, model)")
         .not("status", "in", '("ARCHIVED","CANCELLED")')
         .order("received_at", { ascending: false });
 
@@ -98,7 +98,7 @@ export default function KanbanPage() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Kanban zleceń</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Tablica zleceń</h1>
           <p className="text-muted-foreground text-sm">{orders.length} zleceń</p>
         </div>
         <div className="flex items-center gap-2">

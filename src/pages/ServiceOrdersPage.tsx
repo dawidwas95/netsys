@@ -56,7 +56,7 @@ export default function ServiceOrdersPage() {
     queryFn: async () => {
       let query = supabase
         .from("service_orders")
-        .select("*, clients(display_name), devices(manufacturer, model), profiles(full_name)")
+        .select("*, clients(display_name), devices(manufacturer, model)")
         .order("received_at", { ascending: false });
 
       if (statusFilter !== "all") {
@@ -89,7 +89,10 @@ export default function ServiceOrdersPage() {
 
   const createOrder = useMutation({
     mutationFn: async (data: ServiceOrderInsert) => {
-      const { error } = await supabase.from("service_orders").insert(data);
+      const { error } = await supabase.from("service_orders").insert({
+        ...data,
+        order_number: "TEMP", // trigger will override
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -111,7 +114,7 @@ export default function ServiceOrdersPage() {
         <div className="flex items-center gap-2">
           <Link to="/orders/kanban">
             <Button variant="outline" size="sm">
-              <KanbanSquare className="h-4 w-4 mr-1" /> Kanban
+              <KanbanSquare className="h-4 w-4 mr-1" /> Tablica
             </Button>
           </Link>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -186,7 +189,7 @@ export default function ServiceOrdersPage() {
                   <TableCell><OrderStatusBadge status={order.status} /></TableCell>
                   <TableCell className="text-sm">{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
                   <TableCell className="text-sm">{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
-                  <TableCell className="text-sm">{order.profiles?.full_name ?? "—"}</TableCell>
+                  <TableCell className="text-sm">—</TableCell>
                 </TableRow>
               ))
             )}
