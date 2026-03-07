@@ -170,7 +170,11 @@ export default function OrderDetailPage() {
     const revenue = laborNet + itemsRevenue;
     const profit = revenue - totalCost;
     const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
-    return { laborNet, partsCost, extraCost, totalCost, itemsRevenue, itemsCost, revenue, profit, margin };
+    const vatRate = 0.23;
+    const revenueGross = revenue * (1 + vatRate);
+    const totalCostGross = totalCost * (1 + vatRate);
+    const profitGross = revenueGross - totalCostGross;
+    return { laborNet, partsCost, extraCost, totalCost, itemsRevenue, itemsCost, revenue, profit, margin, revenueGross, totalCostGross, profitGross };
   }, [currentForm, orderItems]);
 
   // ── Save mutation ──
