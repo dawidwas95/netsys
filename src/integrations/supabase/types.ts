@@ -401,11 +401,13 @@ export type Database = {
         Row: {
           asset_tag: string | null
           client_id: string | null
+          cpu: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
           description: string | null
           device_category: Database["public"]["Enums"]["device_category"]
+          gpu: string | null
           id: string
           imei: string | null
           ip_address: string | null
@@ -413,15 +415,23 @@ export type Database = {
           mac_address: string | null
           manufacturer: string | null
           model: string | null
+          motherboard: string | null
           notes: string | null
           operating_system: string | null
           processor: string | null
+          psu: string | null
           purchase_date: string | null
           ram_gb: number | null
+          ram_type: string | null
           serial_number: string | null
+          specification_notes: string | null
           status: Database["public"]["Enums"]["device_status"]
           storage_size_gb: number | null
           storage_type: string | null
+          storage1_size: string | null
+          storage1_type: string | null
+          storage2_size: string | null
+          storage2_type: string | null
           updated_at: string
           updated_by: string | null
           warranty_until: string | null
@@ -429,11 +439,13 @@ export type Database = {
         Insert: {
           asset_tag?: string | null
           client_id?: string | null
+          cpu?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           description?: string | null
           device_category?: Database["public"]["Enums"]["device_category"]
+          gpu?: string | null
           id?: string
           imei?: string | null
           ip_address?: string | null
@@ -441,15 +453,23 @@ export type Database = {
           mac_address?: string | null
           manufacturer?: string | null
           model?: string | null
+          motherboard?: string | null
           notes?: string | null
           operating_system?: string | null
           processor?: string | null
+          psu?: string | null
           purchase_date?: string | null
           ram_gb?: number | null
+          ram_type?: string | null
           serial_number?: string | null
+          specification_notes?: string | null
           status?: Database["public"]["Enums"]["device_status"]
           storage_size_gb?: number | null
           storage_type?: string | null
+          storage1_size?: string | null
+          storage1_type?: string | null
+          storage2_size?: string | null
+          storage2_type?: string | null
           updated_at?: string
           updated_by?: string | null
           warranty_until?: string | null
@@ -457,11 +477,13 @@ export type Database = {
         Update: {
           asset_tag?: string | null
           client_id?: string | null
+          cpu?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           description?: string | null
           device_category?: Database["public"]["Enums"]["device_category"]
+          gpu?: string | null
           id?: string
           imei?: string | null
           ip_address?: string | null
@@ -469,15 +491,23 @@ export type Database = {
           mac_address?: string | null
           manufacturer?: string | null
           model?: string | null
+          motherboard?: string | null
           notes?: string | null
           operating_system?: string | null
           processor?: string | null
+          psu?: string | null
           purchase_date?: string | null
           ram_gb?: number | null
+          ram_type?: string | null
           serial_number?: string | null
+          specification_notes?: string | null
           status?: Database["public"]["Enums"]["device_status"]
           storage_size_gb?: number | null
           storage_type?: string | null
+          storage1_size?: string | null
+          storage1_type?: string | null
+          storage2_size?: string | null
+          storage2_type?: string | null
           updated_at?: string
           updated_by?: string | null
           warranty_until?: string | null

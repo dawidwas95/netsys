@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import {
   User, Monitor, ClipboardList, Wrench, DollarSign, CreditCard,
-  Phone, Mail, MapPin, Plus, Info, TrendingUp, TrendingDown, Percent, Hash,
+  Phone, Mail, MapPin, Info, TrendingUp, TrendingDown, Percent,
 } from "lucide-react";
 import { SearchableSelect } from "@/components/SearchableSelect";
 import { ClientFormDialog } from "@/components/ClientFormDialog";
@@ -100,6 +100,7 @@ export function ClientSection({ clientId, onChange }: {
   onChange: (clientId: string | undefined) => void;
 }) {
   const queryClient = useQueryClient();
+  const [clientDialogOpen, setClientDialogOpen] = useState(false);
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-select"],
@@ -130,22 +131,21 @@ export function ClientSection({ clientId, onChange }: {
           value={clientId ?? ""}
           onChange={(v) => onChange(v || undefined)}
           placeholder="Wpisz nazwisko, firmę, telefon, NIP..."
-          actions={
-            <ClientFormDialog
-              onCreated={(id) => {
-                queryClient.invalidateQueries({ queryKey: ["clients-select"] });
-                onChange(id);
-              }}
-              trigger={
-                <button type="button" className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-accent rounded-sm flex items-center gap-1">
-                  <Plus className="h-3.5 w-3.5" /> Dodaj nowego klienta
-                </button>
-              }
-            />
-          }
+          onAddNew={() => setClientDialogOpen(true)}
+          addNewLabel="Dodaj nowego klienta"
         />
       </div>
       <ClientPreview client={selectedClient} />
+
+      {/* Separate dialog — not inside the dropdown */}
+      <ClientFormDialog
+        externalOpen={clientDialogOpen}
+        onOpenChange={setClientDialogOpen}
+        onCreated={(id) => {
+          queryClient.invalidateQueries({ queryKey: ["clients-select"] });
+          onChange(id);
+        }}
+      />
     </FormSection>
   );
 }
@@ -159,6 +159,7 @@ export function DeviceSection({ clientId, deviceId, onChange }: {
   onChange: (deviceId: string | undefined) => void;
 }) {
   const queryClient = useQueryClient();
+  const [deviceDialogOpen, setDeviceDialogOpen] = useState(false);
 
   const { data: devices = [] } = useQuery({
     queryKey: ["client-devices-select", clientId],
@@ -199,23 +200,22 @@ export function DeviceSection({ clientId, deviceId, onChange }: {
           value={deviceId ?? ""}
           onChange={(v) => onChange(v || undefined)}
           placeholder="Wpisz producenta, model, S/N, IMEI..."
-          actions={
-            <DeviceFormDialog
-              clientId={clientId}
-              onCreated={(id) => {
-                queryClient.invalidateQueries({ queryKey: ["client-devices-select", clientId] });
-                onChange(id);
-              }}
-              trigger={
-                <button type="button" className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-accent rounded-sm flex items-center gap-1">
-                  <Plus className="h-3.5 w-3.5" /> Dodaj nowe urządzenie
-                </button>
-              }
-            />
-          }
+          onAddNew={() => setDeviceDialogOpen(true)}
+          addNewLabel="Dodaj nowe urządzenie"
         />
       </div>
       <DevicePreview device={selectedDevice} />
+
+      {/* Separate dialog — not inside the dropdown */}
+      <DeviceFormDialog
+        clientId={clientId}
+        externalOpen={deviceDialogOpen}
+        onOpenChange={setDeviceDialogOpen}
+        onCreated={(id) => {
+          queryClient.invalidateQueries({ queryKey: ["client-devices-select", clientId] });
+          onChange(id);
+        }}
+      />
     </FormSection>
   );
 }
