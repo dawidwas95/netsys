@@ -79,6 +79,11 @@ export default function OrderDetailPage() {
 
   const updateOrder = useMutation({
     mutationFn: async (updates: Record<string, any>) => {
+      // If completing order, set completed_at
+      if (updates.status === "COMPLETED") {
+        updates.completed_at = new Date().toISOString();
+      }
+
       const { error } = await supabase
         .from("service_orders")
         .update({ ...updates, updated_by: user?.id })
@@ -93,11 +98,28 @@ export default function OrderDetailPage() {
         new_value_json: updates,
         user_id: user?.id,
       });
+
+      // Auto cash entry: if status=COMPLETED, payment=CASH, is_paid=true
+      if (updates.status === "COMPLETED" && order) {
+        const currentOrder = { ...order, ...updates };
+        if (currentOrder.payment_method === "CASH" && currentOrder.is_paid && Number(currentOrder.total_gross || 0) > 0) {
+          await supabase.from("cash_transactions").insert({
+            transaction_type: "IN" as any,
+            source_type: "SERVICE_ORDER" as any,
+            related_order_id: id!,
+            amount: Number(currentOrder.total_gross),
+            description: `Zlecenie ${order.order_number} — płatność gotówką`,
+            transaction_date: new Date().toISOString().split("T")[0],
+            user_id: user?.id,
+          });
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order", id] });
       queryClient.invalidateQueries({ queryKey: ["order-logs", id] });
       queryClient.invalidateQueries({ queryKey: ["kanban-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["cash_transactions"] });
       toast.success("Zlecenie zaktualizowane");
     },
     onError: (err: any) => toast.error(err.message),
