@@ -365,6 +365,119 @@ export type Database = {
           },
         ]
       }
+      inventory_items: {
+        Row: {
+          category: string | null
+          created_at: string
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          is_archived: boolean
+          manufacturer: string | null
+          minimum_quantity: number
+          model: string | null
+          name: string
+          notes: string | null
+          purchase_net: number
+          sale_net: number
+          sku: string | null
+          stock_quantity: number
+          unit: string
+          updated_at: string
+          vat_rate: number
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          is_archived?: boolean
+          manufacturer?: string | null
+          minimum_quantity?: number
+          model?: string | null
+          name: string
+          notes?: string | null
+          purchase_net?: number
+          sale_net?: number
+          sku?: string | null
+          stock_quantity?: number
+          unit?: string
+          updated_at?: string
+          vat_rate?: number
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          is_archived?: boolean
+          manufacturer?: string | null
+          minimum_quantity?: number
+          model?: string | null
+          name?: string
+          notes?: string | null
+          purchase_net?: number
+          sale_net?: number
+          sku?: string | null
+          stock_quantity?: number
+          unit?: string
+          updated_at?: string
+          vat_rate?: number
+        }
+        Relationships: []
+      }
+      inventory_movements: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          item_id: string
+          movement_type: Database["public"]["Enums"]["movement_type"]
+          notes: string | null
+          purchase_net: number | null
+          quantity: number
+          sale_net: number | null
+          source_id: string | null
+          source_type: Database["public"]["Enums"]["movement_source"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_id: string
+          movement_type: Database["public"]["Enums"]["movement_type"]
+          notes?: string | null
+          purchase_net?: number | null
+          quantity: number
+          sale_net?: number | null
+          source_id?: string | null
+          source_type?: Database["public"]["Enums"]["movement_source"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_id?: string
+          movement_type?: Database["public"]["Enums"]["movement_type"]
+          notes?: string | null
+          purchase_net?: number | null
+          quantity?: number
+          sale_net?: number | null
+          source_id?: string | null
+          source_type?: Database["public"]["Enums"]["movement_source"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_movements_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       it_work_entries: {
         Row: {
           amount_gross: number
@@ -538,6 +651,63 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "service_order_comments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "service_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_order_items: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          inventory_item_id: string | null
+          item_name_snapshot: string
+          order_id: string
+          purchase_net: number
+          quantity: number
+          sale_net: number
+          total_purchase_net: number
+          total_sale_net: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          inventory_item_id?: string | null
+          item_name_snapshot: string
+          order_id: string
+          purchase_net?: number
+          quantity?: number
+          sale_net?: number
+          total_purchase_net?: number
+          total_sale_net?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          inventory_item_id?: string | null
+          item_name_snapshot?: string
+          order_id?: string
+          purchase_net?: number
+          quantity?: number
+          sale_net?: number
+          total_purchase_net?: number
+          total_sale_net?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_order_items_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_order_items_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "service_orders"
@@ -742,6 +912,8 @@ export type Database = {
         | "OTHER"
       device_status: "ACTIVE" | "IN_SERVICE" | "RETIRED"
       intake_channel: "PHONE" | "EMAIL" | "IN_PERSON" | "REMOTE" | "OTHER"
+      movement_source: "PURCHASE" | "SERVICE_ORDER" | "IT_WORK" | "MANUAL"
+      movement_type: "IN" | "OUT" | "ADJUSTMENT" | "RESERVATION"
       order_priority: "LOW" | "NORMAL" | "HIGH" | "URGENT"
       order_status:
         | "NEW"
@@ -910,6 +1082,8 @@ export const Constants = {
       ],
       device_status: ["ACTIVE", "IN_SERVICE", "RETIRED"],
       intake_channel: ["PHONE", "EMAIL", "IN_PERSON", "REMOTE", "OTHER"],
+      movement_source: ["PURCHASE", "SERVICE_ORDER", "IT_WORK", "MANUAL"],
+      movement_type: ["IN", "OUT", "ADJUSTMENT", "RESERVATION"],
       order_priority: ["LOW", "NORMAL", "HIGH", "URGENT"],
       order_status: [
         "NEW",

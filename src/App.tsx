@@ -14,6 +14,7 @@ import ServiceOrdersPage from "@/pages/ServiceOrdersPage";
 import KanbanPage from "@/pages/KanbanPage";
 import OrderDetailPage from "@/pages/OrderDetailPage";
 import ITWorkPage from "@/pages/ITWorkPage";
+import InventoryPage from "@/pages/InventoryPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,6 +54,7 @@ const App = () => (
             <Route path="/orders/kanban" element={<KanbanPage />} />
             <Route path="/orders/:id" element={<OrderDetailPage />} />
             <Route path="/it-work" element={<ITWorkPage />} />
+            <Route path="/inventory" element={<InventoryPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

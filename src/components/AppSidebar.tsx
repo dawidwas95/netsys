@@ -8,6 +8,7 @@ import {
   Settings,
   LogOut,
   Search,
+  Package,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -30,6 +31,7 @@ const mainNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Klienci", url: "/clients", icon: Users },
   { title: "Urządzenia", url: "/devices", icon: Monitor },
+  { title: "Magazyn", url: "/inventory", icon: Package },
 ];
 
 const serviceNav = [
