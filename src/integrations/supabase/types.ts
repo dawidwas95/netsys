@@ -136,6 +136,50 @@ export type Database = {
           },
         ]
       }
+      cash_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          related_order_id: string | null
+          source_type: Database["public"]["Enums"]["cash_source_type"]
+          transaction_date: string
+          transaction_type: Database["public"]["Enums"]["cash_transaction_type"]
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          related_order_id?: string | null
+          source_type?: Database["public"]["Enums"]["cash_source_type"]
+          transaction_date?: string
+          transaction_type: Database["public"]["Enums"]["cash_transaction_type"]
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          related_order_id?: string | null
+          source_type?: Database["public"]["Enums"]["cash_source_type"]
+          transaction_date?: string
+          transaction_type?: Database["public"]["Enums"]["cash_transaction_type"]
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_transactions_related_order_id_fkey"
+            columns: ["related_order_id"]
+            isOneToOne: false
+            referencedRelation: "service_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_contacts: {
         Row: {
           client_id: string
@@ -1023,6 +1067,8 @@ export type Database = {
     Enums: {
       app_role: "ADMIN" | "MANAGER" | "EMPLOYEE" | "READONLY"
       billing_status: "UNBILLED" | "BILLED" | "CANCELLED"
+      cash_source_type: "SERVICE_ORDER" | "MANUAL" | "WITHDRAWAL" | "CORRECTION"
+      cash_transaction_type: "IN" | "OUT" | "RESET"
       client_type: "PRIVATE" | "COMPANY"
       device_category:
         | "DESKTOP"
@@ -1201,6 +1247,8 @@ export const Constants = {
     Enums: {
       app_role: ["ADMIN", "MANAGER", "EMPLOYEE", "READONLY"],
       billing_status: ["UNBILLED", "BILLED", "CANCELLED"],
+      cash_source_type: ["SERVICE_ORDER", "MANUAL", "WITHDRAWAL", "CORRECTION"],
+      cash_transaction_type: ["IN", "OUT", "RESET"],
       client_type: ["PRIVATE", "COMPANY"],
       device_category: [
         "DESKTOP",
