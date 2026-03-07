@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronDown, X } from "lucide-react";
+import { Search, ChevronDown, X, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SearchableSelectOption {
@@ -17,11 +17,16 @@ interface SearchableSelectProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  /** @deprecated Use onAddNew instead */
   actions?: React.ReactNode;
+  /** Called when the "Add new" button is clicked. Closes the dropdown first. */
+  onAddNew?: () => void;
+  addNewLabel?: string;
 }
 
 export function SearchableSelect({
-  options, value, onChange, placeholder = "Wyszukaj...", className, disabled, actions,
+  options, value, onChange, placeholder = "Wyszukaj...", className, disabled,
+  actions, onAddNew, addNewLabel = "Dodaj nowy",
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -111,7 +116,24 @@ export function SearchableSelect({
               ))
             )}
           </div>
-          {actions && (
+          {onAddNew && (
+            <div className="border-t border-border p-1">
+              <button
+                type="button"
+                className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-accent rounded-sm flex items-center gap-1"
+                onClick={() => {
+                  setOpen(false);
+                  setSearch("");
+                  // Use setTimeout to ensure dropdown is fully closed before opening dialog
+                  setTimeout(() => onAddNew(), 0);
+                }}
+              >
+                <Plus className="h-3.5 w-3.5" /> {addNewLabel}
+              </button>
+            </div>
+          )}
+          {/* Legacy actions support */}
+          {!onAddNew && actions && (
             <div className="border-t border-border p-1">
               {actions}
             </div>
