@@ -343,21 +343,29 @@ export default function OrderDetailPage() {
             </div>
           </div>
         </div>
-        <Select
-          value={order.status}
-          onValueChange={(v) => {
-            const updates: any = { status: v };
-            if (v === "COMPLETED") updates.completed_at = new Date().toISOString();
-            updateOrder.mutate(updates);
-          }}
-        >
-          <SelectTrigger className="w-48"><SelectValue placeholder="Zmień status" /></SelectTrigger>
-          <SelectContent>
-            {Object.entries(ORDER_STATUS_LABELS).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
+            <FileDown className="mr-1 h-4 w-4" /> PDF
+          </Button>
+          <Button variant="outline" size="sm" onClick={handlePrintPDF}>
+            <Printer className="mr-1 h-4 w-4" /> Drukuj
+          </Button>
+          <Select
+            value={order.status}
+            onValueChange={(v) => {
+              const updates: any = { status: v };
+              if (v === "COMPLETED") updates.completed_at = new Date().toISOString();
+              updateOrder.mutate(updates);
+            }}
+          >
+            <SelectTrigger className="w-48"><SelectValue placeholder="Zmień status" /></SelectTrigger>
+            <SelectContent>
+              {Object.entries(ORDER_STATUS_LABELS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Info cards */}
