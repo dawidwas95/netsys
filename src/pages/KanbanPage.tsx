@@ -42,7 +42,7 @@ export default function KanbanPage() {
     queryFn: async () => {
       let query = supabase
         .from("service_orders")
-        .select("*, clients(display_name, phone), devices(manufacturer, model), profiles(full_name)")
+        .select("*, clients(display_name, phone), devices(manufacturer, model)")
         .not("status", "in", '("ARCHIVED","CANCELLED")')
         .order("received_at", { ascending: false });
 
