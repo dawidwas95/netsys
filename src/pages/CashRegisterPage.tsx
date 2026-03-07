@@ -43,7 +43,11 @@ export default function CashRegisterPage() {
         .order("created_at", { ascending: false })
         .limit(500);
       if (error) throw error;
-      return data;
+      // Use gross_amount if available, fallback to amount
+      return (data ?? []).map((t: any) => ({
+        ...t,
+        display_amount: t.gross_amount && t.gross_amount > 0 ? t.gross_amount : t.amount,
+      }));
     },
   });
 
