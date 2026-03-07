@@ -69,6 +69,7 @@ export default function OrderDetailPage() {
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [newItem, setNewItem] = useState({ name: "", quantity: "1", sale_net: "", purchase_net: "" });
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
   const [editDirty, setEditDirty] = useState(false);
 
   // Editable form state — synced from order data
