@@ -17,6 +17,7 @@ import ITWorkPage from "@/pages/ITWorkPage";
 import InventoryPage from "@/pages/InventoryPage";
 import OffersPage from "@/pages/OffersPage";
 import CashRegisterPage from "@/pages/CashRegisterPage";
+import ITDocsPage from "@/pages/ITDocsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
