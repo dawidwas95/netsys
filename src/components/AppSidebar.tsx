@@ -103,6 +103,11 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
+          <SidebarGroupLabel>Finanse</SidebarGroupLabel>
+          <SidebarGroupContent>{renderItems(financeNav)}</SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
           <SidebarGroupLabel>System</SidebarGroupLabel>
           <SidebarGroupContent>{renderItems(systemNav)}</SidebarGroupContent>
         </SidebarGroup>
