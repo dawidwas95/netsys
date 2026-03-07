@@ -21,8 +21,9 @@ import {
 } from "@/components/ui/dialog";
 import {
   ArrowLeft, Send, Clock, User, Monitor, Plus, Trash2,
-  DollarSign, TrendingUp, TrendingDown, Percent,
+  DollarSign, TrendingUp, TrendingDown, Percent, FileDown, Printer,
 } from "lucide-react";
+import { generateOrderPDF } from "@/lib/generateOrderPDF";
 import { toast } from "sonner";
 import { useState, useMemo } from "react";
 import {
