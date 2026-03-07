@@ -4,8 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -19,22 +17,14 @@ import { Plus, Search, KanbanSquare } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import {
-  ORDER_STATUS_LABELS,
-  ORDER_PRIORITY_LABELS,
-  SERVICE_TYPE_LABELS,
-  INTAKE_CHANNEL_LABELS,
-  DEVICE_CATEGORY_LABELS,
-  type OrderStatus,
-  type OrderPriority,
-  type ServiceType,
-  type IntakeChannel,
-  type DeviceCategory,
+  ORDER_STATUS_LABELS, ORDER_PRIORITY_LABELS, SERVICE_TYPE_LABELS,
+  type OrderStatus, type OrderPriority, type ServiceType,
   type ServiceOrderInsert,
 } from "@/types/database";
 import { OrderStatusBadge } from "@/pages/DashboardPage";
-import { DeviceFormDialog } from "@/components/DeviceFormDialog";
-import { ClientFormDialog } from "@/components/ClientFormDialog";
-import { SearchableSelect } from "@/components/SearchableSelect";
+import {
+  ClientSection, DeviceSection, OrderDataSection, DescriptionSection,
+} from "@/components/order/OrderFormSections";
 
 export default function ServiceOrdersPage() {
   const [search, setSearch] = useState("");
@@ -51,15 +41,8 @@ export default function ServiceOrdersPage() {
         .select("*, clients(display_name), devices(manufacturer, model)")
         .order("received_at", { ascending: false });
 
-      if (statusFilter !== "all") {
-        query = query.eq("status", statusFilter as any);
-      }
-
-      if (search) {
-        query = query.or(
-          `order_number.ilike.%${search}%,problem_description.ilike.%${search}%`
-        );
-      }
+      if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
+      if (search) query = query.or(`order_number.ilike.%${search}%,problem_description.ilike.%${search}%`);
 
       const { data, error } = await query;
       if (error) throw error;
@@ -101,9 +84,9 @@ export default function ServiceOrdersPage() {
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4 mr-1" /> Nowe zlecenie</Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>Nowe zlecenie serwisowe</DialogTitle></DialogHeader>
-              <OrderForm
+            <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto p-0">
+              <DialogHeader className="p-6 pb-0"><DialogTitle>Nowe zlecenie serwisowe</DialogTitle></DialogHeader>
+              <NewOrderForm
                 onSubmit={(data) => createOrder.mutate({ ...data, created_by: user?.id })}
                 loading={createOrder.isPending}
               />
@@ -172,52 +155,18 @@ export default function ServiceOrdersPage() {
   );
 }
 
-function OrderForm({
-  onSubmit,
-  loading,
-}: {
+// ── New Order Form (uses shared sections) ──
+function NewOrderForm({ onSubmit, loading }: {
   onSubmit: (data: ServiceOrderInsert) => void;
   loading: boolean;
 }) {
-  const [formData, setFormData] = useState<Partial<ServiceOrderInsert>>({
+  const [formData, setFormData] = useState<Record<string, any>>({
     service_type: "COMPUTER_SERVICE",
     priority: "NORMAL",
     intake_channel: "IN_PERSON",
   });
 
-  const queryClient = useQueryClient();
-
-  // Fetch all clients for searchable select
-  const { data: clients = [] } = useQuery({
-    queryKey: ["clients-select"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("clients")
-        .select("id, display_name, company_name, first_name, last_name, phone, nip, address_city")
-        .eq("is_active", true)
-        .order("display_name");
-      return data ?? [];
-    },
-  });
-
-  const selectedClientId = formData.client_id;
-
-  // Fetch devices for selected client
-  const { data: clientDevices = [] } = useQuery({
-    queryKey: ["client-devices-select", selectedClientId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("devices")
-        .select("id, device_category, manufacturer, model, serial_number, imei")
-        .eq("client_id", selectedClientId!)
-        .eq("is_archived", false)
-        .order("created_at", { ascending: false });
-      return data ?? [];
-    },
-    enabled: !!selectedClientId,
-  });
-
-  const set = (field: keyof ServiceOrderInsert, value: any) =>
+  const set = (field: string, value: any) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -229,144 +178,22 @@ function OrderForm({
     onSubmit(formData as ServiceOrderInsert);
   };
 
-  const clientOptions = clients.map((c: any) => ({
-    value: c.id,
-    label: c.display_name || c.company_name || [c.first_name, c.last_name].filter(Boolean).join(" ") || "—",
-    sublabel: [c.phone, c.nip, c.address_city].filter(Boolean).join(" · "),
-  }));
-
-  const deviceOptions = clientDevices.map((d: any) => ({
-    value: d.id,
-    label: `${DEVICE_CATEGORY_LABELS[d.device_category as DeviceCategory]} — ${d.manufacturer || ""} ${d.model || ""}`.trim(),
-    sublabel: [d.serial_number && `S/N: ${d.serial_number}`, d.imei && `IMEI: ${d.imei}`].filter(Boolean).join(" · "),
-  }));
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Client - searchable with inline create */}
-      <div className="space-y-1.5">
-        <Label>Klient *</Label>
-        <SearchableSelect
-          options={clientOptions}
-          value={formData.client_id ?? ""}
-          onChange={(v) => {
-            set("client_id", v || undefined);
-            set("device_id", undefined);
-          }}
-          placeholder="Wyszukaj klienta..."
-          actions={
-            <ClientFormDialog
-              onCreated={(id) => {
-                queryClient.invalidateQueries({ queryKey: ["clients-select"] });
-                set("client_id", id);
-              }}
-              trigger={
-                <button type="button" className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-accent rounded-sm flex items-center gap-1">
-                  <Plus className="h-3.5 w-3.5" /> Dodaj nowego klienta
-                </button>
-              }
-            />
-          }
-        />
-      </div>
-
-      {/* Device - searchable with inline create */}
-      {selectedClientId && (
-        <div className="space-y-1.5">
-          <Label>Urządzenie</Label>
-          <SearchableSelect
-            options={deviceOptions}
-            value={formData.device_id ?? ""}
-            onChange={(v) => set("device_id", v || undefined)}
-            placeholder="Wyszukaj urządzenie..."
-            actions={
-              <DeviceFormDialog
-                clientId={selectedClientId}
-                onCreated={(id) => {
-                  queryClient.invalidateQueries({ queryKey: ["client-devices-select", selectedClientId] });
-                  set("device_id", id);
-                }}
-                trigger={
-                  <button type="button" className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-accent rounded-sm flex items-center gap-1">
-                    <Plus className="h-3.5 w-3.5" /> Dodaj nowe urządzenie
-                  </button>
-                }
-              />
-            }
-          />
-        </div>
-      )}
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label>Typ serwisu</Label>
-          <Select value={formData.service_type} onValueChange={(v) => set("service_type", v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {Object.entries(SERVICE_TYPE_LABELS).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1.5">
-          <Label>Priorytet</Label>
-          <Select value={formData.priority} onValueChange={(v) => set("priority", v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {Object.entries(ORDER_PRIORITY_LABELS).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label>Kanał przyjęcia</Label>
-        <Select value={formData.intake_channel ?? "IN_PERSON"} onValueChange={(v) => set("intake_channel", v)}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {Object.entries(INTAKE_CHANNEL_LABELS).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label>Opis problemu</Label>
-        <Textarea rows={3} onChange={(e) => set("problem_description", e.target.value)} />
-      </div>
-
-      <div className="space-y-1.5">
-        <Label>Opis klienta</Label>
-        <Textarea rows={2} onChange={(e) => set("client_description", e.target.value)} />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label>Akcesoria otrzymane</Label>
-          <Input onChange={(e) => set("accessories_received", e.target.value)} placeholder="np. ładowarka, torba" />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Stan wizualny</Label>
-          <Input onChange={(e) => set("visual_condition", e.target.value)} placeholder="np. zarysowania" />
-        </div>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label>Kod blokady</Label>
-        <Input onChange={(e) => set("lock_code", e.target.value)} />
-      </div>
-
-      <div className="space-y-1.5">
-        <Label>Notatki wewnętrzne</Label>
-        <Textarea rows={2} onChange={(e) => set("internal_notes", e.target.value)} />
-      </div>
+    <form onSubmit={handleSubmit} className="p-6 pt-4 space-y-4">
+      <ClientSection
+        clientId={formData.client_id}
+        onChange={(v) => { set("client_id", v); set("device_id", undefined); }}
+      />
+      <DeviceSection
+        clientId={formData.client_id}
+        deviceId={formData.device_id}
+        onChange={(v) => set("device_id", v)}
+      />
+      <OrderDataSection formData={formData} onChange={set} />
+      <DescriptionSection formData={formData} onChange={set} />
 
       <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? "Zapisywanie..." : "Utwórz zlecenie"}
+        {loading ? "Tworzenie..." : "Utwórz zlecenie"}
       </Button>
     </form>
   );
