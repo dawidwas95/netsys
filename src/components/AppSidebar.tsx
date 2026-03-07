@@ -43,6 +43,10 @@ const serviceNav = [
   { title: "Oferty", url: "/offers", icon: FileText },
 ];
 
+const financeNav = [
+  { title: "Kasa gotówkowa", url: "/cash", icon: Wallet },
+];
+
 const systemNav = [
   { title: "Ustawienia", url: "/settings", icon: Settings },
 ];
