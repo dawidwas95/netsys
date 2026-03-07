@@ -289,7 +289,7 @@ function OfferForm({ clients, userId, onSuccess }: {
 
       const offerItems = items.map((item, idx) => ({
         offer_id: offer.id,
-        item_type: item.item_type,
+        item_type: item.item_type as "SERVICE" | "PRODUCT" | "CUSTOM",
         name: item.name,
         description: item.description || null,
         quantity: item.quantity,
