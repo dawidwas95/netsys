@@ -43,7 +43,11 @@ export default function CashRegisterPage() {
         .order("created_at", { ascending: false })
         .limit(500);
       if (error) throw error;
-      return data;
+      // Use gross_amount if available, fallback to amount
+      return (data ?? []).map((t: any) => ({
+        ...t,
+        display_amount: t.gross_amount && t.gross_amount > 0 ? t.gross_amount : t.amount,
+      }));
     },
   });
 
@@ -54,8 +58,9 @@ export default function CashRegisterPage() {
 
   const balance = useMemo(() => {
     return transactions.reduce((sum: number, t: any) => {
-      if (t.transaction_type === "IN") return sum + Number(t.amount);
-      if (t.transaction_type === "OUT") return sum - Number(t.amount);
+      const amt = t.display_amount || Number(t.amount);
+      if (t.transaction_type === "IN") return sum + amt;
+      if (t.transaction_type === "OUT") return sum - amt;
       return 0; // RESET
     }, 0);
   }, [transactions]);
@@ -64,14 +69,14 @@ export default function CashRegisterPage() {
     const today = new Date().toISOString().split("T")[0];
     return transactions
       .filter((t: any) => t.transaction_date === today && t.transaction_type === "IN")
-      .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+      .reduce((sum: number, t: any) => sum + (t.display_amount || Number(t.amount)), 0);
   }, [transactions]);
 
   const todayOut = useMemo(() => {
     const today = new Date().toISOString().split("T")[0];
     return transactions
       .filter((t: any) => t.transaction_date === today && t.transaction_type === "OUT")
-      .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+      .reduce((sum: number, t: any) => sum + (t.display_amount || Number(t.amount)), 0);
   }, [transactions]);
 
   const addTransaction = useMutation({
@@ -220,7 +225,7 @@ export default function CashRegisterPage() {
                       {t.service_orders?.order_number || "—"}
                     </TableCell>
                     <TableCell className={`text-right tabular-nums font-medium ${t.transaction_type === "IN" ? "text-emerald-400" : "text-red-400"}`}>
-                      {t.transaction_type === "IN" ? "+" : "-"}{Number(t.amount).toFixed(2)} zł
+                      {t.transaction_type === "IN" ? "+" : "-"}{Number(t.display_amount || t.amount).toFixed(2)} zł
                     </TableCell>
                   </TableRow>
                 ))

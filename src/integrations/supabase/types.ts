@@ -141,34 +141,43 @@ export type Database = {
           amount: number
           created_at: string
           description: string | null
+          gross_amount: number | null
           id: string
+          payment_method: string | null
           related_order_id: string | null
           source_type: Database["public"]["Enums"]["cash_source_type"]
           transaction_date: string
           transaction_type: Database["public"]["Enums"]["cash_transaction_type"]
           user_id: string | null
+          vat_amount: number | null
         }
         Insert: {
           amount: number
           created_at?: string
           description?: string | null
+          gross_amount?: number | null
           id?: string
+          payment_method?: string | null
           related_order_id?: string | null
           source_type?: Database["public"]["Enums"]["cash_source_type"]
           transaction_date?: string
           transaction_type: Database["public"]["Enums"]["cash_transaction_type"]
           user_id?: string | null
+          vat_amount?: number | null
         }
         Update: {
           amount?: number
           created_at?: string
           description?: string | null
+          gross_amount?: number | null
           id?: string
+          payment_method?: string | null
           related_order_id?: string | null
           source_type?: Database["public"]["Enums"]["cash_source_type"]
           transaction_date?: string
           transaction_type?: Database["public"]["Enums"]["cash_transaction_type"]
           user_id?: string | null
+          vat_amount?: number | null
         }
         Relationships: [
           {
@@ -518,6 +527,92 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          document_id: string
+          id: string
+          inventory_item_id: string | null
+          name: string
+          quantity: number
+          related_it_work_id: string | null
+          related_order_id: string | null
+          sort_order: number
+          total_gross: number
+          total_net: number
+          total_vat: number
+          unit: string
+          unit_net: number
+          vat_rate: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          document_id: string
+          id?: string
+          inventory_item_id?: string | null
+          name: string
+          quantity?: number
+          related_it_work_id?: string | null
+          related_order_id?: string | null
+          sort_order?: number
+          total_gross?: number
+          total_net?: number
+          total_vat?: number
+          unit?: string
+          unit_net?: number
+          vat_rate?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          document_id?: string
+          id?: string
+          inventory_item_id?: string | null
+          name?: string
+          quantity?: number
+          related_it_work_id?: string | null
+          related_order_id?: string | null
+          sort_order?: number
+          total_gross?: number
+          total_net?: number
+          total_vat?: number
+          unit?: string
+          unit_net?: number
+          vat_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_items_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_items_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_items_related_it_work_id_fkey"
+            columns: ["related_it_work_id"]
+            isOneToOne: false
+            referencedRelation: "it_work_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_items_related_order_id_fkey"
+            columns: ["related_order_id"]
+            isOneToOne: false
+            referencedRelation: "service_orders"
             referencedColumns: ["id"]
           },
         ]

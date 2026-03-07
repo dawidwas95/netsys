@@ -170,7 +170,11 @@ export default function OrderDetailPage() {
     const revenue = laborNet + itemsRevenue;
     const profit = revenue - totalCost;
     const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
-    return { laborNet, partsCost, extraCost, totalCost, itemsRevenue, itemsCost, revenue, profit, margin };
+    const vatRate = 0.23;
+    const revenueGross = revenue * (1 + vatRate);
+    const totalCostGross = totalCost * (1 + vatRate);
+    const profitGross = revenueGross - totalCostGross;
+    return { laborNet, partsCost, extraCost, totalCost, itemsRevenue, itemsCost, revenue, profit, margin, revenueGross, totalCostGross, profitGross };
   }, [currentForm, orderItems]);
 
   // ── Save mutation ──
@@ -219,12 +223,18 @@ export default function OrderDetailPage() {
             .eq("source_type", "SERVICE_ORDER")
             .limit(1);
 
+          const grossRevenue = revenue * 1.23;
+          const vatAmount = revenue * 0.23;
+
           if (!existing?.length) {
             await supabase.from("cash_transactions").insert({
               transaction_type: "IN" as any,
               source_type: "SERVICE_ORDER" as any,
               related_order_id: id!,
-              amount: revenue,
+              amount: grossRevenue,
+              gross_amount: grossRevenue,
+              vat_amount: vatAmount,
+              payment_method: "CASH",
               description: `Zlecenie ${order?.order_number} — płatność gotówką`,
               transaction_date: new Date().toISOString().split("T")[0],
               user_id: user?.id,

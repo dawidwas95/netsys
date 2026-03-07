@@ -369,6 +369,11 @@ export function FinanceSection({ formData, onChange, orderItems = [] }: {
   const revenue = laborNet + itemsRevenue;
   const profit = revenue - totalCost;
   const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
+  const vatRate = 0.23;
+  const revenueGross = revenue * (1 + vatRate);
+  const revenueVat = revenue * vatRate;
+  const totalCostGross = totalCost * (1 + vatRate);
+  const profitGross = revenueGross - totalCostGross;
 
   return (
     <FormSection icon={DollarSign} title="Finanse" accent>
@@ -376,18 +381,21 @@ export function FinanceSection({ formData, onChange, orderItems = [] }: {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="rounded-md border border-border p-2.5 text-center">
           <TrendingUp className="h-3.5 w-3.5 mx-auto mb-0.5 text-primary" />
-          <p className="text-[10px] text-muted-foreground uppercase">Przychód</p>
-          <p className="text-base font-bold font-mono text-primary">{formatCurrency(revenue)}</p>
+          <p className="text-[10px] text-muted-foreground uppercase">Przychód brutto</p>
+          <p className="text-base font-bold font-mono text-primary">{formatCurrency(revenueGross)}</p>
+          <p className="text-[10px] text-muted-foreground">netto: {formatCurrency(revenue)}</p>
         </div>
         <div className="rounded-md border border-border p-2.5 text-center">
           <TrendingDown className="h-3.5 w-3.5 mx-auto mb-0.5 text-destructive" />
-          <p className="text-[10px] text-muted-foreground uppercase">Koszt</p>
-          <p className="text-base font-bold font-mono text-destructive">{formatCurrency(totalCost)}</p>
+          <p className="text-[10px] text-muted-foreground uppercase">Koszt brutto</p>
+          <p className="text-base font-bold font-mono text-destructive">{formatCurrency(totalCostGross)}</p>
+          <p className="text-[10px] text-muted-foreground">netto: {formatCurrency(totalCost)}</p>
         </div>
         <div className="rounded-md border border-border p-2.5 text-center">
           <DollarSign className="h-3.5 w-3.5 mx-auto mb-0.5 text-primary" />
-          <p className="text-[10px] text-muted-foreground uppercase">Zysk</p>
-          <p className={cn("text-base font-bold font-mono", profit >= 0 ? "text-primary" : "text-destructive")}>{formatCurrency(profit)}</p>
+          <p className="text-[10px] text-muted-foreground uppercase">Zysk brutto</p>
+          <p className={cn("text-base font-bold font-mono", profitGross >= 0 ? "text-primary" : "text-destructive")}>{formatCurrency(profitGross)}</p>
+          <p className="text-[10px] text-muted-foreground">netto: {formatCurrency(profit)}</p>
         </div>
         <div className="rounded-md border border-border p-2.5 text-center">
           <Percent className="h-3.5 w-3.5 mx-auto mb-0.5 text-muted-foreground" />
@@ -400,18 +408,23 @@ export function FinanceSection({ formData, onChange, orderItems = [] }: {
         <div className="space-y-1">
           <Label className="text-xs">Cena usługi / naprawy (netto)</Label>
           <Input type="number" step="0.01" value={formData.labor_net ?? ""} onChange={(e) => onChange("labor_net", e.target.value)} placeholder="0.00" className="h-9 font-mono" />
-          <p className="text-[10px] text-muted-foreground">Kwota sprzedaży dla klienta</p>
+          <p className="text-[10px] text-muted-foreground">brutto: {formatCurrency(laborNet * 1.23)}</p>
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Koszt części (netto)</Label>
           <Input type="number" step="0.01" value={formData.parts_net ?? ""} onChange={(e) => onChange("parts_net", e.target.value)} placeholder="0.00" className="h-9 font-mono" />
-          <p className="text-[10px] text-muted-foreground">Twój koszt zakupu</p>
+          <p className="text-[10px] text-muted-foreground">brutto: {formatCurrency(partsCost * 1.23)}</p>
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Koszt dodatkowy (netto)</Label>
           <Input type="number" step="0.01" value={formData.extra_cost_net ?? ""} onChange={(e) => onChange("extra_cost_net", e.target.value)} placeholder="0.00" className="h-9 font-mono" />
-          <p className="text-[10px] text-muted-foreground">Inne koszty własne</p>
+          <p className="text-[10px] text-muted-foreground">brutto: {formatCurrency(extraCost * 1.23)}</p>
         </div>
+      </div>
+
+      {/* VAT summary */}
+      <div className="rounded-md bg-muted/50 p-3 text-sm">
+        <div className="flex justify-between"><span className="text-muted-foreground">VAT (23%)</span><span className="font-mono">{formatCurrency(revenueVat)}</span></div>
       </div>
     </FormSection>
   );

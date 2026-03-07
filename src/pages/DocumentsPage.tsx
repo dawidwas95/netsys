@@ -83,6 +83,17 @@ interface Document {
   clients?: { display_name: string | null; company_name: string | null; first_name: string | null; last_name: string | null } | null;
 }
 
+interface DocumentLineItem {
+  id?: string;
+  name: string;
+  quantity: string;
+  unit: string;
+  unit_net: string;
+  vat_rate: string;
+}
+
+const emptyLineItem: DocumentLineItem = { name: "", quantity: "1", unit: "szt.", unit_net: "0", vat_rate: "23" };
+
 const emptyForm = {
   document_number: "TEMP",
   document_type: "SALES_INVOICE" as DocType,
@@ -121,6 +132,7 @@ export default function DocumentsPage() {
   const [search, setSearch] = useState("");
   const [filterDirection, setFilterDirection] = useState("ALL");
   const [filterPayment, setFilterPayment] = useState("ALL");
+  const [lineItems, setLineItems] = useState<DocumentLineItem[]>([{ ...emptyLineItem }]);
 
   const { data: docs = [], isLoading } = useQuery({
     queryKey: ["documents"],
@@ -147,12 +159,26 @@ export default function DocumentsPage() {
     },
   });
 
+  // Computed from line items
+  const computedFromItems = lineItems.reduce((acc, item) => {
+    const qty = parseFloat(item.quantity) || 0;
+    const unitNet = parseFloat(item.unit_net) || 0;
+    const vatRate = parseFloat(item.vat_rate) || 23;
+    const totalNet = qty * unitNet;
+    const totalVat = totalNet * (vatRate / 100);
+    const totalGross = totalNet + totalVat;
+    return { net: acc.net + totalNet, vat: acc.vat + totalVat, gross: acc.gross + totalGross };
+  }, { net: 0, vat: 0, gross: 0 });
+
+  const hasLineItems = lineItems.some(i => i.name.trim() !== "");
+
   const saveMutation = useMutation({
     mutationFn: async (values: typeof form) => {
-      const netAmount = parseFloat(values.net_amount) || 0;
+      // If line items exist, compute from them; otherwise use manual entry
+      const netAmount = hasLineItems ? computedFromItems.net : (parseFloat(values.net_amount) || 0);
       const vatRate = parseFloat(values.vat_rate) || 23;
-      const vatAmount = netAmount * (vatRate / 100);
-      const grossAmount = netAmount + vatAmount;
+      const vatAmount = hasLineItems ? computedFromItems.vat : netAmount * (vatRate / 100);
+      const grossAmount = hasLineItems ? computedFromItems.gross : netAmount + vatAmount;
 
       const payload: Record<string, unknown> = {
         document_number: values.document_number,
@@ -176,14 +202,47 @@ export default function DocumentsPage() {
         notes: values.notes || null,
       };
 
+      let docId = editId;
       if (editId) {
         payload.updated_by = user?.id;
         const { error } = await supabase.from("documents").update(payload as any).eq("id", editId);
         if (error) throw error;
       } else {
         payload.created_by = user?.id;
-        const { error } = await supabase.from("documents").insert(payload as any);
+        const { data, error } = await supabase.from("documents").insert(payload as any).select("id").single();
         if (error) throw error;
+        docId = data.id;
+      }
+
+      // Save line items
+      if (docId && hasLineItems) {
+        // Delete old items
+        await supabase.from("document_items").delete().eq("document_id", docId);
+        // Insert new items
+        const items = lineItems.filter(i => i.name.trim()).map((item, idx) => {
+          const qty = parseFloat(item.quantity) || 1;
+          const unitNet = parseFloat(item.unit_net) || 0;
+          const vatR = parseFloat(item.vat_rate) || 23;
+          const totalNet = qty * unitNet;
+          const totalVat = totalNet * (vatR / 100);
+          const totalGross = totalNet + totalVat;
+          return {
+            document_id: docId!,
+            name: item.name,
+            quantity: qty,
+            unit: item.unit || "szt.",
+            unit_net: unitNet,
+            vat_rate: vatR,
+            total_net: totalNet,
+            total_vat: totalVat,
+            total_gross: totalGross,
+            sort_order: idx,
+          };
+        });
+        if (items.length) {
+          const { error: itemErr } = await supabase.from("document_items").insert(items);
+          if (itemErr) throw itemErr;
+        }
       }
     },
     onSuccess: () => {
@@ -191,7 +250,7 @@ export default function DocumentsPage() {
       toast.success(editId ? "Zaktualizowano dokument" : "Dodano dokument");
       resetForm();
     },
-    onError: () => toast.error("Błąd zapisu"),
+    onError: (err: any) => toast.error(err?.message || "Błąd zapisu"),
   });
 
   const deleteMutation = useMutation({
@@ -209,6 +268,7 @@ export default function DocumentsPage() {
     setForm(emptyForm);
     setEditId(null);
     setOpen(false);
+    setLineItems([{ ...emptyLineItem }]);
   }
 
   function openEdit(doc: Document) {
@@ -342,17 +402,77 @@ export default function DocumentsPage() {
                 <div><Label>Data otrzymania</Label><Input type="date" value={form.received_date} onChange={(e) => setForm({ ...form, received_date: e.target.value })} /></div>
               </div>
 
+              {/* Line Items */}
               <div className="rounded-lg border border-border p-4 space-y-3">
-                <p className="text-sm font-medium text-muted-foreground">Kwoty</p>
-                <div className="grid grid-cols-3 gap-4">
-                  <div><Label>Netto *</Label><Input type="number" step="0.01" value={form.net_amount} onChange={(e) => setForm({ ...form, net_amount: e.target.value })} /></div>
-                  <div><Label>Stawka VAT (%)</Label><Input type="number" value={form.vat_rate} onChange={(e) => setForm({ ...form, vat_rate: e.target.value })} /></div>
-                  <div>
-                    <Label>Brutto</Label>
-                    <Input value={formatCurrency(computedGross)} disabled className="bg-muted" />
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-muted-foreground">Pozycje dokumentu</p>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setLineItems([...lineItems, { ...emptyLineItem }])}>
+                    <Plus className="h-3 w-3 mr-1" /> Dodaj pozycję
+                  </Button>
+                </div>
+                {lineItems.map((item, idx) => (
+                  <div key={idx} className="grid grid-cols-12 gap-2 items-end">
+                    <div className="col-span-4">
+                      {idx === 0 && <Label className="text-xs">Nazwa</Label>}
+                      <Input value={item.name} onChange={(e) => {
+                        const updated = [...lineItems]; updated[idx] = { ...item, name: e.target.value }; setLineItems(updated);
+                      }} placeholder="Nazwa pozycji" className="h-8 text-sm" />
+                    </div>
+                    <div className="col-span-1">
+                      {idx === 0 && <Label className="text-xs">Ilość</Label>}
+                      <Input type="number" value={item.quantity} onChange={(e) => {
+                        const updated = [...lineItems]; updated[idx] = { ...item, quantity: e.target.value }; setLineItems(updated);
+                      }} className="h-8 text-sm" />
+                    </div>
+                    <div className="col-span-2">
+                      {idx === 0 && <Label className="text-xs">Cena netto</Label>}
+                      <Input type="number" step="0.01" value={item.unit_net} onChange={(e) => {
+                        const updated = [...lineItems]; updated[idx] = { ...item, unit_net: e.target.value }; setLineItems(updated);
+                      }} className="h-8 text-sm" />
+                    </div>
+                    <div className="col-span-1">
+                      {idx === 0 && <Label className="text-xs">VAT%</Label>}
+                      <Input type="number" value={item.vat_rate} onChange={(e) => {
+                        const updated = [...lineItems]; updated[idx] = { ...item, vat_rate: e.target.value }; setLineItems(updated);
+                      }} className="h-8 text-sm" />
+                    </div>
+                    <div className="col-span-2">
+                      {idx === 0 && <Label className="text-xs">Brutto</Label>}
+                      <Input value={formatCurrency(
+                        (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_net) || 0) * (1 + (parseFloat(item.vat_rate) || 23) / 100)
+                      )} disabled className="h-8 text-sm bg-muted" />
+                    </div>
+                    <div className="col-span-2 flex gap-1">
+                      {lineItems.length > 1 && (
+                        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => {
+                          setLineItems(lineItems.filter((_, i) => i !== idx));
+                        }}><Trash2 className="h-3 w-3" /></Button>
+                      )}
+                    </div>
                   </div>
+                ))}
+                {/* Summary */}
+                <div className="border-t border-border pt-3 space-y-1 text-sm">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Suma netto</span><span className="font-mono font-medium">{formatCurrency(computedFromItems.net)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Suma VAT</span><span className="font-mono">{formatCurrency(computedFromItems.vat)}</span></div>
+                  <div className="flex justify-between font-bold"><span>Suma brutto</span><span className="font-mono">{formatCurrency(computedFromItems.gross)}</span></div>
                 </div>
               </div>
+
+              {/* Fallback manual entry if no line items */}
+              {!hasLineItems && (
+                <div className="rounded-lg border border-dashed border-border p-4 space-y-3">
+                  <p className="text-sm font-medium text-muted-foreground">Kwoty ręczne (jeśli brak pozycji)</p>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div><Label>Netto</Label><Input type="number" step="0.01" value={form.net_amount} onChange={(e) => setForm({ ...form, net_amount: e.target.value })} /></div>
+                    <div><Label>Stawka VAT (%)</Label><Input type="number" value={form.vat_rate} onChange={(e) => setForm({ ...form, vat_rate: e.target.value })} /></div>
+                    <div>
+                      <Label>Brutto</Label>
+                      <Input value={formatCurrency(computedGross)} disabled className="bg-muted" />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-3 gap-4">
                 <div>

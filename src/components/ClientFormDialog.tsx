@@ -86,7 +86,10 @@ export function ClientFormDialog({ onCreated, trigger, externalOpen, onOpenChang
       onCreated?.(data.id);
       setOpen(false);
     },
-    onError: () => toast.error("Błąd dodawania klienta"),
+    onError: (err: any) => {
+      console.error("Client creation error:", err);
+      toast.error(err?.message || "Błąd dodawania klienta");
+    },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
