@@ -19,9 +19,14 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   ArrowLeft, Send, Clock, User, Monitor, Plus, Trash2,
   DollarSign, TrendingUp, TrendingDown, Percent, FileDown, Printer,
-  CheckCircle, AlertTriangle, Save,
+  CheckCircle, AlertTriangle, Save, Archive, XCircle,
 } from "lucide-react";
 import { generateOrderPDF } from "@/lib/generateOrderPDF";
 import { toast } from "sonner";
@@ -64,6 +69,7 @@ export default function OrderDetailPage() {
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [newItem, setNewItem] = useState({ name: "", quantity: "1", sale_net: "", purchase_net: "" });
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
   const [editDirty, setEditDirty] = useState(false);
 
   // Editable form state — synced from order data
@@ -398,41 +404,67 @@ export default function OrderDetailPage() {
             <Printer className="mr-1 h-4 w-4" /> Drukuj
           </Button>
           {!isCompleted && (
-            <Dialog open={closeDialogOpen} onOpenChange={setCloseDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm"><CheckCircle className="mr-1 h-4 w-4" /> Zakończ i rozlicz</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader><DialogTitle>Zakończ i rozlicz zlecenie</DialogTitle></DialogHeader>
-                <div className="space-y-4">
-                  <div className="rounded-lg border border-border p-4 space-y-2 text-sm">
-                    <div className="flex justify-between"><span>Przychód:</span><span className="font-mono font-medium">{formatCurrency(financials.revenue)}</span></div>
-                    <div className="flex justify-between"><span>Koszty:</span><span className="font-mono font-medium">{formatCurrency(financials.totalCost)}</span></div>
-                    <div className="flex justify-between border-t border-border pt-2"><span className="font-medium">Zysk:</span><span className={cn("font-mono font-medium", financials.profit >= 0 ? "text-primary" : "text-destructive")}>{formatCurrency(financials.profit)}</span></div>
-                    <div className="flex justify-between"><span>Forma płatności:</span><span>{currentForm.payment_method ? PAYMENT_METHOD_LABELS[currentForm.payment_method as PaymentMethod] : <span className="text-destructive flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Nie wybrano!</span>}</span></div>
-                  </div>
-                  {financials.revenue <= 0 && (
-                    <div className="text-sm text-destructive flex items-center gap-2 p-2 rounded bg-destructive/10">
-                      <AlertTriangle className="h-4 w-4" /> Brak kwoty (ustaw cenę usługi lub dodaj pozycje)
+            <>
+              <Button variant="outline" size="sm" onClick={() => setArchiveDialogOpen(true)}>
+                <Archive className="mr-1 h-4 w-4" /> Archiwizuj
+              </Button>
+              <Dialog open={closeDialogOpen} onOpenChange={setCloseDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm"><CheckCircle className="mr-1 h-4 w-4" /> Zakończ i rozlicz</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader><DialogTitle>Zakończ i rozlicz zlecenie</DialogTitle></DialogHeader>
+                  <div className="space-y-4">
+                    <div className="rounded-lg border border-border p-4 space-y-2 text-sm">
+                      <div className="flex justify-between"><span>Przychód:</span><span className="font-mono font-medium">{formatCurrency(financials.revenue)}</span></div>
+                      <div className="flex justify-between"><span>Koszty:</span><span className="font-mono font-medium">{formatCurrency(financials.totalCost)}</span></div>
+                      <div className="flex justify-between border-t border-border pt-2"><span className="font-medium">Zysk:</span><span className={cn("font-mono font-medium", financials.profit >= 0 ? "text-primary" : "text-destructive")}>{formatCurrency(financials.profit)}</span></div>
+                      <div className="flex justify-between"><span>Forma płatności:</span><span>{currentForm.payment_method ? PAYMENT_METHOD_LABELS[currentForm.payment_method as PaymentMethod] : <span className="text-destructive flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Nie wybrano!</span>}</span></div>
                     </div>
-                  )}
-                  {currentForm.payment_method === "CASH" && financials.revenue > 0 && (
-                    <div className="text-sm text-primary flex items-center gap-2 p-2 rounded bg-primary/10">
-                      <DollarSign className="h-4 w-4" /> Kwota {formatCurrency(financials.revenue)} trafi do kasy gotówkowej
+                    {financials.revenue <= 0 && (
+                      <div className="text-sm text-destructive flex items-center gap-2 p-2 rounded bg-destructive/10">
+                        <AlertTriangle className="h-4 w-4" /> Brak kwoty (ustaw cenę usługi lub dodaj pozycje)
+                      </div>
+                    )}
+                    {currentForm.payment_method === "CASH" && financials.revenue > 0 && (
+                      <div className="text-sm text-primary flex items-center gap-2 p-2 rounded bg-primary/10">
+                        <DollarSign className="h-4 w-4" /> Kwota {formatCurrency(financials.revenueGross)} trafi do kasy gotówkowej
+                      </div>
+                    )}
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="outline" onClick={() => setCloseDialogOpen(false)}>Anuluj</Button>
+                      <Button onClick={handleCloseAndSettle} disabled={financials.revenue <= 0 || !currentForm.payment_method || updateOrder.isPending}>
+                        {updateOrder.isPending ? "Zapisywanie..." : "Potwierdź zamknięcie"}
+                      </Button>
                     </div>
-                  )}
-                  <div className="flex gap-2 justify-end">
-                    <Button variant="outline" onClick={() => setCloseDialogOpen(false)}>Anuluj</Button>
-                    <Button onClick={handleCloseAndSettle} disabled={financials.revenue <= 0 || !currentForm.payment_method || updateOrder.isPending}>
-                      {updateOrder.isPending ? "Zapisywanie..." : "Potwierdź zamknięcie"}
-                    </Button>
                   </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+                </DialogContent>
+              </Dialog>
+            </>
           )}
         </div>
       </div>
+
+      {/* Archive confirmation */}
+      <AlertDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archiwizować zlecenie?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Zlecenie {order.order_number} zostanie przeniesione do archiwum. Można je później przywrócić.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              updateOrder.mutate({ status: "ARCHIVED", is_archived: true, archive_reason: "Zarchiwizowane ręcznie" });
+              setArchiveDialogOpen(false);
+            }}>
+              Archiwizuj
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* ═══ TWO-COLUMN LAYOUT ═══ */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-5">
