@@ -175,11 +175,11 @@ export default function ITDocsPage() {
 
       if (editId) {
         payload.updated_by = user?.id;
-        const { error } = await supabase.from("client_it_documents").update(payload).eq("id", editId);
+        const { error } = await supabase.from("client_it_documents").update(payload as any).eq("id", editId);
         if (error) throw error;
       } else {
         payload.created_by = user?.id;
-        const { error } = await supabase.from("client_it_documents").insert(payload);
+        const { error } = await supabase.from("client_it_documents").insert(payload as any);
         if (error) throw error;
       }
     },
