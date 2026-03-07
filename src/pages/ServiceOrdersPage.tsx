@@ -33,6 +33,8 @@ import {
 } from "@/types/database";
 import { OrderStatusBadge } from "@/pages/DashboardPage";
 import { DeviceFormDialog } from "@/components/DeviceFormDialog";
+import { ClientFormDialog } from "@/components/ClientFormDialog";
+import { SearchableSelect } from "@/components/SearchableSelect";
 
 export default function ServiceOrdersPage() {
   const [search, setSearch] = useState("");
@@ -62,18 +64,6 @@ export default function ServiceOrdersPage() {
       const { data, error } = await query;
       if (error) throw error;
       return data;
-    },
-  });
-
-  const { data: clients } = useQuery({
-    queryKey: ["clients-select"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("clients")
-        .select("id, display_name")
-        .eq("is_active", true)
-        .order("display_name");
-      return data ?? [];
     },
   });
 
@@ -114,7 +104,6 @@ export default function ServiceOrdersPage() {
             <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle>Nowe zlecenie serwisowe</DialogTitle></DialogHeader>
               <OrderForm
-                clients={clients ?? []}
                 onSubmit={(data) => createOrder.mutate({ ...data, created_by: user?.id })}
                 loading={createOrder.isPending}
               />
@@ -184,11 +173,9 @@ export default function ServiceOrdersPage() {
 }
 
 function OrderForm({
-  clients,
   onSubmit,
   loading,
 }: {
-  clients: { id: string; display_name: string }[];
   onSubmit: (data: ServiceOrderInsert) => void;
   loading: boolean;
 }) {
@@ -197,7 +184,21 @@ function OrderForm({
     priority: "NORMAL",
     intake_channel: "IN_PERSON",
   });
-  const [deviceDialogOpen, setDeviceDialogOpen] = useState(false);
+
+  const queryClient = useQueryClient();
+
+  // Fetch all clients for searchable select
+  const { data: clients = [] } = useQuery({
+    queryKey: ["clients-select"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("clients")
+        .select("id, display_name, company_name, first_name, last_name, phone, nip, address_city")
+        .eq("is_active", true)
+        .order("display_name");
+      return data ?? [];
+    },
+  });
 
   const selectedClientId = formData.client_id;
 
@@ -207,7 +208,7 @@ function OrderForm({
     queryFn: async () => {
       const { data } = await supabase
         .from("devices")
-        .select("id, device_category, manufacturer, model, serial_number")
+        .select("id, device_category, manufacturer, model, serial_number, imei")
         .eq("client_id", selectedClientId!)
         .eq("is_archived", false)
         .order("created_at", { ascending: false });
@@ -228,52 +229,71 @@ function OrderForm({
     onSubmit(formData as ServiceOrderInsert);
   };
 
+  const clientOptions = clients.map((c: any) => ({
+    value: c.id,
+    label: c.display_name || c.company_name || [c.first_name, c.last_name].filter(Boolean).join(" ") || "—",
+    sublabel: [c.phone, c.nip, c.address_city].filter(Boolean).join(" · "),
+  }));
+
+  const deviceOptions = clientDevices.map((d: any) => ({
+    value: d.id,
+    label: `${DEVICE_CATEGORY_LABELS[d.device_category as DeviceCategory]} — ${d.manufacturer || ""} ${d.model || ""}`.trim(),
+    sublabel: [d.serial_number && `S/N: ${d.serial_number}`, d.imei && `IMEI: ${d.imei}`].filter(Boolean).join(" · "),
+  }));
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Client - searchable with inline create */}
       <div className="space-y-1.5">
         <Label>Klient *</Label>
-        <Select onValueChange={(v) => {
-          set("client_id", v);
-          set("device_id", undefined);
-        }}>
-          <SelectTrigger><SelectValue placeholder="Wybierz klienta" /></SelectTrigger>
-          <SelectContent>
-            {clients.map((c) => (
-              <SelectItem key={c.id} value={c.id}>{c.display_name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SearchableSelect
+          options={clientOptions}
+          value={formData.client_id ?? ""}
+          onChange={(v) => {
+            set("client_id", v || undefined);
+            set("device_id", undefined);
+          }}
+          placeholder="Wyszukaj klienta..."
+          actions={
+            <ClientFormDialog
+              onCreated={(id) => {
+                queryClient.invalidateQueries({ queryKey: ["clients-select"] });
+                set("client_id", id);
+              }}
+              trigger={
+                <button type="button" className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-accent rounded-sm flex items-center gap-1">
+                  <Plus className="h-3.5 w-3.5" /> Dodaj nowego klienta
+                </button>
+              }
+            />
+          }
+        />
       </div>
 
-      {/* Device selection */}
+      {/* Device - searchable with inline create */}
       {selectedClientId && (
         <div className="space-y-1.5">
           <Label>Urządzenie</Label>
-          <div className="flex gap-2">
-            <Select value={formData.device_id ?? ""} onValueChange={(v) => set("device_id", v)}>
-              <SelectTrigger className="flex-1"><SelectValue placeholder="Wybierz urządzenie" /></SelectTrigger>
-              <SelectContent>
-                {clientDevices.map((d: any) => (
-                  <SelectItem key={d.id} value={d.id}>
-                    {DEVICE_CATEGORY_LABELS[d.device_category as DeviceCategory]} — {d.manufacturer} {d.model}
-                    {d.serial_number ? ` (${d.serial_number})` : ""}
-                  </SelectItem>
-                ))}
-                {clientDevices.length === 0 && (
-                  <div className="px-2 py-1.5 text-sm text-muted-foreground">Brak urządzeń klienta</div>
-                )}
-              </SelectContent>
-            </Select>
-            <DeviceFormDialog
-              clientId={selectedClientId}
-              onCreated={(deviceId) => set("device_id", deviceId)}
-              trigger={
-                <Button type="button" variant="outline" size="icon" title="Dodaj nowe urządzenie">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              }
-            />
-          </div>
+          <SearchableSelect
+            options={deviceOptions}
+            value={formData.device_id ?? ""}
+            onChange={(v) => set("device_id", v || undefined)}
+            placeholder="Wyszukaj urządzenie..."
+            actions={
+              <DeviceFormDialog
+                clientId={selectedClientId}
+                onCreated={(id) => {
+                  queryClient.invalidateQueries({ queryKey: ["client-devices-select", selectedClientId] });
+                  set("device_id", id);
+                }}
+                trigger={
+                  <button type="button" className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-accent rounded-sm flex items-center gap-1">
+                    <Plus className="h-3.5 w-3.5" /> Dodaj nowe urządzenie
+                  </button>
+                }
+              />
+            }
+          />
         </div>
       )}
 

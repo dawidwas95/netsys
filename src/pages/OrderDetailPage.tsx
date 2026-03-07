@@ -22,6 +22,7 @@ import {
 import {
   ArrowLeft, Send, Clock, User, Monitor, Plus, Trash2,
   DollarSign, TrendingUp, TrendingDown, Percent, FileDown, Printer,
+  CheckCircle, AlertTriangle,
 } from "lucide-react";
 import { generateOrderPDF } from "@/lib/generateOrderPDF";
 import { toast } from "sonner";
@@ -32,12 +33,16 @@ import {
   SERVICE_TYPE_LABELS,
   PAYMENT_METHOD_LABELS,
   INTAKE_CHANNEL_LABELS,
+  DEVICE_CATEGORY_LABELS,
   type OrderStatus,
   type OrderPriority,
   type IntakeChannel,
   type PaymentMethod,
+  type DeviceCategory,
 } from "@/types/database";
 import { OrderStatusBadge } from "@/pages/DashboardPage";
+import { DeviceFormDialog } from "@/components/DeviceFormDialog";
+import { SearchableSelect } from "@/components/SearchableSelect";
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(v);
@@ -63,6 +68,7 @@ export default function OrderDetailPage() {
   const [comment, setComment] = useState("");
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [newItem, setNewItem] = useState({ name: "", quantity: "1", sale_net: "", purchase_net: "" });
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
 
   // Financial edit state
   const [editingFinance, setEditingFinance] = useState(false);
@@ -79,7 +85,7 @@ export default function OrderDetailPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("service_orders")
-        .select("*, clients(display_name, phone, email), devices(manufacturer, model, serial_number, device_category, imei)")
+        .select("*, clients(display_name, phone, email, address_city, address_street), devices(manufacturer, model, serial_number, device_category, imei)")
         .eq("id", id!)
         .single();
       if (error) throw error;
@@ -129,6 +135,21 @@ export default function OrderDetailPage() {
     enabled: !!id,
   });
 
+  // Devices for assignment
+  const { data: clientDevices = [] } = useQuery({
+    queryKey: ["client-devices-for-order", order?.client_id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("devices")
+        .select("id, device_category, manufacturer, model, serial_number, imei")
+        .eq("client_id", order!.client_id)
+        .eq("is_archived", false)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!order?.client_id,
+  });
+
   // === Financial calculations ===
   const financials = useMemo(() => {
     if (!order) return { laborNet: 0, partsCost: 0, extraCost: 0, totalCost: 0, itemsRevenue: 0, itemsCost: 0, revenue: 0, profit: 0, margin: 0 };
@@ -162,10 +183,9 @@ export default function OrderDetailPage() {
       const itemsRevenue = orderItems.reduce((s, i) => s + i.total_sale_net, 0);
       const itemsCost = orderItems.reduce((s, i) => s + i.total_purchase_net, 0);
       const revenue = laborNet + itemsRevenue;
-      const totalCost = partsCost + extraCost + itemsCost;
 
       updates.total_net = revenue;
-      updates.total_gross = revenue * 1.23; // VAT 23%
+      updates.total_gross = revenue * 1.23;
 
       const { error } = await supabase
         .from("service_orders")
@@ -183,18 +203,29 @@ export default function OrderDetailPage() {
       });
 
       // Auto cash entry on COMPLETED + CASH + is_paid
-      if (updates.status === "COMPLETED") {
+      const shouldCreateCash = updates.status === "COMPLETED" || (updates.is_paid && order?.status === "COMPLETED");
+      if (shouldCreateCash) {
         const currentOrder = { ...order, ...updates };
         if (currentOrder.payment_method === "CASH" && currentOrder.is_paid && revenue > 0) {
-          await supabase.from("cash_transactions").insert({
-            transaction_type: "IN" as any,
-            source_type: "SERVICE_ORDER" as any,
-            related_order_id: id!,
-            amount: revenue,
-            description: `Zlecenie ${order?.order_number} — płatność gotówką`,
-            transaction_date: new Date().toISOString().split("T")[0],
-            user_id: user?.id,
-          });
+          // Check no duplicate cash entry
+          const { data: existing } = await supabase
+            .from("cash_transactions")
+            .select("id")
+            .eq("related_order_id", id!)
+            .eq("source_type", "SERVICE_ORDER")
+            .limit(1);
+
+          if (!existing?.length) {
+            await supabase.from("cash_transactions").insert({
+              transaction_type: "IN" as any,
+              source_type: "SERVICE_ORDER" as any,
+              related_order_id: id!,
+              amount: revenue,
+              description: `Zlecenie ${order?.order_number} — płatność gotówką`,
+              transaction_date: new Date().toISOString().split("T")[0],
+              user_id: user?.id,
+            });
+          }
         }
       }
     },
@@ -204,6 +235,9 @@ export default function OrderDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["kanban-orders"] });
       queryClient.invalidateQueries({ queryKey: ["cash_transactions"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-order-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-financial-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-cash-balance"] });
+      queryClient.invalidateQueries({ queryKey: ["recent-cash-ops"] });
       toast.success("Zlecenie zaktualizowane");
     },
     onError: (err: any) => toast.error(err.message),
@@ -229,9 +263,7 @@ export default function OrderDetailPage() {
 
       // Recalculate order totals
       const newItemsRevenue = financials.itemsRevenue + qty * saleNet;
-      const newItemsCost = financials.itemsCost + qty * purchaseNet;
       const revenue = financials.laborNet + newItemsRevenue;
-      const totalCost = financials.partsCost + financials.extraCost + newItemsCost;
 
       await supabase.from("service_orders").update({
         total_net: revenue,
@@ -306,16 +338,56 @@ export default function OrderDetailPage() {
     setEditingFinance(false);
   }
 
+  function handleCloseAndSettle() {
+    if (!order) return;
+
+    const laborNet = Number(order.labor_net || 0);
+    const itemsRevenue = orderItems.reduce((s, i) => s + i.total_sale_net, 0);
+    const revenue = laborNet + itemsRevenue;
+
+    // Validation
+    const errors: string[] = [];
+    if (revenue <= 0) errors.push("Brak ceny usługi lub pozycji");
+    if (!order.payment_method) errors.push("Nie wybrano formy płatności");
+
+    if (errors.length > 0) {
+      toast.error(`Nie można zamknąć zlecenia:\n${errors.join("\n")}`);
+      return;
+    }
+
+    updateOrder.mutate({
+      status: "COMPLETED",
+      is_paid: true,
+      paid_at: new Date().toISOString(),
+      completed_at: new Date().toISOString(),
+    });
+    setCloseDialogOpen(false);
+  }
+
+  function assignDevice(deviceId: string) {
+    updateOrder.mutate({ device_id: deviceId });
+  }
+
   function handleDownloadPDF() {
     if (!order) return;
-    const doc = generateOrderPDF({ order, orderItems, financials });
+    const doc = generateOrderPDF({
+      order,
+      orderItems,
+      financials,
+      companyName: "W3-Support",
+    });
     doc.save(`${order.order_number.replace(/\//g, "-")}.pdf`);
     toast.success("PDF pobrany");
   }
 
   function handlePrintPDF() {
     if (!order) return;
-    const doc = generateOrderPDF({ order, orderItems, financials });
+    const doc = generateOrderPDF({
+      order,
+      orderItems,
+      financials,
+      companyName: "W3-Support",
+    });
     const blob = doc.output("blob");
     const url = URL.createObjectURL(blob);
     const win = window.open(url);
@@ -325,17 +397,25 @@ export default function OrderDetailPage() {
   if (isLoading) return <p className="text-muted-foreground p-4">Ładowanie...</p>;
   if (!order) return <p className="text-muted-foreground p-4">Zlecenie nie znalezione</p>;
 
+  const deviceOptions = clientDevices.map((d: any) => ({
+    value: d.id,
+    label: `${DEVICE_CATEGORY_LABELS[d.device_category as DeviceCategory]} — ${d.manufacturer || ""} ${d.model || ""}`.trim(),
+    sublabel: [d.serial_number && `S/N: ${d.serial_number}`, d.imei && `IMEI: ${d.imei}`].filter(Boolean).join(" · "),
+  }));
+
+  const isCompleted = order.status === "COMPLETED" || order.status === "ARCHIVED" || order.status === "CANCELLED";
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <Link to="/orders" className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
             <h1 className="text-2xl font-bold tracking-tight font-mono">{order.order_number}</h1>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
               <OrderStatusBadge status={order.status as OrderStatus} />
               <Badge variant="outline">{SERVICE_TYPE_LABELS[order.service_type as keyof typeof SERVICE_TYPE_LABELS]}</Badge>
               <Badge variant="outline">{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</Badge>
@@ -343,20 +423,66 @@ export default function OrderDetailPage() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
             <FileDown className="mr-1 h-4 w-4" /> PDF
           </Button>
           <Button variant="outline" size="sm" onClick={handlePrintPDF}>
             <Printer className="mr-1 h-4 w-4" /> Drukuj
           </Button>
+
+          {/* Close & Settle button */}
+          {!isCompleted && (
+            <Dialog open={closeDialogOpen} onOpenChange={setCloseDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="bg-primary">
+                  <CheckCircle className="mr-1 h-4 w-4" /> Zakończ i rozlicz
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Zakończ i rozlicz zlecenie</DialogTitle></DialogHeader>
+                <div className="space-y-4">
+                  <div className="rounded-lg border border-border p-4 space-y-2 text-sm">
+                    <div className="flex justify-between"><span>Przychód:</span><span className="font-mono font-medium">{formatCurrency(financials.revenue)}</span></div>
+                    <div className="flex justify-between"><span>Koszty:</span><span className="font-mono font-medium">{formatCurrency(financials.totalCost)}</span></div>
+                    <div className="flex justify-between border-t border-border pt-2"><span className="font-medium">Zysk:</span><span className={`font-mono font-medium ${financials.profit >= 0 ? "text-primary" : "text-destructive"}`}>{formatCurrency(financials.profit)}</span></div>
+                    <div className="flex justify-between"><span>Forma płatności:</span><span>{order.payment_method ? PAYMENT_METHOD_LABELS[order.payment_method as PaymentMethod] : <span className="text-destructive flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Nie wybrano!</span>}</span></div>
+                  </div>
+
+                  {financials.revenue <= 0 && (
+                    <div className="text-sm text-destructive flex items-center gap-2 p-2 rounded bg-destructive/10">
+                      <AlertTriangle className="h-4 w-4" /> Brak kwoty do rozliczenia (ustaw cenę usługi lub dodaj pozycje)
+                    </div>
+                  )}
+                  {!order.payment_method && (
+                    <div className="text-sm text-destructive flex items-center gap-2 p-2 rounded bg-destructive/10">
+                      <AlertTriangle className="h-4 w-4" /> Wybierz formę płatności w sekcji finansowej
+                    </div>
+                  )}
+
+                  {order.payment_method === "CASH" && financials.revenue > 0 && (
+                    <div className="text-sm text-primary flex items-center gap-2 p-2 rounded bg-primary/10">
+                      <DollarSign className="h-4 w-4" /> Kwota {formatCurrency(financials.revenue)} zostanie dodana do kasy gotówkowej
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={() => setCloseDialogOpen(false)}>Anuluj</Button>
+                    <Button
+                      onClick={handleCloseAndSettle}
+                      disabled={financials.revenue <= 0 || !order.payment_method || updateOrder.isPending}
+                    >
+                      {updateOrder.isPending ? "Zapisywanie..." : "Potwierdź zamknięcie"}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+
           <Select
             value={order.status}
-            onValueChange={(v) => {
-              const updates: any = { status: v };
-              if (v === "COMPLETED") updates.completed_at = new Date().toISOString();
-              updateOrder.mutate(updates);
-            }}
+            onValueChange={(v) => updateOrder.mutate({ status: v })}
           >
             <SelectTrigger className="w-48"><SelectValue placeholder="Zmień status" /></SelectTrigger>
             <SelectContent>
@@ -378,9 +504,11 @@ export default function OrderDetailPage() {
             {(order as any).clients?.email && <div className="text-muted-foreground">{(order as any).clients.email}</div>}
           </CardContent>
         </Card>
+
+        {/* Device card with assignment capability */}
         <Card>
           <CardHeader><CardTitle className="text-sm font-medium text-muted-foreground">Urządzenie</CardTitle></CardHeader>
-          <CardContent className="text-sm space-y-1">
+          <CardContent className="text-sm space-y-2">
             {(order as any).devices ? (
               <>
                 <div className="font-medium flex items-center gap-1">
@@ -388,18 +516,48 @@ export default function OrderDetailPage() {
                   {(order as any).devices.manufacturer} {(order as any).devices.model}
                 </div>
                 {(order as any).devices.serial_number && (
-                  <div className="font-mono text-muted-foreground">S/N: {(order as any).devices.serial_number}</div>
+                  <div className="font-mono text-muted-foreground text-xs">S/N: {(order as any).devices.serial_number}</div>
+                )}
+                {(order as any).devices.imei && (
+                  <div className="font-mono text-muted-foreground text-xs">IMEI: {(order as any).devices.imei}</div>
+                )}
+                {(order as any).devices.device_category && (
+                  <Badge variant="outline" className="text-xs">{DEVICE_CATEGORY_LABELS[(order as any).devices.device_category as DeviceCategory]}</Badge>
                 )}
               </>
             ) : (
-              <span className="text-muted-foreground">Nie przypisano</span>
+              <div className="space-y-2">
+                <span className="text-muted-foreground">Nie przypisano urządzenia</span>
+                <SearchableSelect
+                  options={deviceOptions}
+                  value=""
+                  onChange={(v) => { if (v) assignDevice(v); }}
+                  placeholder="Wybierz urządzenie..."
+                  actions={
+                    <DeviceFormDialog
+                      clientId={order.client_id}
+                      onCreated={(deviceId) => {
+                        queryClient.invalidateQueries({ queryKey: ["client-devices-for-order", order.client_id] });
+                        assignDevice(deviceId);
+                      }}
+                      trigger={
+                        <button type="button" className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-accent rounded-sm flex items-center gap-1">
+                          <Plus className="h-3.5 w-3.5" /> Dodaj nowe urządzenie
+                        </button>
+                      }
+                    />
+                  }
+                />
+              </div>
             )}
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader><CardTitle className="text-sm font-medium text-muted-foreground">Informacje</CardTitle></CardHeader>
           <CardContent className="text-sm space-y-1">
             <div>Przyjęto: {new Date(order.received_at).toLocaleDateString("pl-PL")}</div>
+            {order.completed_at && <div>Zakończono: {new Date(order.completed_at).toLocaleDateString("pl-PL")}</div>}
             {order.intake_channel && <div>Kanał: {INTAKE_CHANNEL_LABELS[order.intake_channel as IntakeChannel]}</div>}
             {order.payment_method && <div>Płatność: {PAYMENT_METHOD_LABELS[order.payment_method as PaymentMethod]}</div>}
           </CardContent>
@@ -452,32 +610,17 @@ export default function OrderDetailPage() {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label>Cena naprawy / usługi (netto)</Label>
-                  <Input
-                    type="number" step="0.01"
-                    value={financeForm.labor_net}
-                    onChange={(e) => setFinanceForm({ ...financeForm, labor_net: e.target.value })}
-                    placeholder="0.00"
-                  />
+                  <Input type="number" step="0.01" value={financeForm.labor_net} onChange={(e) => setFinanceForm({ ...financeForm, labor_net: e.target.value })} placeholder="0.00" />
                   <p className="text-xs text-muted-foreground mt-1">Kwota sprzedaży dla klienta</p>
                 </div>
                 <div>
                   <Label>Koszt części (netto)</Label>
-                  <Input
-                    type="number" step="0.01"
-                    value={financeForm.parts_net}
-                    onChange={(e) => setFinanceForm({ ...financeForm, parts_net: e.target.value })}
-                    placeholder="0.00"
-                  />
+                  <Input type="number" step="0.01" value={financeForm.parts_net} onChange={(e) => setFinanceForm({ ...financeForm, parts_net: e.target.value })} placeholder="0.00" />
                   <p className="text-xs text-muted-foreground mt-1">Twój koszt zakupu części</p>
                 </div>
                 <div>
                   <Label>Koszt dodatkowy (netto)</Label>
-                  <Input
-                    type="number" step="0.01"
-                    value={financeForm.extra_cost_net}
-                    onChange={(e) => setFinanceForm({ ...financeForm, extra_cost_net: e.target.value })}
-                    placeholder="0.00"
-                  />
+                  <Input type="number" step="0.01" value={financeForm.extra_cost_net} onChange={(e) => setFinanceForm({ ...financeForm, extra_cost_net: e.target.value })} placeholder="0.00" />
                   <p className="text-xs text-muted-foreground mt-1">Inne koszty własne</p>
                 </div>
               </div>
@@ -495,10 +638,7 @@ export default function OrderDetailPage() {
                 </div>
                 <div className="flex items-end">
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <Checkbox
-                      checked={financeForm.is_paid}
-                      onCheckedChange={(v) => setFinanceForm({ ...financeForm, is_paid: !!v })}
-                    />
+                    <Checkbox checked={financeForm.is_paid} onCheckedChange={(v) => setFinanceForm({ ...financeForm, is_paid: !!v })} />
                     <span className="text-sm font-medium">Opłacone</span>
                   </label>
                 </div>
@@ -566,18 +706,9 @@ export default function OrderDetailPage() {
                       <Input value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} placeholder="np. Dysk SSD 256GB" />
                     </div>
                     <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <Label>Ilość</Label>
-                        <Input type="number" min="1" value={newItem.quantity} onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })} />
-                      </div>
-                      <div>
-                        <Label>Cena sprzedaży (netto)</Label>
-                        <Input type="number" step="0.01" value={newItem.sale_net} onChange={(e) => setNewItem({ ...newItem, sale_net: e.target.value })} placeholder="0.00" />
-                      </div>
-                      <div>
-                        <Label>Cena zakupu (netto)</Label>
-                        <Input type="number" step="0.01" value={newItem.purchase_net} onChange={(e) => setNewItem({ ...newItem, purchase_net: e.target.value })} placeholder="0.00" />
-                      </div>
+                      <div><Label>Ilość</Label><Input type="number" min="1" value={newItem.quantity} onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })} /></div>
+                      <div><Label>Cena sprzedaży (netto)</Label><Input type="number" step="0.01" value={newItem.sale_net} onChange={(e) => setNewItem({ ...newItem, sale_net: e.target.value })} placeholder="0.00" /></div>
+                      <div><Label>Cena zakupu (netto)</Label><Input type="number" step="0.01" value={newItem.purchase_net} onChange={(e) => setNewItem({ ...newItem, purchase_net: e.target.value })} placeholder="0.00" /></div>
                     </div>
                     {(parseFloat(newItem.sale_net) > 0 || parseFloat(newItem.purchase_net) > 0) && (
                       <div className="rounded-lg bg-muted p-3 text-sm">
