@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -22,27 +21,23 @@ import {
 import {
   ArrowLeft, Send, Clock, User, Monitor, Plus, Trash2,
   DollarSign, TrendingUp, TrendingDown, Percent, FileDown, Printer,
-  CheckCircle, AlertTriangle,
+  CheckCircle, AlertTriangle, Save,
 } from "lucide-react";
 import { generateOrderPDF } from "@/lib/generateOrderPDF";
 import { toast } from "sonner";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
-  ORDER_STATUS_LABELS,
-  ORDER_PRIORITY_LABELS,
-  SERVICE_TYPE_LABELS,
-  PAYMENT_METHOD_LABELS,
-  INTAKE_CHANNEL_LABELS,
-  DEVICE_CATEGORY_LABELS,
-  type OrderStatus,
-  type OrderPriority,
-  type IntakeChannel,
-  type PaymentMethod,
-  type DeviceCategory,
+  ORDER_STATUS_LABELS, ORDER_PRIORITY_LABELS, SERVICE_TYPE_LABELS,
+  PAYMENT_METHOD_LABELS, INTAKE_CHANNEL_LABELS, DEVICE_CATEGORY_LABELS,
+  type OrderStatus, type OrderPriority, type IntakeChannel,
+  type PaymentMethod, type DeviceCategory,
 } from "@/types/database";
 import { OrderStatusBadge } from "@/pages/DashboardPage";
-import { DeviceFormDialog } from "@/components/DeviceFormDialog";
-import { SearchableSelect } from "@/components/SearchableSelect";
+import {
+  FormSection, ClientSection, DeviceSection, OrderDataSection,
+  DescriptionSection, DiagnosisSection, FinanceSection, PaymentSection,
+} from "@/components/order/OrderFormSections";
+import { cn } from "@/lib/utils";
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(v);
@@ -69,23 +64,17 @@ export default function OrderDetailPage() {
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [newItem, setNewItem] = useState({ name: "", quantity: "1", sale_net: "", purchase_net: "" });
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [editDirty, setEditDirty] = useState(false);
 
-  // Financial edit state
-  const [editingFinance, setEditingFinance] = useState(false);
-  const [financeForm, setFinanceForm] = useState({
-    labor_net: "",
-    parts_net: "",
-    extra_cost_net: "",
-    payment_method: "" as string,
-    is_paid: false,
-  });
+  // Editable form state — synced from order data
+  const [editForm, setEditForm] = useState<Record<string, any> | null>(null);
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("service_orders")
-        .select("*, clients(display_name, phone, email, address_city, address_street), devices(manufacturer, model, serial_number, device_category, imei)")
+        .select("*, clients(display_name, phone, email, address_city, address_street, address_postal_code, company_name, first_name, last_name, nip), devices(manufacturer, model, serial_number, device_category, imei)")
         .eq("id", id!)
         .single();
       if (error) throw error;
@@ -93,6 +82,41 @@ export default function OrderDetailPage() {
     },
     enabled: !!id,
   });
+
+  // Init edit form from order
+  const currentForm = useMemo(() => {
+    if (editForm) return editForm;
+    if (!order) return {};
+    return {
+      client_id: order.client_id,
+      device_id: order.device_id,
+      service_type: order.service_type,
+      priority: order.priority,
+      intake_channel: order.intake_channel,
+      estimated_completion_date: order.estimated_completion_date,
+      problem_description: order.problem_description,
+      client_description: order.client_description,
+      accessories_received: order.accessories_received,
+      visual_condition: order.visual_condition,
+      lock_code: order.lock_code,
+      internal_notes: order.internal_notes,
+      status: order.status,
+      diagnosis: order.diagnosis,
+      repair_description: order.repair_description,
+      labor_net: order.labor_net?.toString() ?? "",
+      parts_net: order.parts_net?.toString() ?? "",
+      extra_cost_net: order.extra_cost_net?.toString() ?? "",
+      payment_method: order.payment_method ?? "",
+      is_paid: order.is_paid,
+      sales_document_type: order.sales_document_type ?? "NONE",
+      sales_document_number: order.sales_document_number ?? "",
+    };
+  }, [order, editForm]);
+
+  const handleFieldChange = useCallback((field: string, value: any) => {
+    setEditForm((prev) => ({ ...(prev ?? currentForm), [field]: value }));
+    setEditDirty(true);
+  }, [currentForm]);
 
   const { data: orderItems = [] } = useQuery({
     queryKey: ["order-items", id],
@@ -135,57 +159,39 @@ export default function OrderDetailPage() {
     enabled: !!id,
   });
 
-  // Devices for assignment
-  const { data: clientDevices = [] } = useQuery({
-    queryKey: ["client-devices-for-order", order?.client_id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("devices")
-        .select("id, device_category, manufacturer, model, serial_number, imei")
-        .eq("client_id", order!.client_id)
-        .eq("is_archived", false)
-        .order("created_at", { ascending: false });
-      return data ?? [];
-    },
-    enabled: !!order?.client_id,
-  });
-
-  // === Financial calculations ===
+  // ── Financial calculations ──
   const financials = useMemo(() => {
-    if (!order) return { laborNet: 0, partsCost: 0, extraCost: 0, totalCost: 0, itemsRevenue: 0, itemsCost: 0, revenue: 0, profit: 0, margin: 0 };
-
-    const laborNet = Number(order.labor_net || 0);
-    const partsCost = Number(order.parts_net || 0);
-    const extraCost = Number(order.extra_cost_net || 0);
-
+    const laborNet = parseFloat(currentForm.labor_net) || 0;
+    const partsCost = parseFloat(currentForm.parts_net) || 0;
+    const extraCost = parseFloat(currentForm.extra_cost_net) || 0;
     const itemsRevenue = orderItems.reduce((s, i) => s + i.total_sale_net, 0);
     const itemsCost = orderItems.reduce((s, i) => s + i.total_purchase_net, 0);
-
     const totalCost = partsCost + extraCost + itemsCost;
     const revenue = laborNet + itemsRevenue;
     const profit = revenue - totalCost;
     const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
-
     return { laborNet, partsCost, extraCost, totalCost, itemsRevenue, itemsCost, revenue, profit, margin };
-  }, [order, orderItems]);
+  }, [currentForm, orderItems]);
 
-  // === Mutations ===
+  // ── Save mutation ──
   const updateOrder = useMutation({
     mutationFn: async (updates: Record<string, any>) => {
-      if (updates.status === "COMPLETED") {
+      if (updates.status === "COMPLETED" && order?.status !== "COMPLETED") {
         updates.completed_at = new Date().toISOString();
       }
 
-      // Recalculate totals before saving
-      const laborNet = Number(updates.labor_net ?? order?.labor_net ?? 0);
-      const partsCost = Number(updates.parts_net ?? order?.parts_net ?? 0);
-      const extraCost = Number(updates.extra_cost_net ?? order?.extra_cost_net ?? 0);
+      const laborNet = parseFloat(updates.labor_net ?? currentForm.labor_net ?? 0) || 0;
       const itemsRevenue = orderItems.reduce((s, i) => s + i.total_sale_net, 0);
-      const itemsCost = orderItems.reduce((s, i) => s + i.total_purchase_net, 0);
       const revenue = laborNet + itemsRevenue;
 
       updates.total_net = revenue;
       updates.total_gross = revenue * 1.23;
+      updates.labor_net = parseFloat(updates.labor_net) || 0;
+      updates.parts_net = parseFloat(updates.parts_net) || 0;
+      updates.extra_cost_net = parseFloat(updates.extra_cost_net) || 0;
+      if (updates.is_paid && !order?.paid_at) {
+        updates.paid_at = new Date().toISOString();
+      }
 
       const { error } = await supabase
         .from("service_orders")
@@ -193,7 +199,6 @@ export default function OrderDetailPage() {
         .eq("id", id!);
       if (error) throw error;
 
-      // Log activity
       await supabase.from("activity_logs").insert({
         entity_type: "service_order",
         entity_id: id!,
@@ -202,12 +207,11 @@ export default function OrderDetailPage() {
         user_id: user?.id,
       });
 
-      // Auto cash entry on COMPLETED + CASH + is_paid
+      // Cash entry on COMPLETED + CASH + is_paid
       const shouldCreateCash = updates.status === "COMPLETED" || (updates.is_paid && order?.status === "COMPLETED");
       if (shouldCreateCash) {
-        const currentOrder = { ...order, ...updates };
-        if (currentOrder.payment_method === "CASH" && currentOrder.is_paid && revenue > 0) {
-          // Check no duplicate cash entry
+        const merged = { ...order, ...updates };
+        if (merged.payment_method === "CASH" && merged.is_paid && revenue > 0) {
           const { data: existing } = await supabase
             .from("cash_transactions")
             .select("id")
@@ -238,17 +242,43 @@ export default function OrderDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["dashboard-financial-stats"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-cash-balance"] });
       queryClient.invalidateQueries({ queryKey: ["recent-cash-ops"] });
+      setEditForm(null);
+      setEditDirty(false);
       toast.success("Zlecenie zaktualizowane");
     },
     onError: (err: any) => toast.error(err.message),
   });
 
+  function handleSave() {
+    if (!editForm) return;
+    updateOrder.mutate(editForm);
+  }
+
+  function handleCloseAndSettle() {
+    if (!order) return;
+    const errors: string[] = [];
+    if (financials.revenue <= 0) errors.push("Brak ceny usługi lub pozycji");
+    if (!currentForm.payment_method) errors.push("Nie wybrano formy płatności");
+    if (errors.length > 0) {
+      toast.error(`Nie można zamknąć zlecenia:\n${errors.join("\n")}`);
+      return;
+    }
+    updateOrder.mutate({
+      ...currentForm,
+      status: "COMPLETED",
+      is_paid: true,
+      paid_at: new Date().toISOString(),
+      completed_at: new Date().toISOString(),
+    });
+    setCloseDialogOpen(false);
+  }
+
+  // ── Items ──
   const addItemMutation = useMutation({
     mutationFn: async () => {
       const qty = parseFloat(newItem.quantity) || 1;
       const saleNet = parseFloat(newItem.sale_net) || 0;
       const purchaseNet = parseFloat(newItem.purchase_net) || 0;
-
       const { error } = await supabase.from("service_order_items").insert({
         order_id: id!,
         item_name_snapshot: newItem.name,
@@ -261,13 +291,10 @@ export default function OrderDetailPage() {
       });
       if (error) throw error;
 
-      // Recalculate order totals
-      const newItemsRevenue = financials.itemsRevenue + qty * saleNet;
-      const revenue = financials.laborNet + newItemsRevenue;
-
+      const newRevenue = financials.revenue + qty * saleNet;
       await supabase.from("service_orders").update({
-        total_net: revenue,
-        total_gross: revenue * 1.23,
+        total_net: newRevenue,
+        total_gross: newRevenue * 1.23,
         updated_by: user?.id,
       }).eq("id", id!);
     },
@@ -297,9 +324,7 @@ export default function OrderDetailPage() {
     mutationFn: async () => {
       if (!comment.trim()) return;
       const { error } = await supabase.from("service_order_comments").insert({
-        order_id: id!,
-        user_id: user?.id,
-        comment: comment.trim(),
+        order_id: id!, user_id: user?.id, comment: comment.trim(),
       });
       if (error) throw error;
     },
@@ -311,83 +336,16 @@ export default function OrderDetailPage() {
     onError: (err: any) => toast.error(err.message),
   });
 
-  function startEditFinance() {
-    if (!order) return;
-    setFinanceForm({
-      labor_net: (order.labor_net ?? 0).toString(),
-      parts_net: (order.parts_net ?? 0).toString(),
-      extra_cost_net: (order.extra_cost_net ?? 0).toString(),
-      payment_method: order.payment_method ?? "",
-      is_paid: order.is_paid,
-    });
-    setEditingFinance(true);
-  }
-
-  function saveFinance() {
-    const updates: Record<string, any> = {
-      labor_net: parseFloat(financeForm.labor_net) || 0,
-      parts_net: parseFloat(financeForm.parts_net) || 0,
-      extra_cost_net: parseFloat(financeForm.extra_cost_net) || 0,
-      payment_method: financeForm.payment_method || null,
-      is_paid: financeForm.is_paid,
-    };
-    if (financeForm.is_paid && !order?.paid_at) {
-      updates.paid_at = new Date().toISOString();
-    }
-    updateOrder.mutate(updates);
-    setEditingFinance(false);
-  }
-
-  function handleCloseAndSettle() {
-    if (!order) return;
-
-    const laborNet = Number(order.labor_net || 0);
-    const itemsRevenue = orderItems.reduce((s, i) => s + i.total_sale_net, 0);
-    const revenue = laborNet + itemsRevenue;
-
-    // Validation
-    const errors: string[] = [];
-    if (revenue <= 0) errors.push("Brak ceny usługi lub pozycji");
-    if (!order.payment_method) errors.push("Nie wybrano formy płatności");
-
-    if (errors.length > 0) {
-      toast.error(`Nie można zamknąć zlecenia:\n${errors.join("\n")}`);
-      return;
-    }
-
-    updateOrder.mutate({
-      status: "COMPLETED",
-      is_paid: true,
-      paid_at: new Date().toISOString(),
-      completed_at: new Date().toISOString(),
-    });
-    setCloseDialogOpen(false);
-  }
-
-  function assignDevice(deviceId: string) {
-    updateOrder.mutate({ device_id: deviceId });
-  }
-
   function handleDownloadPDF() {
     if (!order) return;
-    const doc = generateOrderPDF({
-      order,
-      orderItems,
-      financials,
-      companyName: "W3-Support",
-    });
+    const doc = generateOrderPDF({ order, orderItems, financials, companyName: "W3-Support" });
     doc.save(`${order.order_number.replace(/\//g, "-")}.pdf`);
     toast.success("PDF pobrany");
   }
 
   function handlePrintPDF() {
     if (!order) return;
-    const doc = generateOrderPDF({
-      order,
-      orderItems,
-      financials,
-      companyName: "W3-Support",
-    });
+    const doc = generateOrderPDF({ order, orderItems, financials, companyName: "W3-Support" });
     const blob = doc.output("blob");
     const url = URL.createObjectURL(blob);
     const win = window.open(url);
@@ -397,17 +355,11 @@ export default function OrderDetailPage() {
   if (isLoading) return <p className="text-muted-foreground p-4">Ładowanie...</p>;
   if (!order) return <p className="text-muted-foreground p-4">Zlecenie nie znalezione</p>;
 
-  const deviceOptions = clientDevices.map((d: any) => ({
-    value: d.id,
-    label: `${DEVICE_CATEGORY_LABELS[d.device_category as DeviceCategory]} — ${d.manufacturer || ""} ${d.model || ""}`.trim(),
-    sublabel: [d.serial_number && `S/N: ${d.serial_number}`, d.imei && `IMEI: ${d.imei}`].filter(Boolean).join(" · "),
-  }));
-
   const isCompleted = order.status === "COMPLETED" || order.status === "ARCHIVED" || order.status === "CANCELLED";
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-5">
+      {/* ═══ HEADER ═══ */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <Link to="/orders" className="text-muted-foreground hover:text-foreground">
@@ -419,25 +371,26 @@ export default function OrderDetailPage() {
               <OrderStatusBadge status={order.status as OrderStatus} />
               <Badge variant="outline">{SERVICE_TYPE_LABELS[order.service_type as keyof typeof SERVICE_TYPE_LABELS]}</Badge>
               <Badge variant="outline">{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</Badge>
-              {order.is_paid && <Badge className="bg-primary/10 text-primary">Opłacone</Badge>}
+              {order.is_paid && <Badge className="bg-primary/10 text-primary border-primary/20">Opłacone</Badge>}
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {editDirty && (
+            <Button size="sm" onClick={handleSave} disabled={updateOrder.isPending}>
+              <Save className="mr-1 h-4 w-4" /> {updateOrder.isPending ? "Zapis..." : "Zapisz zmiany"}
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
             <FileDown className="mr-1 h-4 w-4" /> PDF
           </Button>
           <Button variant="outline" size="sm" onClick={handlePrintPDF}>
             <Printer className="mr-1 h-4 w-4" /> Drukuj
           </Button>
-
-          {/* Close & Settle button */}
           {!isCompleted && (
             <Dialog open={closeDialogOpen} onOpenChange={setCloseDialogOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" className="bg-primary">
-                  <CheckCircle className="mr-1 h-4 w-4" /> Zakończ i rozlicz
-                </Button>
+                <Button size="sm"><CheckCircle className="mr-1 h-4 w-4" /> Zakończ i rozlicz</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader><DialogTitle>Zakończ i rozlicz zlecenie</DialogTitle></DialogHeader>
@@ -445,33 +398,22 @@ export default function OrderDetailPage() {
                   <div className="rounded-lg border border-border p-4 space-y-2 text-sm">
                     <div className="flex justify-between"><span>Przychód:</span><span className="font-mono font-medium">{formatCurrency(financials.revenue)}</span></div>
                     <div className="flex justify-between"><span>Koszty:</span><span className="font-mono font-medium">{formatCurrency(financials.totalCost)}</span></div>
-                    <div className="flex justify-between border-t border-border pt-2"><span className="font-medium">Zysk:</span><span className={`font-mono font-medium ${financials.profit >= 0 ? "text-primary" : "text-destructive"}`}>{formatCurrency(financials.profit)}</span></div>
-                    <div className="flex justify-between"><span>Forma płatności:</span><span>{order.payment_method ? PAYMENT_METHOD_LABELS[order.payment_method as PaymentMethod] : <span className="text-destructive flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Nie wybrano!</span>}</span></div>
+                    <div className="flex justify-between border-t border-border pt-2"><span className="font-medium">Zysk:</span><span className={cn("font-mono font-medium", financials.profit >= 0 ? "text-primary" : "text-destructive")}>{formatCurrency(financials.profit)}</span></div>
+                    <div className="flex justify-between"><span>Forma płatności:</span><span>{currentForm.payment_method ? PAYMENT_METHOD_LABELS[currentForm.payment_method as PaymentMethod] : <span className="text-destructive flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Nie wybrano!</span>}</span></div>
                   </div>
-
                   {financials.revenue <= 0 && (
                     <div className="text-sm text-destructive flex items-center gap-2 p-2 rounded bg-destructive/10">
-                      <AlertTriangle className="h-4 w-4" /> Brak kwoty do rozliczenia (ustaw cenę usługi lub dodaj pozycje)
+                      <AlertTriangle className="h-4 w-4" /> Brak kwoty (ustaw cenę usługi lub dodaj pozycje)
                     </div>
                   )}
-                  {!order.payment_method && (
-                    <div className="text-sm text-destructive flex items-center gap-2 p-2 rounded bg-destructive/10">
-                      <AlertTriangle className="h-4 w-4" /> Wybierz formę płatności w sekcji finansowej
-                    </div>
-                  )}
-
-                  {order.payment_method === "CASH" && financials.revenue > 0 && (
+                  {currentForm.payment_method === "CASH" && financials.revenue > 0 && (
                     <div className="text-sm text-primary flex items-center gap-2 p-2 rounded bg-primary/10">
-                      <DollarSign className="h-4 w-4" /> Kwota {formatCurrency(financials.revenue)} zostanie dodana do kasy gotówkowej
+                      <DollarSign className="h-4 w-4" /> Kwota {formatCurrency(financials.revenue)} trafi do kasy gotówkowej
                     </div>
                   )}
-
                   <div className="flex gap-2 justify-end">
                     <Button variant="outline" onClick={() => setCloseDialogOpen(false)}>Anuluj</Button>
-                    <Button
-                      onClick={handleCloseAndSettle}
-                      disabled={financials.revenue <= 0 || !order.payment_method || updateOrder.isPending}
-                    >
+                    <Button onClick={handleCloseAndSettle} disabled={financials.revenue <= 0 || !currentForm.payment_method || updateOrder.isPending}>
                       {updateOrder.isPending ? "Zapisywanie..." : "Potwierdź zamknięcie"}
                     </Button>
                   </div>
@@ -479,246 +421,137 @@ export default function OrderDetailPage() {
               </DialogContent>
             </Dialog>
           )}
-
-          <Select
-            value={order.status}
-            onValueChange={(v) => updateOrder.mutate({ status: v })}
-          >
-            <SelectTrigger className="w-48"><SelectValue placeholder="Zmień status" /></SelectTrigger>
-            <SelectContent>
-              {Object.entries(ORDER_STATUS_LABELS).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
       </div>
 
-      {/* Info cards */}
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
-        <Card>
-          <CardHeader><CardTitle className="text-sm font-medium text-muted-foreground">Klient</CardTitle></CardHeader>
-          <CardContent className="text-sm space-y-1">
-            <div className="font-medium">{(order as any).clients?.display_name}</div>
-            {(order as any).clients?.phone && <div className="text-muted-foreground">{(order as any).clients.phone}</div>}
-            {(order as any).clients?.email && <div className="text-muted-foreground">{(order as any).clients.email}</div>}
-          </CardContent>
-        </Card>
+      {/* ═══ TWO-COLUMN LAYOUT ═══ */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-5">
+        {/* ── LEFT COLUMN: Main content ── */}
+        <div className="space-y-5">
+          <Tabs defaultValue="edit">
+            <TabsList>
+              <TabsTrigger value="edit">Edycja</TabsTrigger>
+              <TabsTrigger value="comments">Komentarze ({comments?.length ?? 0})</TabsTrigger>
+              <TabsTrigger value="history">Historia</TabsTrigger>
+              <TabsTrigger value="documents">Dokumenty</TabsTrigger>
+            </TabsList>
 
-        {/* Device card with assignment capability */}
-        <Card>
-          <CardHeader><CardTitle className="text-sm font-medium text-muted-foreground">Urządzenie</CardTitle></CardHeader>
-          <CardContent className="text-sm space-y-2">
-            {(order as any).devices ? (
-              <>
-                <div className="font-medium flex items-center gap-1">
-                  <Monitor className="h-4 w-4" />
-                  {(order as any).devices.manufacturer} {(order as any).devices.model}
-                </div>
-                {(order as any).devices.serial_number && (
-                  <div className="font-mono text-muted-foreground text-xs">S/N: {(order as any).devices.serial_number}</div>
-                )}
-                {(order as any).devices.imei && (
-                  <div className="font-mono text-muted-foreground text-xs">IMEI: {(order as any).devices.imei}</div>
-                )}
-                {(order as any).devices.device_category && (
-                  <Badge variant="outline" className="text-xs">{DEVICE_CATEGORY_LABELS[(order as any).devices.device_category as DeviceCategory]}</Badge>
-                )}
-              </>
-            ) : (
-              <div className="space-y-2">
-                <span className="text-muted-foreground">Nie przypisano urządzenia</span>
-                <SearchableSelect
-                  options={deviceOptions}
-                  value=""
-                  onChange={(v) => { if (v) assignDevice(v); }}
-                  placeholder="Wybierz urządzenie..."
-                  actions={
-                    <DeviceFormDialog
-                      clientId={order.client_id}
-                      onCreated={(deviceId) => {
-                        queryClient.invalidateQueries({ queryKey: ["client-devices-for-order", order.client_id] });
-                        assignDevice(deviceId);
-                      }}
-                      trigger={
-                        <button type="button" className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-accent rounded-sm flex items-center gap-1">
-                          <Plus className="h-3.5 w-3.5" /> Dodaj nowe urządzenie
-                        </button>
-                      }
-                    />
-                  }
-                />
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            <TabsContent value="edit" className="mt-4 space-y-5">
+              <ClientSection clientId={currentForm.client_id} onChange={(v) => { handleFieldChange("client_id", v); handleFieldChange("device_id", undefined); }} />
+              <DeviceSection clientId={currentForm.client_id} deviceId={currentForm.device_id} onChange={(v) => handleFieldChange("device_id", v)} />
+              <OrderDataSection formData={currentForm} onChange={handleFieldChange} />
+              <DescriptionSection formData={currentForm} onChange={handleFieldChange} />
+              <DiagnosisSection
+                formData={currentForm}
+                onChange={handleFieldChange}
+                onStatusChange={(v) => {
+                  handleFieldChange("status", v);
+                  // Also immediately save status change
+                  updateOrder.mutate({ status: v });
+                }}
+              />
+            </TabsContent>
 
-        <Card>
-          <CardHeader><CardTitle className="text-sm font-medium text-muted-foreground">Informacje</CardTitle></CardHeader>
-          <CardContent className="text-sm space-y-1">
-            <div>Przyjęto: {new Date(order.received_at).toLocaleDateString("pl-PL")}</div>
-            {order.completed_at && <div>Zakończono: {new Date(order.completed_at).toLocaleDateString("pl-PL")}</div>}
-            {order.intake_channel && <div>Kanał: {INTAKE_CHANNEL_LABELS[order.intake_channel as IntakeChannel]}</div>}
-            {order.payment_method && <div>Płatność: {PAYMENT_METHOD_LABELS[order.payment_method as PaymentMethod]}</div>}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* ========== FINANCIAL SECTION ========== */}
-      <Card className="border-primary/20">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-primary" />
-            Sekcja finansowa
-          </CardTitle>
-          {!editingFinance && (
-            <Button variant="outline" size="sm" onClick={startEditFinance}>Edytuj</Button>
-          )}
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* KPI Cards */}
-          <div className="grid grid-cols-4 gap-4">
-            <div className="rounded-lg border border-border p-3 text-center">
-              <TrendingUp className="h-4 w-4 mx-auto mb-1 text-primary" />
-              <p className="text-xs text-muted-foreground">Przychód</p>
-              <p className="text-lg font-bold text-primary">{formatCurrency(financials.revenue)}</p>
-            </div>
-            <div className="rounded-lg border border-border p-3 text-center">
-              <TrendingDown className="h-4 w-4 mx-auto mb-1 text-destructive" />
-              <p className="text-xs text-muted-foreground">Koszt całkowity</p>
-              <p className="text-lg font-bold text-destructive">{formatCurrency(financials.totalCost)}</p>
-            </div>
-            <div className="rounded-lg border border-border p-3 text-center">
-              <DollarSign className="h-4 w-4 mx-auto mb-1 text-primary" />
-              <p className="text-xs text-muted-foreground">Zysk</p>
-              <p className={`text-lg font-bold ${financials.profit >= 0 ? "text-primary" : "text-destructive"}`}>
-                {formatCurrency(financials.profit)}
-              </p>
-            </div>
-            <div className="rounded-lg border border-border p-3 text-center">
-              <Percent className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">Marża</p>
-              <p className={`text-lg font-bold ${financials.margin >= 0 ? "text-primary" : "text-destructive"}`}>
-                {financials.margin.toFixed(1)}%
-              </p>
-            </div>
-          </div>
-
-          {/* Finance edit form */}
-          {editingFinance ? (
-            <div className="space-y-4 rounded-lg border border-border p-4">
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label>Cena naprawy / usługi (netto)</Label>
-                  <Input type="number" step="0.01" value={financeForm.labor_net} onChange={(e) => setFinanceForm({ ...financeForm, labor_net: e.target.value })} placeholder="0.00" />
-                  <p className="text-xs text-muted-foreground mt-1">Kwota sprzedaży dla klienta</p>
-                </div>
-                <div>
-                  <Label>Koszt części (netto)</Label>
-                  <Input type="number" step="0.01" value={financeForm.parts_net} onChange={(e) => setFinanceForm({ ...financeForm, parts_net: e.target.value })} placeholder="0.00" />
-                  <p className="text-xs text-muted-foreground mt-1">Twój koszt zakupu części</p>
-                </div>
-                <div>
-                  <Label>Koszt dodatkowy (netto)</Label>
-                  <Input type="number" step="0.01" value={financeForm.extra_cost_net} onChange={(e) => setFinanceForm({ ...financeForm, extra_cost_net: e.target.value })} placeholder="0.00" />
-                  <p className="text-xs text-muted-foreground mt-1">Inne koszty własne</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label>Metoda płatności</Label>
-                  <Select value={financeForm.payment_method} onValueChange={(v) => setFinanceForm({ ...financeForm, payment_method: v })}>
-                    <SelectTrigger><SelectValue placeholder="Wybierz" /></SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[]).map((k) => (
-                        <SelectItem key={k} value={k}>{PAYMENT_METHOD_LABELS[k]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-end">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <Checkbox checked={financeForm.is_paid} onCheckedChange={(v) => setFinanceForm({ ...financeForm, is_paid: !!v })} />
-                    <span className="text-sm font-medium">Opłacone</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Preview */}
-              <div className="rounded-lg bg-muted p-3 text-sm space-y-1">
-                <p className="font-medium text-muted-foreground">Podgląd:</p>
-                <div className="grid grid-cols-4 gap-2">
-                  <div>Cena usługi: <span className="font-mono font-medium">{formatCurrency(parseFloat(financeForm.labor_net) || 0)}</span></div>
-                  <div>Koszt części: <span className="font-mono font-medium">{formatCurrency(parseFloat(financeForm.parts_net) || 0)}</span></div>
-                  <div>Koszt dodatkowy: <span className="font-mono font-medium">{formatCurrency(parseFloat(financeForm.extra_cost_net) || 0)}</span></div>
-                  <div>
-                    Zysk z usługi:{" "}
-                    <span className={`font-mono font-medium ${(parseFloat(financeForm.labor_net) || 0) - (parseFloat(financeForm.parts_net) || 0) - (parseFloat(financeForm.extra_cost_net) || 0) >= 0 ? "text-primary" : "text-destructive"}`}>
-                      {formatCurrency((parseFloat(financeForm.labor_net) || 0) - (parseFloat(financeForm.parts_net) || 0) - (parseFloat(financeForm.extra_cost_net) || 0))}
-                    </span>
+            <TabsContent value="comments" className="mt-4">
+              <Card>
+                <CardContent className="pt-4 space-y-4">
+                  {comments?.map((c: any) => (
+                    <div key={c.id} className="border-b border-border pb-3 last:border-0">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                        <User className="h-3 w-3" />
+                        <Clock className="h-3 w-3" />
+                        {new Date(c.created_at).toLocaleString("pl-PL")}
+                      </div>
+                      <p className="text-sm">{c.comment}</p>
+                    </div>
+                  ))}
+                  <div className="flex gap-2">
+                    <Textarea placeholder="Dodaj komentarz..." value={comment} onChange={(e) => setComment(e.target.value)} rows={2} className="flex-1" />
+                    <Button size="icon" onClick={() => addComment.mutate()} disabled={!comment.trim() || addComment.isPending}>
+                      <Send className="h-4 w-4" />
+                    </Button>
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setEditingFinance(false)}>Anuluj</Button>
-                <Button onClick={saveFinance} disabled={updateOrder.isPending}>Zapisz finanse</Button>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 gap-4 text-sm">
-              <div className="space-y-2">
-                <p className="font-medium text-muted-foreground">Przychody</p>
-                <div className="flex justify-between"><span>Cena usługi:</span><span className="font-mono">{formatCurrency(financials.laborNet)}</span></div>
-                <div className="flex justify-between"><span>Sprzedane pozycje:</span><span className="font-mono">{formatCurrency(financials.itemsRevenue)}</span></div>
-                <div className="flex justify-between border-t border-border pt-1 font-medium"><span>Razem przychód:</span><span className="font-mono">{formatCurrency(financials.revenue)}</span></div>
-              </div>
-              <div className="space-y-2">
-                <p className="font-medium text-muted-foreground">Koszty</p>
-                <div className="flex justify-between"><span>Koszt części:</span><span className="font-mono">{formatCurrency(financials.partsCost)}</span></div>
-                <div className="flex justify-between"><span>Koszt dodatkowy:</span><span className="font-mono">{formatCurrency(financials.extraCost)}</span></div>
-                <div className="flex justify-between"><span>Koszty pozycji:</span><span className="font-mono">{formatCurrency(financials.itemsCost)}</span></div>
-                <div className="flex justify-between border-t border-border pt-1 font-medium"><span>Razem koszty:</span><span className="font-mono">{formatCurrency(financials.totalCost)}</span></div>
-              </div>
-              <div className="space-y-2">
-                <p className="font-medium text-muted-foreground">Wynik</p>
-                <div className="flex justify-between font-medium"><span>Zysk:</span><span className={`font-mono ${financials.profit >= 0 ? "text-primary" : "text-destructive"}`}>{formatCurrency(financials.profit)}</span></div>
-                <div className="flex justify-between font-medium"><span>Marża:</span><span className={`font-mono ${financials.margin >= 0 ? "text-primary" : "text-destructive"}`}>{financials.margin.toFixed(1)}%</span></div>
-                <div className="flex justify-between"><span>Płatność:</span><span>{order.payment_method ? PAYMENT_METHOD_LABELS[order.payment_method as PaymentMethod] : "—"}</span></div>
-                <div className="flex justify-between"><span>Status:</span><span>{order.is_paid ? "✅ Opłacone" : "⏳ Nieopłacone"}</span></div>
-              </div>
-            </div>
-          )}
+            <TabsContent value="history" className="mt-4">
+              <Card>
+                <CardContent className="pt-4">
+                  {!logs?.length ? (
+                    <p className="text-sm text-muted-foreground">Brak historii</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {logs.map((log: any) => (
+                        <div key={log.id} className="flex items-start gap-3 text-sm border-b border-border pb-3 last:border-0">
+                          <Clock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                          <div>
+                            <div className="text-xs text-muted-foreground">{new Date(log.created_at).toLocaleString("pl-PL")}</div>
+                            <Badge variant="outline" className="text-xs mt-0.5">{log.action_type}</Badge>
+                            {log.new_value_json && (
+                              <pre className="text-xs text-muted-foreground mt-1 bg-muted p-1 rounded overflow-x-auto max-w-full">
+                                {JSON.stringify(log.new_value_json, null, 2)}
+                              </pre>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="documents" className="mt-4">
+              <Card>
+                <CardContent className="pt-4 space-y-3">
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
+                      <FileDown className="mr-1 h-4 w-4" /> Pobierz PDF
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handlePrintPDF}>
+                      <Printer className="mr-1 h-4 w-4" /> Drukuj PDF
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">PDF generowany na żywo z aktualnych danych zlecenia.</p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* ── RIGHT COLUMN: Finance + Payment + Items ── */}
+        <div className="space-y-5">
+          <FinanceSection formData={currentForm} onChange={handleFieldChange} orderItems={orderItems} />
+          <PaymentSection formData={currentForm} onChange={handleFieldChange} />
 
           {/* Order Items */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-muted-foreground">Pozycje zlecenia (sprzedane części/produkty)</h3>
+          <FormSection icon={Plus} title="Pozycje zlecenia" className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">Sprzedane części / produkty</p>
               <Dialog open={itemDialogOpen} onOpenChange={setItemDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm"><Plus className="mr-1 h-3 w-3" />Dodaj pozycję</Button>
+                  <Button variant="outline" size="sm"><Plus className="mr-1 h-3 w-3" />Dodaj</Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader><DialogTitle>Dodaj pozycję</DialogTitle></DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <Label>Nazwa pozycji *</Label>
+                      <Label>Nazwa *</Label>
                       <Input value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} placeholder="np. Dysk SSD 256GB" />
                     </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div><Label>Ilość</Label><Input type="number" min="1" value={newItem.quantity} onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })} /></div>
-                      <div><Label>Cena sprzedaży (netto)</Label><Input type="number" step="0.01" value={newItem.sale_net} onChange={(e) => setNewItem({ ...newItem, sale_net: e.target.value })} placeholder="0.00" /></div>
-                      <div><Label>Cena zakupu (netto)</Label><Input type="number" step="0.01" value={newItem.purchase_net} onChange={(e) => setNewItem({ ...newItem, purchase_net: e.target.value })} placeholder="0.00" /></div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div><Label className="text-xs">Ilość</Label><Input type="number" min="1" value={newItem.quantity} onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })} /></div>
+                      <div><Label className="text-xs">Cena sprzedaży</Label><Input type="number" step="0.01" value={newItem.sale_net} onChange={(e) => setNewItem({ ...newItem, sale_net: e.target.value })} placeholder="0.00" /></div>
+                      <div><Label className="text-xs">Cena zakupu</Label><Input type="number" step="0.01" value={newItem.purchase_net} onChange={(e) => setNewItem({ ...newItem, purchase_net: e.target.value })} placeholder="0.00" /></div>
                     </div>
                     {(parseFloat(newItem.sale_net) > 0 || parseFloat(newItem.purchase_net) > 0) && (
-                      <div className="rounded-lg bg-muted p-3 text-sm">
-                        <div className="grid grid-cols-3 gap-2">
-                          <div>Sprzedaż: <span className="font-mono font-medium">{formatCurrency((parseFloat(newItem.quantity) || 1) * (parseFloat(newItem.sale_net) || 0))}</span></div>
-                          <div>Zakup: <span className="font-mono font-medium">{formatCurrency((parseFloat(newItem.quantity) || 1) * (parseFloat(newItem.purchase_net) || 0))}</span></div>
-                          <div>Zysk: <span className={`font-mono font-medium ${((parseFloat(newItem.sale_net) || 0) - (parseFloat(newItem.purchase_net) || 0)) >= 0 ? "text-primary" : "text-destructive"}`}>
-                            {formatCurrency((parseFloat(newItem.quantity) || 1) * ((parseFloat(newItem.sale_net) || 0) - (parseFloat(newItem.purchase_net) || 0)))}
-                          </span></div>
-                        </div>
+                      <div className="rounded-md bg-muted p-2.5 text-xs grid grid-cols-3 gap-2">
+                        <div>Sprzedaż: <span className="font-mono font-medium">{formatCurrency((parseFloat(newItem.quantity) || 1) * (parseFloat(newItem.sale_net) || 0))}</span></div>
+                        <div>Zakup: <span className="font-mono font-medium">{formatCurrency((parseFloat(newItem.quantity) || 1) * (parseFloat(newItem.purchase_net) || 0))}</span></div>
+                        <div>Zysk: <span className={cn("font-mono font-medium", ((parseFloat(newItem.sale_net) || 0) - (parseFloat(newItem.purchase_net) || 0)) >= 0 ? "text-primary" : "text-destructive")}>
+                          {formatCurrency((parseFloat(newItem.quantity) || 1) * ((parseFloat(newItem.sale_net) || 0) - (parseFloat(newItem.purchase_net) || 0)))}
+                        </span></div>
                       </div>
                     )}
                     <div className="flex justify-end gap-2">
@@ -731,155 +564,43 @@ export default function OrderDetailPage() {
             </div>
 
             {orderItems.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nazwa</TableHead>
-                    <TableHead className="text-right">Ilość</TableHead>
-                    <TableHead className="text-right">Cena sprzedaży</TableHead>
-                    <TableHead className="text-right">Cena zakupu</TableHead>
-                    <TableHead className="text-right">Sprzedaż ×</TableHead>
-                    <TableHead className="text-right">Zakup ×</TableHead>
-                    <TableHead className="text-right">Zysk</TableHead>
-                    <TableHead className="w-10"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {orderItems.map((item) => {
-                    const itemProfit = item.total_sale_net - item.total_purchase_net;
-                    return (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium">{item.item_name_snapshot}</TableCell>
-                        <TableCell className="text-right">{item.quantity}</TableCell>
-                        <TableCell className="text-right font-mono text-sm">{formatCurrency(item.sale_net)}</TableCell>
-                        <TableCell className="text-right font-mono text-sm">{formatCurrency(item.purchase_net)}</TableCell>
-                        <TableCell className="text-right font-mono text-sm">{formatCurrency(item.total_sale_net)}</TableCell>
-                        <TableCell className="text-right font-mono text-sm">{formatCurrency(item.total_purchase_net)}</TableCell>
-                        <TableCell className={`text-right font-mono text-sm font-medium ${itemProfit >= 0 ? "text-primary" : "text-destructive"}`}>
-                          {formatCurrency(itemProfit)}
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteItemMutation.mutate(item.id)}>
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                  <TableRow className="bg-muted/50 font-medium">
-                    <TableCell colSpan={4}>Suma pozycji</TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(financials.itemsRevenue)}</TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(financials.itemsCost)}</TableCell>
-                    <TableCell className={`text-right font-mono ${financials.itemsRevenue - financials.itemsCost >= 0 ? "text-primary" : "text-destructive"}`}>
-                      {formatCurrency(financials.itemsRevenue - financials.itemsCost)}
-                    </TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-4 border border-dashed border-border rounded-lg">
-                Brak pozycji. Dodaj sprzedane części lub produkty.
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tabs */}
-      <Tabs defaultValue="details">
-        <TabsList>
-          <TabsTrigger value="details">Szczegóły</TabsTrigger>
-          <TabsTrigger value="comments">Komentarze ({comments?.length ?? 0})</TabsTrigger>
-          <TabsTrigger value="history">Historia</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="details" className="mt-4 space-y-4">
-          {order.problem_description && (
-            <Card><CardHeader><CardTitle className="text-sm">Opis problemu</CardTitle></CardHeader>
-              <CardContent className="text-sm whitespace-pre-wrap">{order.problem_description}</CardContent></Card>
-          )}
-          {order.client_description && (
-            <Card><CardHeader><CardTitle className="text-sm">Opis klienta</CardTitle></CardHeader>
-              <CardContent className="text-sm whitespace-pre-wrap">{order.client_description}</CardContent></Card>
-          )}
-          {order.diagnosis && (
-            <Card><CardHeader><CardTitle className="text-sm">Diagnoza</CardTitle></CardHeader>
-              <CardContent className="text-sm whitespace-pre-wrap">{order.diagnosis}</CardContent></Card>
-          )}
-          {order.repair_description && (
-            <Card><CardHeader><CardTitle className="text-sm">Wykonane prace</CardTitle></CardHeader>
-              <CardContent className="text-sm whitespace-pre-wrap">{order.repair_description}</CardContent></Card>
-          )}
-          {order.accessories_received && (
-            <Card><CardHeader><CardTitle className="text-sm">Akcesoria</CardTitle></CardHeader>
-              <CardContent className="text-sm">{order.accessories_received}</CardContent></Card>
-          )}
-          {order.visual_condition && (
-            <Card><CardHeader><CardTitle className="text-sm">Stan wizualny</CardTitle></CardHeader>
-              <CardContent className="text-sm">{order.visual_condition}</CardContent></Card>
-          )}
-          {order.internal_notes && (
-            <Card><CardHeader><CardTitle className="text-sm">Notatki wewnętrzne</CardTitle></CardHeader>
-              <CardContent className="text-sm whitespace-pre-wrap">{order.internal_notes}</CardContent></Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="comments" className="mt-4">
-          <Card>
-            <CardContent className="pt-4 space-y-4">
-              {comments?.map((c: any) => (
-                <div key={c.id} className="border-b pb-3 last:border-0">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                    <User className="h-3 w-3" />
-                    <span>·</span>
-                    <Clock className="h-3 w-3" />
-                    {new Date(c.created_at).toLocaleString("pl-PL")}
-                  </div>
-                  <p className="text-sm">{c.comment}</p>
-                </div>
-              ))}
-              <div className="flex gap-2">
-                <Textarea placeholder="Dodaj komentarz..." value={comment} onChange={(e) => setComment(e.target.value)} rows={2} className="flex-1" />
-                <Button size="icon" onClick={() => addComment.mutate()} disabled={!comment.trim() || addComment.isPending}>
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="history" className="mt-4">
-          <Card>
-            <CardContent className="pt-4">
-              {!logs?.length ? (
-                <p className="text-sm text-muted-foreground">Brak historii</p>
-              ) : (
-                <div className="space-y-3">
-                  {logs.map((log: any) => (
-                    <div key={log.id} className="flex items-start gap-3 text-sm border-b pb-3 last:border-0">
-                      <Clock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                      <div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(log.created_at).toLocaleString("pl-PL")}
-                        </div>
-                        <div className="mt-0.5">
-                          <Badge variant="outline" className="text-xs">{log.action_type}</Badge>
-                          {log.new_value_json && (
-                            <pre className="text-xs text-muted-foreground mt-1 bg-muted p-1 rounded overflow-x-auto">
-                              {JSON.stringify(log.new_value_json, null, 2)}
-                            </pre>
-                          )}
+              <div className="space-y-2">
+                {orderItems.map((item) => {
+                  const itemProfit = item.total_sale_net - item.total_purchase_net;
+                  return (
+                    <div key={item.id} className="rounded-md border border-border p-2.5 text-xs flex items-center justify-between">
+                      <div className="space-y-0.5 min-w-0 flex-1">
+                        <div className="font-medium truncate">{item.item_name_snapshot}</div>
+                        <div className="text-muted-foreground">
+                          {item.quantity}× · Sprzedaż: {formatCurrency(item.total_sale_net)} · Zakup: {formatCurrency(item.total_purchase_net)} · Zysk: <span className={cn("font-medium", itemProfit >= 0 ? "text-primary" : "text-destructive")}>{formatCurrency(itemProfit)}</span>
                         </div>
                       </div>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive shrink-0" onClick={() => deleteItemMutation.mutate(item.id)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
-                  ))}
+                  );
+                })}
+                <div className="rounded-md bg-muted/50 p-2.5 text-xs flex justify-between font-medium">
+                  <span>Suma pozycji</span>
+                  <span>Sprzedaż: {formatCurrency(financials.itemsRevenue)} · Zakup: {formatCurrency(financials.itemsCost)} · Zysk: <span className={cn(financials.itemsRevenue - financials.itemsCost >= 0 ? "text-primary" : "text-destructive")}>{formatCurrency(financials.itemsRevenue - financials.itemsCost)}</span></span>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-4 border border-dashed border-border rounded-md">
+                Brak pozycji
+              </p>
+            )}
+          </FormSection>
+
+          {/* Save button in sidebar */}
+          {editDirty && (
+            <Button className="w-full" onClick={handleSave} disabled={updateOrder.isPending}>
+              <Save className="mr-1 h-4 w-4" /> {updateOrder.isPending ? "Zapisywanie..." : "Zapisz wszystkie zmiany"}
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
