@@ -15,6 +15,7 @@ import KanbanPage from "@/pages/KanbanPage";
 import OrderDetailPage from "@/pages/OrderDetailPage";
 import ITWorkPage from "@/pages/ITWorkPage";
 import InventoryPage from "@/pages/InventoryPage";
+import OffersPage from "@/pages/OffersPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
