@@ -55,7 +55,7 @@ export default function OrderDetailPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("service_order_comments")
-        .select("*, profiles(full_name)")
+        .select("*")
         .eq("order_id", id!)
         .order("created_at", { ascending: true });
       return data ?? [];
