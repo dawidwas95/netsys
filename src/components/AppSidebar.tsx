@@ -31,6 +31,7 @@ const mainNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Klienci", url: "/clients", icon: Users },
   { title: "Urządzenia", url: "/devices", icon: Monitor },
+  { title: "Magazyn", url: "/inventory", icon: Package },
 ];
 
 const serviceNav = [
