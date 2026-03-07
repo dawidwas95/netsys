@@ -18,6 +18,7 @@ import InventoryPage from "@/pages/InventoryPage";
 import OffersPage from "@/pages/OffersPage";
 import CashRegisterPage from "@/pages/CashRegisterPage";
 import ITDocsPage from "@/pages/ITDocsPage";
+import DocumentsPage from "@/pages/DocumentsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,6 +62,7 @@ const App = () => (
             <Route path="/offers" element={<OffersPage />} />
             <Route path="/cash" element={<CashRegisterPage />} />
             <Route path="/it-docs" element={<ITDocsPage />} />
+            <Route path="/documents" element={<DocumentsPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
