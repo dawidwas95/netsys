@@ -11,6 +11,7 @@ import {
   Package,
   FileText,
   Wallet,
+  BookOpen,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -41,6 +42,7 @@ const serviceNav = [
   { title: "Lista zleceń", url: "/orders", icon: ListTodo },
   { title: "Prace IT", url: "/it-work", icon: Wrench },
   { title: "Oferty", url: "/offers", icon: FileText },
+  { title: "Dokumentacja IT", url: "/it-docs", icon: BookOpen },
 ];
 
 const financeNav = [
