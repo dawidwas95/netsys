@@ -83,6 +83,17 @@ interface Document {
   clients?: { display_name: string | null; company_name: string | null; first_name: string | null; last_name: string | null } | null;
 }
 
+interface DocumentLineItem {
+  id?: string;
+  name: string;
+  quantity: string;
+  unit: string;
+  unit_net: string;
+  vat_rate: string;
+}
+
+const emptyLineItem: DocumentLineItem = { name: "", quantity: "1", unit: "szt.", unit_net: "0", vat_rate: "23" };
+
 const emptyForm = {
   document_number: "TEMP",
   document_type: "SALES_INVOICE" as DocType,
