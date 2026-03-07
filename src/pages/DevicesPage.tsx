@@ -4,16 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Search } from "lucide-react";
 import { DEVICE_CATEGORY_LABELS, type DeviceCategory } from "@/types/database";
 import { Link } from "react-router-dom";
+import { DeviceFormDialog } from "@/components/DeviceFormDialog";
 
 export default function DevicesPage() {
   const [search, setSearch] = useState("");
@@ -39,9 +35,15 @@ export default function DevicesPage() {
     },
   });
 
+  const statusLabels: Record<string, string> = {
+    ACTIVE: "Aktywne",
+    IN_SERVICE: "W serwisie",
+    RETIRED: "Wycofane",
+  };
+
   const statusColor: Record<string, string> = {
-    ACTIVE: "bg-success/10 text-success",
-    IN_SERVICE: "bg-warning/10 text-warning",
+    ACTIVE: "bg-primary/10 text-primary",
+    IN_SERVICE: "bg-accent text-accent-foreground",
     RETIRED: "bg-muted text-muted-foreground",
   };
 
@@ -52,6 +54,7 @@ export default function DevicesPage() {
           <h1 className="text-2xl font-bold tracking-tight">Urządzenia</h1>
           <p className="text-muted-foreground text-sm">{devices?.length ?? 0} urządzeń</p>
         </div>
+        <DeviceFormDialog />
       </div>
 
       <div className="mb-4 relative max-w-sm">
@@ -72,15 +75,16 @@ export default function DevicesPage() {
               <TableHead>Producent</TableHead>
               <TableHead>Model</TableHead>
               <TableHead>Nr seryjny</TableHead>
+              <TableHead>IMEI</TableHead>
               <TableHead>Klient</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Ładowanie...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Ładowanie...</TableCell></TableRow>
             ) : !devices?.length ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Brak urządzeń</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Brak urządzeń</TableCell></TableRow>
             ) : (
               devices.map((device: any) => (
                 <TableRow key={device.id} className="hover:bg-muted/50">
@@ -89,9 +93,10 @@ export default function DevicesPage() {
                       {DEVICE_CATEGORY_LABELS[device.device_category as DeviceCategory]}
                     </Badge>
                   </TableCell>
-                  <TableCell>{device.manufacturer}</TableCell>
-                  <TableCell>{device.model}</TableCell>
+                  <TableCell>{device.manufacturer ?? "—"}</TableCell>
+                  <TableCell>{device.model ?? "—"}</TableCell>
                   <TableCell className="font-mono text-sm">{device.serial_number ?? "—"}</TableCell>
+                  <TableCell className="font-mono text-sm">{device.imei ?? "—"}</TableCell>
                   <TableCell>
                     {device.clients ? (
                       <Link to={`/clients/${device.client_id}`} className="text-primary hover:underline">
@@ -101,7 +106,7 @@ export default function DevicesPage() {
                   </TableCell>
                   <TableCell>
                     <span className={`status-badge ${statusColor[device.status] ?? ""}`}>
-                      {device.status}
+                      {statusLabels[device.status] ?? device.status}
                     </span>
                   </TableCell>
                 </TableRow>

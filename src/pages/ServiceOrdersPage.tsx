@@ -7,26 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Plus, Search, KanbanSquare } from "lucide-react";
 import { toast } from "sonner";
@@ -36,13 +23,16 @@ import {
   ORDER_PRIORITY_LABELS,
   SERVICE_TYPE_LABELS,
   INTAKE_CHANNEL_LABELS,
+  DEVICE_CATEGORY_LABELS,
   type OrderStatus,
   type OrderPriority,
   type ServiceType,
   type IntakeChannel,
+  type DeviceCategory,
   type ServiceOrderInsert,
 } from "@/types/database";
 import { OrderStatusBadge } from "@/pages/DashboardPage";
+import { DeviceFormDialog } from "@/components/DeviceFormDialog";
 
 export default function ServiceOrdersPage() {
   const [search, setSearch] = useState("");
@@ -91,7 +81,7 @@ export default function ServiceOrdersPage() {
     mutationFn: async (data: ServiceOrderInsert) => {
       const { error } = await supabase.from("service_orders").insert({
         ...data,
-        order_number: "TEMP", // trigger will override
+        order_number: "TEMP",
       });
       if (error) throw error;
     },
@@ -136,12 +126,7 @@ export default function ServiceOrdersPage() {
       <div className="mb-4 flex gap-3 flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Szukaj po numerze, opisie..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
+          <Input placeholder="Szukaj po numerze, opisie..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-48"><SelectValue placeholder="Status" /></SelectTrigger>
@@ -165,14 +150,13 @@ export default function ServiceOrdersPage() {
               <TableHead>Status</TableHead>
               <TableHead>Priorytet</TableHead>
               <TableHead>Data przyjęcia</TableHead>
-              <TableHead>Pracownik</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Ładowanie...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Ładowanie...</TableCell></TableRow>
             ) : !orders?.length ? (
-              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Brak zleceń</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Brak zleceń</TableCell></TableRow>
             ) : (
               orders.map((order: any) => (
                 <TableRow key={order.id} className="hover:bg-muted/50">
@@ -189,7 +173,6 @@ export default function ServiceOrdersPage() {
                   <TableCell><OrderStatusBadge status={order.status} /></TableCell>
                   <TableCell className="text-sm">{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
                   <TableCell className="text-sm">{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
-                  <TableCell className="text-sm">—</TableCell>
                 </TableRow>
               ))
             )}
@@ -214,6 +197,24 @@ function OrderForm({
     priority: "NORMAL",
     intake_channel: "IN_PERSON",
   });
+  const [deviceDialogOpen, setDeviceDialogOpen] = useState(false);
+
+  const selectedClientId = formData.client_id;
+
+  // Fetch devices for selected client
+  const { data: clientDevices = [] } = useQuery({
+    queryKey: ["client-devices-select", selectedClientId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("devices")
+        .select("id, device_category, manufacturer, model, serial_number")
+        .eq("client_id", selectedClientId!)
+        .eq("is_archived", false)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!selectedClientId,
+  });
 
   const set = (field: keyof ServiceOrderInsert, value: any) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -231,7 +232,10 @@ function OrderForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
         <Label>Klient *</Label>
-        <Select onValueChange={(v) => set("client_id", v)}>
+        <Select onValueChange={(v) => {
+          set("client_id", v);
+          set("device_id", undefined);
+        }}>
           <SelectTrigger><SelectValue placeholder="Wybierz klienta" /></SelectTrigger>
           <SelectContent>
             {clients.map((c) => (
@@ -240,6 +244,38 @@ function OrderForm({
           </SelectContent>
         </Select>
       </div>
+
+      {/* Device selection */}
+      {selectedClientId && (
+        <div className="space-y-1.5">
+          <Label>Urządzenie</Label>
+          <div className="flex gap-2">
+            <Select value={formData.device_id ?? ""} onValueChange={(v) => set("device_id", v)}>
+              <SelectTrigger className="flex-1"><SelectValue placeholder="Wybierz urządzenie" /></SelectTrigger>
+              <SelectContent>
+                {clientDevices.map((d: any) => (
+                  <SelectItem key={d.id} value={d.id}>
+                    {DEVICE_CATEGORY_LABELS[d.device_category as DeviceCategory]} — {d.manufacturer} {d.model}
+                    {d.serial_number ? ` (${d.serial_number})` : ""}
+                  </SelectItem>
+                ))}
+                {clientDevices.length === 0 && (
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground">Brak urządzeń klienta</div>
+                )}
+              </SelectContent>
+            </Select>
+            <DeviceFormDialog
+              clientId={selectedClientId}
+              onCreated={(deviceId) => set("device_id", deviceId)}
+              trigger={
+                <Button type="button" variant="outline" size="icon" title="Dodaj nowe urządzenie">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              }
+            />
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
