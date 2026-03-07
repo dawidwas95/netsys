@@ -56,7 +56,7 @@ export default function ServiceOrdersPage() {
     queryFn: async () => {
       let query = supabase
         .from("service_orders")
-        .select("*, clients(display_name), devices(manufacturer, model), profiles(full_name)")
+        .select("*, clients(display_name), devices(manufacturer, model)")
         .order("received_at", { ascending: false });
 
       if (statusFilter !== "all") {
