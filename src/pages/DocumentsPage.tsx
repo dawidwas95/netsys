@@ -132,6 +132,7 @@ export default function DocumentsPage() {
   const [search, setSearch] = useState("");
   const [filterDirection, setFilterDirection] = useState("ALL");
   const [filterPayment, setFilterPayment] = useState("ALL");
+  const [lineItems, setLineItems] = useState<DocumentLineItem[]>([{ ...emptyLineItem }]);
 
   const { data: docs = [], isLoading } = useQuery({
     queryKey: ["documents"],
