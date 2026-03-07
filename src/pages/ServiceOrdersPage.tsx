@@ -89,7 +89,10 @@ export default function ServiceOrdersPage() {
 
   const createOrder = useMutation({
     mutationFn: async (data: ServiceOrderInsert) => {
-      const { error } = await supabase.from("service_orders").insert(data);
+      const { error } = await supabase.from("service_orders").insert({
+        ...data,
+        order_number: "TEMP", // trigger will override
+      });
       if (error) throw error;
     },
     onSuccess: () => {
