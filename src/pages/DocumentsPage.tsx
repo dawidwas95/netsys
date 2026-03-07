@@ -268,6 +268,7 @@ export default function DocumentsPage() {
     setForm(emptyForm);
     setEditId(null);
     setOpen(false);
+    setLineItems([{ ...emptyLineItem }]);
   }
 
   function openEdit(doc: Document) {
