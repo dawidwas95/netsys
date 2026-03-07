@@ -39,6 +39,7 @@ const serviceNav = [
   { title: "Kanban zleceń", url: "/orders/kanban", icon: KanbanSquare },
   { title: "Lista zleceń", url: "/orders", icon: ListTodo },
   { title: "Prace IT", url: "/it-work", icon: Wrench },
+  { title: "Oferty", url: "/offers", icon: FileText },
 ];
 
 const systemNav = [
