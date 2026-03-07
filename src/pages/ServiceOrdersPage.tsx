@@ -189,7 +189,7 @@ export default function ServiceOrdersPage() {
                   <TableCell><OrderStatusBadge status={order.status} /></TableCell>
                   <TableCell className="text-sm">{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
                   <TableCell className="text-sm">{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
-                  <TableCell className="text-sm">{order.profiles?.full_name ?? "—"}</TableCell>
+                  <TableCell className="text-sm">—</TableCell>
                 </TableRow>
               ))
             )}
