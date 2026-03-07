@@ -114,7 +114,7 @@ export default function ServiceOrdersPage() {
         <div className="flex items-center gap-2">
           <Link to="/orders/kanban">
             <Button variant="outline" size="sm">
-              <KanbanSquare className="h-4 w-4 mr-1" /> Kanban
+              <KanbanSquare className="h-4 w-4 mr-1" /> Tablica
             </Button>
           </Link>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
