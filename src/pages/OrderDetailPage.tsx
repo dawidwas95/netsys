@@ -79,7 +79,7 @@ export default function OrderDetailPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("service_orders")
-        .select("*, clients(display_name, phone, email), devices(manufacturer, model, serial_number, device_category)")
+        .select("*, clients(display_name, phone, email), devices(manufacturer, model, serial_number, device_category, imei)")
         .eq("id", id!)
         .single();
       if (error) throw error;
