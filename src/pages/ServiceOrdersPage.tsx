@@ -52,10 +52,7 @@ export default function ServiceOrdersPage() {
 
   const createOrder = useMutation({
     mutationFn: async (data: ServiceOrderInsert) => {
-      const { error } = await supabase.from("service_orders").insert({
-        ...data,
-        order_number: "TEMP",
-      });
+      const { error } = await supabase.from("service_orders").insert(data as any);
       if (error) throw error;
     },
     onSuccess: () => {
