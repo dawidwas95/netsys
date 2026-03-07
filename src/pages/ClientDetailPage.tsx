@@ -5,16 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Phone, Mail, MapPin, Building2, User } from "lucide-react";
+import { ArrowLeft, Phone, Mail, MapPin, Building2 } from "lucide-react";
 import { CLIENT_TYPE_LABELS, DEVICE_CATEGORY_LABELS, type ClientType, type DeviceCategory } from "@/types/database";
 import { OrderStatusBadge } from "@/pages/DashboardPage";
+import { DeviceFormDialog } from "@/components/DeviceFormDialog";
 
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -22,18 +18,14 @@ export default function ClientDetailPage() {
   const { data: client, isLoading } = useQuery({
     queryKey: ["client", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("clients")
-        .select("*")
-        .eq("id", id!)
-        .single();
+      const { data, error } = await supabase.from("clients").select("*").eq("id", id!).single();
       if (error) throw error;
       return data;
     },
     enabled: !!id,
   });
 
-  const { data: devices } = useQuery({
+  const { data: devices = [] } = useQuery({
     queryKey: ["client-devices", id],
     queryFn: async () => {
       const { data } = await supabase
@@ -46,7 +38,7 @@ export default function ClientDetailPage() {
     enabled: !!id,
   });
 
-  const { data: orders } = useQuery({
+  const { data: orders = [] } = useQuery({
     queryKey: ["client-orders", id],
     queryFn: async () => {
       const { data } = await supabase
@@ -59,8 +51,18 @@ export default function ClientDetailPage() {
     enabled: !!id,
   });
 
-  if (isLoading) return <p className="text-muted-foreground">Ładowanie...</p>;
-  if (!client) return <p className="text-muted-foreground">Klient nie znaleziony</p>;
+  // Count orders per device
+  function getDeviceOrderCount(deviceId: string) {
+    return orders.filter((o: any) => o.device_id === deviceId).length;
+  }
+
+  function getLastOrder(deviceId: string) {
+    const deviceOrders = orders.filter((o: any) => o.device_id === deviceId);
+    return deviceOrders.length > 0 ? deviceOrders[0] : null;
+  }
+
+  if (isLoading) return <p className="text-muted-foreground p-4">Ładowanie...</p>;
+  if (!client) return <p className="text-muted-foreground p-4">Klient nie znaleziony</p>;
 
   return (
     <div>
@@ -71,9 +73,7 @@ export default function ClientDetailPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">{client.display_name}</h1>
-            <Badge variant="secondary">
-              {CLIENT_TYPE_LABELS[client.client_type as ClientType]}
-            </Badge>
+            <Badge variant="secondary">{CLIENT_TYPE_LABELS[client.client_type as ClientType]}</Badge>
           </div>
         </div>
       </div>
@@ -107,16 +107,16 @@ export default function ClientDetailPage() {
         <Card>
           <CardHeader><CardTitle className="text-sm font-medium text-muted-foreground">Statystyki</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <div>Urządzenia: <span className="font-bold">{devices?.length ?? 0}</span></div>
-            <div>Zlecenia: <span className="font-bold">{orders?.length ?? 0}</span></div>
+            <div>Urządzenia: <span className="font-bold">{devices.length}</span></div>
+            <div>Zlecenia: <span className="font-bold">{orders.length}</span></div>
           </CardContent>
         </Card>
       </div>
 
       <Tabs defaultValue="orders">
         <TabsList>
-          <TabsTrigger value="orders">Zlecenia ({orders?.length ?? 0})</TabsTrigger>
-          <TabsTrigger value="devices">Urządzenia ({devices?.length ?? 0})</TabsTrigger>
+          <TabsTrigger value="orders">Zlecenia ({orders.length})</TabsTrigger>
+          <TabsTrigger value="devices">Urządzenia ({devices.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="orders" className="mt-4">
@@ -131,15 +131,13 @@ export default function ClientDetailPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {!orders?.length ? (
+                {!orders.length ? (
                   <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Brak zleceń</TableCell></TableRow>
                 ) : (
                   orders.map((order: any) => (
                     <TableRow key={order.id}>
                       <TableCell>
-                        <Link to={`/orders/${order.id}`} className="font-medium text-primary hover:underline">
-                          {order.order_number}
-                        </Link>
+                        <Link to={`/orders/${order.id}`} className="font-medium text-primary hover:underline font-mono">{order.order_number}</Link>
                       </TableCell>
                       <TableCell>{order.devices ? `${order.devices.manufacturer} ${order.devices.model}` : "—"}</TableCell>
                       <TableCell><OrderStatusBadge status={order.status} /></TableCell>
@@ -153,6 +151,9 @@ export default function ClientDetailPage() {
         </TabsContent>
 
         <TabsContent value="devices" className="mt-4">
+          <div className="mb-3 flex justify-end">
+            <DeviceFormDialog clientId={id} />
+          </div>
           <div className="data-table-wrapper">
             <Table>
               <TableHeader>
@@ -161,22 +162,38 @@ export default function ClientDetailPage() {
                   <TableHead>Producent</TableHead>
                   <TableHead>Model</TableHead>
                   <TableHead>Nr seryjny</TableHead>
+                  <TableHead>Zlecenia</TableHead>
+                  <TableHead>Ostatnie zlecenie</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {!devices?.length ? (
-                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Brak urządzeń</TableCell></TableRow>
+                {!devices.length ? (
+                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Brak urządzeń</TableCell></TableRow>
                 ) : (
-                  devices.map((device) => (
-                    <TableRow key={device.id}>
-                      <TableCell>{DEVICE_CATEGORY_LABELS[device.device_category as DeviceCategory]}</TableCell>
-                      <TableCell>{device.manufacturer}</TableCell>
-                      <TableCell>{device.model}</TableCell>
-                      <TableCell className="font-mono text-sm">{device.serial_number}</TableCell>
-                      <TableCell><Badge variant="secondary">{device.status}</Badge></TableCell>
-                    </TableRow>
-                  ))
+                  devices.map((device: any) => {
+                    const orderCount = getDeviceOrderCount(device.id);
+                    const lastOrder = getLastOrder(device.id);
+                    return (
+                      <TableRow key={device.id}>
+                        <TableCell>{DEVICE_CATEGORY_LABELS[device.device_category as DeviceCategory]}</TableCell>
+                        <TableCell>{device.manufacturer ?? "—"}</TableCell>
+                        <TableCell>{device.model ?? "—"}</TableCell>
+                        <TableCell className="font-mono text-sm">{device.serial_number ?? "—"}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{orderCount}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {lastOrder ? (
+                            <Link to={`/orders/${lastOrder.id}`} className="text-primary hover:underline text-sm font-mono">
+                              {lastOrder.order_number}
+                            </Link>
+                          ) : "—"}
+                        </TableCell>
+                        <TableCell><Badge variant="secondary">{device.status}</Badge></TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>

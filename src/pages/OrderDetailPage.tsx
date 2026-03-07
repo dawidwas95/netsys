@@ -21,8 +21,9 @@ import {
 } from "@/components/ui/dialog";
 import {
   ArrowLeft, Send, Clock, User, Monitor, Plus, Trash2,
-  DollarSign, TrendingUp, TrendingDown, Percent,
+  DollarSign, TrendingUp, TrendingDown, Percent, FileDown, Printer,
 } from "lucide-react";
+import { generateOrderPDF } from "@/lib/generateOrderPDF";
 import { toast } from "sonner";
 import { useState, useMemo } from "react";
 import {
@@ -78,7 +79,7 @@ export default function OrderDetailPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("service_orders")
-        .select("*, clients(display_name, phone, email), devices(manufacturer, model, serial_number, device_category)")
+        .select("*, clients(display_name, phone, email), devices(manufacturer, model, serial_number, device_category, imei)")
         .eq("id", id!)
         .single();
       if (error) throw error;
@@ -305,6 +306,22 @@ export default function OrderDetailPage() {
     setEditingFinance(false);
   }
 
+  function handleDownloadPDF() {
+    if (!order) return;
+    const doc = generateOrderPDF({ order, orderItems, financials });
+    doc.save(`${order.order_number.replace(/\//g, "-")}.pdf`);
+    toast.success("PDF pobrany");
+  }
+
+  function handlePrintPDF() {
+    if (!order) return;
+    const doc = generateOrderPDF({ order, orderItems, financials });
+    const blob = doc.output("blob");
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url);
+    win?.addEventListener("load", () => win.print());
+  }
+
   if (isLoading) return <p className="text-muted-foreground p-4">Ładowanie...</p>;
   if (!order) return <p className="text-muted-foreground p-4">Zlecenie nie znalezione</p>;
 
@@ -326,21 +343,29 @@ export default function OrderDetailPage() {
             </div>
           </div>
         </div>
-        <Select
-          value={order.status}
-          onValueChange={(v) => {
-            const updates: any = { status: v };
-            if (v === "COMPLETED") updates.completed_at = new Date().toISOString();
-            updateOrder.mutate(updates);
-          }}
-        >
-          <SelectTrigger className="w-48"><SelectValue placeholder="Zmień status" /></SelectTrigger>
-          <SelectContent>
-            {Object.entries(ORDER_STATUS_LABELS).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
+            <FileDown className="mr-1 h-4 w-4" /> PDF
+          </Button>
+          <Button variant="outline" size="sm" onClick={handlePrintPDF}>
+            <Printer className="mr-1 h-4 w-4" /> Drukuj
+          </Button>
+          <Select
+            value={order.status}
+            onValueChange={(v) => {
+              const updates: any = { status: v };
+              if (v === "COMPLETED") updates.completed_at = new Date().toISOString();
+              updateOrder.mutate(updates);
+            }}
+          >
+            <SelectTrigger className="w-48"><SelectValue placeholder="Zmień status" /></SelectTrigger>
+            <SelectContent>
+              {Object.entries(ORDER_STATUS_LABELS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Info cards */}
