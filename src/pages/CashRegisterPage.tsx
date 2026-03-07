@@ -69,14 +69,14 @@ export default function CashRegisterPage() {
     const today = new Date().toISOString().split("T")[0];
     return transactions
       .filter((t: any) => t.transaction_date === today && t.transaction_type === "IN")
-      .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+      .reduce((sum: number, t: any) => sum + (t.display_amount || Number(t.amount)), 0);
   }, [transactions]);
 
   const todayOut = useMemo(() => {
     const today = new Date().toISOString().split("T")[0];
     return transactions
       .filter((t: any) => t.transaction_date === today && t.transaction_type === "OUT")
-      .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+      .reduce((sum: number, t: any) => sum + (t.display_amount || Number(t.amount)), 0);
   }, [transactions]);
 
   const addTransaction = useMutation({
