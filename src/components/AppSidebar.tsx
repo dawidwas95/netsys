@@ -8,6 +8,7 @@ import {
   Settings,
   LogOut,
   Search,
+  Package,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
