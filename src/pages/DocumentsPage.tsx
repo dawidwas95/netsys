@@ -402,17 +402,77 @@ export default function DocumentsPage() {
                 <div><Label>Data otrzymania</Label><Input type="date" value={form.received_date} onChange={(e) => setForm({ ...form, received_date: e.target.value })} /></div>
               </div>
 
+              {/* Line Items */}
               <div className="rounded-lg border border-border p-4 space-y-3">
-                <p className="text-sm font-medium text-muted-foreground">Kwoty</p>
-                <div className="grid grid-cols-3 gap-4">
-                  <div><Label>Netto *</Label><Input type="number" step="0.01" value={form.net_amount} onChange={(e) => setForm({ ...form, net_amount: e.target.value })} /></div>
-                  <div><Label>Stawka VAT (%)</Label><Input type="number" value={form.vat_rate} onChange={(e) => setForm({ ...form, vat_rate: e.target.value })} /></div>
-                  <div>
-                    <Label>Brutto</Label>
-                    <Input value={formatCurrency(computedGross)} disabled className="bg-muted" />
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-muted-foreground">Pozycje dokumentu</p>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setLineItems([...lineItems, { ...emptyLineItem }])}>
+                    <Plus className="h-3 w-3 mr-1" /> Dodaj pozycję
+                  </Button>
+                </div>
+                {lineItems.map((item, idx) => (
+                  <div key={idx} className="grid grid-cols-12 gap-2 items-end">
+                    <div className="col-span-4">
+                      {idx === 0 && <Label className="text-xs">Nazwa</Label>}
+                      <Input value={item.name} onChange={(e) => {
+                        const updated = [...lineItems]; updated[idx] = { ...item, name: e.target.value }; setLineItems(updated);
+                      }} placeholder="Nazwa pozycji" className="h-8 text-sm" />
+                    </div>
+                    <div className="col-span-1">
+                      {idx === 0 && <Label className="text-xs">Ilość</Label>}
+                      <Input type="number" value={item.quantity} onChange={(e) => {
+                        const updated = [...lineItems]; updated[idx] = { ...item, quantity: e.target.value }; setLineItems(updated);
+                      }} className="h-8 text-sm" />
+                    </div>
+                    <div className="col-span-2">
+                      {idx === 0 && <Label className="text-xs">Cena netto</Label>}
+                      <Input type="number" step="0.01" value={item.unit_net} onChange={(e) => {
+                        const updated = [...lineItems]; updated[idx] = { ...item, unit_net: e.target.value }; setLineItems(updated);
+                      }} className="h-8 text-sm" />
+                    </div>
+                    <div className="col-span-1">
+                      {idx === 0 && <Label className="text-xs">VAT%</Label>}
+                      <Input type="number" value={item.vat_rate} onChange={(e) => {
+                        const updated = [...lineItems]; updated[idx] = { ...item, vat_rate: e.target.value }; setLineItems(updated);
+                      }} className="h-8 text-sm" />
+                    </div>
+                    <div className="col-span-2">
+                      {idx === 0 && <Label className="text-xs">Brutto</Label>}
+                      <Input value={formatCurrency(
+                        (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_net) || 0) * (1 + (parseFloat(item.vat_rate) || 23) / 100)
+                      )} disabled className="h-8 text-sm bg-muted" />
+                    </div>
+                    <div className="col-span-2 flex gap-1">
+                      {lineItems.length > 1 && (
+                        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => {
+                          setLineItems(lineItems.filter((_, i) => i !== idx));
+                        }}><Trash2 className="h-3 w-3" /></Button>
+                      )}
+                    </div>
                   </div>
+                ))}
+                {/* Summary */}
+                <div className="border-t border-border pt-3 space-y-1 text-sm">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Suma netto</span><span className="font-mono font-medium">{formatCurrency(computedFromItems.net)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Suma VAT</span><span className="font-mono">{formatCurrency(computedFromItems.vat)}</span></div>
+                  <div className="flex justify-between font-bold"><span>Suma brutto</span><span className="font-mono">{formatCurrency(computedFromItems.gross)}</span></div>
                 </div>
               </div>
+
+              {/* Fallback manual entry if no line items */}
+              {!hasLineItems && (
+                <div className="rounded-lg border border-dashed border-border p-4 space-y-3">
+                  <p className="text-sm font-medium text-muted-foreground">Kwoty ręczne (jeśli brak pozycji)</p>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div><Label>Netto</Label><Input type="number" step="0.01" value={form.net_amount} onChange={(e) => setForm({ ...form, net_amount: e.target.value })} /></div>
+                    <div><Label>Stawka VAT (%)</Label><Input type="number" value={form.vat_rate} onChange={(e) => setForm({ ...form, vat_rate: e.target.value })} /></div>
+                    <div>
+                      <Label>Brutto</Label>
+                      <Input value={formatCurrency(computedGross)} disabled className="bg-muted" />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-3 gap-4">
                 <div>
