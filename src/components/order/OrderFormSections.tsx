@@ -100,6 +100,7 @@ export function ClientSection({ clientId, onChange }: {
   onChange: (clientId: string | undefined) => void;
 }) {
   const queryClient = useQueryClient();
+  const [clientDialogOpen, setClientDialogOpen] = useState(false);
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-select"],
@@ -130,22 +131,21 @@ export function ClientSection({ clientId, onChange }: {
           value={clientId ?? ""}
           onChange={(v) => onChange(v || undefined)}
           placeholder="Wpisz nazwisko, firmę, telefon, NIP..."
-          actions={
-            <ClientFormDialog
-              onCreated={(id) => {
-                queryClient.invalidateQueries({ queryKey: ["clients-select"] });
-                onChange(id);
-              }}
-              trigger={
-                <button type="button" className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-accent rounded-sm flex items-center gap-1">
-                  <Plus className="h-3.5 w-3.5" /> Dodaj nowego klienta
-                </button>
-              }
-            />
-          }
+          onAddNew={() => setClientDialogOpen(true)}
+          addNewLabel="Dodaj nowego klienta"
         />
       </div>
       <ClientPreview client={selectedClient} />
+
+      {/* Separate dialog — not inside the dropdown */}
+      <ClientFormDialog
+        externalOpen={clientDialogOpen}
+        onOpenChange={setClientDialogOpen}
+        onCreated={(id) => {
+          queryClient.invalidateQueries({ queryKey: ["clients-select"] });
+          onChange(id);
+        }}
+      />
     </FormSection>
   );
 }
