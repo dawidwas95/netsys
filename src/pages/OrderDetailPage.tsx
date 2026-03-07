@@ -68,7 +68,7 @@ export default function OrderDetailPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("activity_logs")
-        .select("*, profiles(full_name)")
+        .select("*")
         .eq("entity_type", "service_order")
         .eq("entity_id", id!)
         .order("created_at", { ascending: false });
