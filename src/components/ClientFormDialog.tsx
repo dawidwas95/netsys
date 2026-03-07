@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -13,14 +14,16 @@ import {
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
-import { CLIENT_TYPE_LABELS, type ClientType } from "@/types/database";
+import { CLIENT_TYPE_LABELS, type ClientType, type Client } from "@/types/database";
 
 interface ClientFormDialogProps {
   onCreated?: (clientId: string) => void;
+  onUpdated?: () => void;
   trigger?: React.ReactNode;
-  /** Controlled open state — when provided, dialog is controlled externally */
   externalOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** Pass existing client for edit mode */
+  editClient?: Client | null;
 }
 
 const emptyForm = {
@@ -31,12 +34,52 @@ const emptyForm = {
   phone: "",
   email: "",
   nip: "",
+  regon: "",
   address_street: "",
   address_city: "",
   address_postal_code: "",
+  address_country: "Polska",
+  notes: "",
 };
 
-export function ClientFormDialog({ onCreated, trigger, externalOpen, onOpenChange }: ClientFormDialogProps) {
+function clientToForm(client: Client) {
+  return {
+    client_type: client.client_type as ClientType,
+    first_name: client.first_name ?? "",
+    last_name: client.last_name ?? "",
+    company_name: client.company_name ?? "",
+    phone: client.phone ?? "",
+    email: client.email ?? "",
+    nip: client.nip ?? "",
+    regon: client.regon ?? "",
+    address_street: client.address_street ?? "",
+    address_city: client.address_city ?? "",
+    address_postal_code: client.address_postal_code ?? "",
+    address_country: client.address_country ?? "Polska",
+    notes: client.notes ?? "",
+  };
+}
+
+/** Build the payload for insert/update — NEVER include display_name (it's GENERATED ALWAYS) */
+function buildPayload(form: typeof emptyForm) {
+  return {
+    client_type: form.client_type,
+    first_name: form.first_name || null,
+    last_name: form.last_name || null,
+    company_name: form.company_name || null,
+    phone: form.phone || null,
+    email: form.email || null,
+    nip: form.nip || null,
+    regon: form.regon || null,
+    address_street: form.address_street || null,
+    address_city: form.address_city || null,
+    address_postal_code: form.address_postal_code || null,
+    address_country: form.address_country || null,
+    notes: form.notes || null,
+  };
+}
+
+export function ClientFormDialog({ onCreated, onUpdated, trigger, externalOpen, onOpenChange, editClient }: ClientFormDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
   const setOpen = (v: boolean) => {
@@ -47,62 +90,81 @@ export function ClientFormDialog({ onCreated, trigger, externalOpen, onOpenChang
     }
   };
 
+  const isEdit = !!editClient;
   const [form, setForm] = useState({ ...emptyForm });
   const { user } = useAuth();
   const qc = useQueryClient();
 
-  // Reset form when dialog closes
+  // Reset/populate form when dialog opens/closes or editClient changes
   useEffect(() => {
-    if (!open) setForm({ ...emptyForm });
-  }, [open]);
+    if (open) {
+      setForm(editClient ? clientToForm(editClient) : { ...emptyForm });
+    }
+  }, [open, editClient]);
 
-  const createMutation = useMutation({
+  const saveMutation = useMutation({
     mutationFn: async () => {
-      const displayName = form.client_type === "COMPANY"
-        ? form.company_name
-        : [form.first_name, form.last_name].filter(Boolean).join(" ");
+      const payload = buildPayload(form);
 
-      const { data, error } = await supabase.from("clients").insert({
-        client_type: form.client_type,
-        first_name: form.first_name || null,
-        last_name: form.last_name || null,
-        company_name: form.company_name || null,
-        display_name: displayName || null,
-        phone: form.phone || null,
-        email: form.email || null,
-        nip: form.nip || null,
-        address_street: form.address_street || null,
-        address_city: form.address_city || null,
-        address_postal_code: form.address_postal_code || null,
-        created_by: user?.id,
-      }).select("id").single();
-      if (error) throw error;
-      return data;
+      if (isEdit) {
+        const { error } = await supabase
+          .from("clients")
+          .update({ ...payload, updated_by: user?.id })
+          .eq("id", editClient!.id);
+        if (error) throw error;
+        return { id: editClient!.id };
+      } else {
+        const { data, error } = await supabase
+          .from("clients")
+          .insert({ ...payload, created_by: user?.id })
+          .select("id")
+          .single();
+        if (error) throw error;
+        return data;
+      }
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["clients-select"] });
       qc.invalidateQueries({ queryKey: ["clients"] });
-      toast.success("Klient dodany");
-      onCreated?.(data.id);
+      qc.invalidateQueries({ queryKey: ["client", editClient?.id] });
+      toast.success(isEdit ? "Klient zaktualizowany" : "Klient dodany");
+      if (isEdit) {
+        onUpdated?.();
+      } else {
+        onCreated?.(data.id);
+      }
       setOpen(false);
     },
     onError: (err: any) => {
-      console.error("Client creation error:", err);
-      toast.error(err?.message || "Błąd dodawania klienta");
+      console.error("Client save error:", err);
+      toast.error(err?.message || "Błąd zapisu klienta");
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    createMutation.mutate();
+
+    // Validation
+    if (form.client_type === "COMPANY" && !form.company_name.trim()) {
+      toast.error("Nazwa firmy jest wymagana");
+      return;
+    }
+    if (form.client_type === "PRIVATE" && !form.first_name.trim() && !form.last_name.trim()) {
+      toast.error("Imię lub nazwisko jest wymagane");
+      return;
+    }
+
+    saveMutation.mutate();
   };
 
   const dialogContent = (
     <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto" onPointerDownOutside={(e) => e.preventDefault()}>
-      <DialogHeader><DialogTitle>Nowy klient</DialogTitle></DialogHeader>
+      <DialogHeader>
+        <DialogTitle>{isEdit ? "Edytuj klienta" : "Nowy klient"}</DialogTitle>
+      </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
+        <div className="space-y-1.5">
           <Label>Typ klienta</Label>
           <Select value={form.client_type} onValueChange={(v) => setForm({ ...form, client_type: v as ClientType })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -113,39 +175,84 @@ export function ClientFormDialog({ onCreated, trigger, externalOpen, onOpenChang
             </SelectContent>
           </Select>
         </div>
+
         {form.client_type === "COMPANY" && (
-          <div>
-            <Label>Nazwa firmy *</Label>
-            <Input value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} />
+          <>
+            <div className="space-y-1.5">
+              <Label>Nazwa firmy *</Label>
+              <Input value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} required />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>NIP</Label>
+                <Input value={form.nip} onChange={(e) => setForm({ ...form, nip: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>REGON</Label>
+                <Input value={form.regon} onChange={(e) => setForm({ ...form, regon: e.target.value })} />
+              </div>
+            </div>
+          </>
+        )}
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>{form.client_type === "COMPANY" ? "Imię kontaktowe" : "Imię *"}</Label>
+            <Input value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} />
           </div>
-        )}
-        <div className="grid grid-cols-2 gap-4">
-          <div><Label>Imię</Label><Input value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} /></div>
-          <div><Label>Nazwisko</Label><Input value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} /></div>
+          <div className="space-y-1.5">
+            <Label>{form.client_type === "COMPANY" ? "Nazwisko kontaktowe" : "Nazwisko *"}</Label>
+            <Input value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} />
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div><Label>Telefon</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
-          <div><Label>E-mail</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>Telefon</Label>
+            <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>E-mail</Label>
+            <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          </div>
         </div>
-        {form.client_type === "COMPANY" && (
-          <div><Label>NIP</Label><Input value={form.nip} onChange={(e) => setForm({ ...form, nip: e.target.value })} /></div>
-        )}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="col-span-2"><Label>Ulica</Label><Input value={form.address_street} onChange={(e) => setForm({ ...form, address_street: e.target.value })} /></div>
-          <div><Label>Kod pocztowy</Label><Input value={form.address_postal_code} onChange={(e) => setForm({ ...form, address_postal_code: e.target.value })} /></div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1.5 col-span-2">
+            <Label>Ulica</Label>
+            <Input value={form.address_street} onChange={(e) => setForm({ ...form, address_street: e.target.value })} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Kod pocztowy</Label>
+            <Input value={form.address_postal_code} onChange={(e) => setForm({ ...form, address_postal_code: e.target.value })} />
+          </div>
         </div>
-        <div><Label>Miasto</Label><Input value={form.address_city} onChange={(e) => setForm({ ...form, address_city: e.target.value })} /></div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>Miasto</Label>
+            <Input value={form.address_city} onChange={(e) => setForm({ ...form, address_city: e.target.value })} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Kraj</Label>
+            <Input value={form.address_country} onChange={(e) => setForm({ ...form, address_country: e.target.value })} />
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Uwagi</Label>
+          <Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+        </div>
+
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={() => setOpen(false)}>Anuluj</Button>
-          <Button type="submit" disabled={createMutation.isPending}>
-            {createMutation.isPending ? "Zapisywanie..." : "Dodaj klienta"}
+          <Button type="submit" disabled={saveMutation.isPending}>
+            {saveMutation.isPending ? "Zapisywanie..." : isEdit ? "Zapisz zmiany" : "Dodaj klienta"}
           </Button>
         </div>
       </form>
     </DialogContent>
   );
 
-  // If controlled externally (no trigger needed), render dialog without trigger
   if (externalOpen !== undefined) {
     return (
       <Dialog open={open} onOpenChange={setOpen}>

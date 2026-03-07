@@ -14,14 +14,16 @@ import {
 } from "@/components/ui/select";
 import { Plus, Cpu } from "lucide-react";
 import { toast } from "sonner";
-import { DEVICE_CATEGORY_LABELS, type DeviceCategory } from "@/types/database";
+import { DEVICE_CATEGORY_LABELS, type DeviceCategory, type Device } from "@/types/database";
 
 interface DeviceFormDialogProps {
   clientId?: string;
   onCreated?: (deviceId: string) => void;
+  onUpdated?: () => void;
   trigger?: React.ReactNode;
   externalOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
+  editDevice?: Device | null;
 }
 
 const RAM_TYPES = ["DDR1", "DDR2", "DDR3", "DDR4", "DDR5"] as const;
@@ -36,7 +38,6 @@ const emptyForm = {
   imei: "",
   description: "",
   notes: "",
-  // Hardware specs (for DESKTOP/LAPTOP)
   cpu: "",
   ram_gb: "",
   ram_type: "",
@@ -51,7 +52,32 @@ const emptyForm = {
   specification_notes: "",
 };
 
-export function DeviceFormDialog({ clientId, onCreated, trigger, externalOpen, onOpenChange }: DeviceFormDialogProps) {
+function deviceToForm(d: Device, clientId?: string) {
+  return {
+    client_id: d.client_id ?? clientId ?? "",
+    device_category: d.device_category as DeviceCategory,
+    manufacturer: d.manufacturer ?? "",
+    model: d.model ?? "",
+    serial_number: d.serial_number ?? "",
+    imei: d.imei ?? "",
+    description: d.description ?? "",
+    notes: d.notes ?? "",
+    cpu: d.cpu ?? "",
+    ram_gb: d.ram_gb?.toString() ?? "",
+    ram_type: d.ram_type ?? "",
+    gpu: d.gpu ?? "",
+    storage1_type: d.storage1_type ?? "",
+    storage1_size: d.storage1_size ?? "",
+    storage2_type: d.storage2_type ?? "",
+    storage2_size: d.storage2_size ?? "",
+    operating_system: d.operating_system ?? "",
+    motherboard: d.motherboard ?? "",
+    psu: d.psu ?? "",
+    specification_notes: d.specification_notes ?? "",
+  };
+}
+
+export function DeviceFormDialog({ clientId, onCreated, onUpdated, trigger, externalOpen, onOpenChange, editDevice }: DeviceFormDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
   const setOpen = (v: boolean) => {
@@ -62,13 +88,16 @@ export function DeviceFormDialog({ clientId, onCreated, trigger, externalOpen, o
     }
   };
 
+  const isEdit = !!editDevice;
   const [form, setForm] = useState({ ...emptyForm, client_id: clientId ?? "" });
   const { user } = useAuth();
   const qc = useQueryClient();
 
   useEffect(() => {
-    if (!open) setForm({ ...emptyForm, client_id: clientId ?? "" });
-  }, [open, clientId]);
+    if (open) {
+      setForm(editDevice ? deviceToForm(editDevice, clientId) : { ...emptyForm, client_id: clientId ?? "" });
+    }
+  }, [open, editDevice, clientId]);
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-select"],
@@ -80,12 +109,12 @@ export function DeviceFormDialog({ clientId, onCreated, trigger, externalOpen, o
         .order("display_name");
       return data ?? [];
     },
-    enabled: !clientId,
+    enabled: !clientId && !isEdit,
   });
 
   const showSpecs = form.device_category === "DESKTOP" || form.device_category === "LAPTOP";
 
-  const createMutation = useMutation({
+  const saveMutation = useMutation({
     mutationFn: async () => {
       const insertData: Record<string, any> = {
         client_id: form.client_id || null,
@@ -96,12 +125,10 @@ export function DeviceFormDialog({ clientId, onCreated, trigger, externalOpen, o
         imei: form.imei || null,
         description: form.description || null,
         notes: form.notes || null,
-        created_by: user?.id,
       };
 
-      // Add hardware specs for desktop/laptop
       if (showSpecs) {
-        insertData.processor = form.cpu || null;
+        insertData.cpu = form.cpu || null;
         insertData.ram_gb = form.ram_gb ? parseInt(form.ram_gb) : null;
         insertData.ram_type = form.ram_type || null;
         insertData.gpu = form.gpu || null;
@@ -115,21 +142,34 @@ export function DeviceFormDialog({ clientId, onCreated, trigger, externalOpen, o
         insertData.specification_notes = form.specification_notes || null;
       }
 
-      const { data, error } = await supabase.from("devices").insert(insertData).select("id").single();
-      if (error) throw error;
-      return data;
+      if (isEdit) {
+        const { error } = await supabase
+          .from("devices")
+          .update({ ...insertData, updated_by: user?.id })
+          .eq("id", editDevice!.id);
+        if (error) throw error;
+        return { id: editDevice!.id };
+      } else {
+        const { data, error } = await supabase.from("devices").insert({ ...insertData, created_by: user?.id }).select("id").single();
+        if (error) throw error;
+        return data;
+      }
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["devices"] });
       qc.invalidateQueries({ queryKey: ["client-devices"] });
       qc.invalidateQueries({ queryKey: ["client-devices-select"] });
-      toast.success("Urządzenie dodane");
-      onCreated?.(data.id);
+      toast.success(isEdit ? "Urządzenie zaktualizowane" : "Urządzenie dodane");
+      if (isEdit) {
+        onUpdated?.();
+      } else {
+        onCreated?.(data.id);
+      }
       setOpen(false);
     },
     onError: (err: any) => {
-      console.error("Device creation error:", err);
-      toast.error(err?.message || "Błąd dodawania urządzenia");
+      console.error("Device save error:", err);
+      toast.error(err?.message || "Błąd zapisu urządzenia");
     },
   });
 
@@ -140,14 +180,14 @@ export function DeviceFormDialog({ clientId, onCreated, trigger, externalOpen, o
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    createMutation.mutate();
+    saveMutation.mutate();
   };
 
   const dialogContent = (
     <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto" onPointerDownOutside={(e) => e.preventDefault()}>
-      <DialogHeader><DialogTitle>Nowe urządzenie</DialogTitle></DialogHeader>
+      <DialogHeader><DialogTitle>{isEdit ? "Edytuj urządzenie" : "Nowe urządzenie"}</DialogTitle></DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {!clientId && (
+        {!clientId && !isEdit && (
           <div>
             <Label>Klient</Label>
             <Select value={form.client_id} onValueChange={(v) => setForm({ ...form, client_id: v })}>
@@ -161,7 +201,6 @@ export function DeviceFormDialog({ clientId, onCreated, trigger, externalOpen, o
           </div>
         )}
 
-        {/* Basic info */}
         <div>
           <Label>Kategoria *</Label>
           <Select value={form.device_category} onValueChange={(v) => setForm({ ...form, device_category: v as DeviceCategory })}>
@@ -182,7 +221,6 @@ export function DeviceFormDialog({ clientId, onCreated, trigger, externalOpen, o
           <div><Label>IMEI</Label><Input value={form.imei} onChange={(e) => setForm({ ...form, imei: e.target.value })} placeholder="Dla telefonów" /></div>
         </div>
 
-        {/* Hardware specs for DESKTOP / LAPTOP */}
         {showSpecs && (
           <div className="rounded-lg border border-border p-4 space-y-3 bg-muted/30">
             <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
@@ -198,9 +236,7 @@ export function DeviceFormDialog({ clientId, onCreated, trigger, externalOpen, o
                 <Label className="text-xs">Typ RAM</Label>
                 <Select value={form.ram_type} onValueChange={(v) => setForm({ ...form, ram_type: v })}>
                   <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Wybierz" /></SelectTrigger>
-                  <SelectContent>
-                    {RAM_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                  </SelectContent>
+                  <SelectContent>{RAM_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div><Label className="text-xs">Płyta główna</Label><Input value={form.motherboard} onChange={(e) => setForm({ ...form, motherboard: e.target.value })} placeholder="np. ASUS B660" className="h-8 text-sm" /></div>
@@ -210,9 +246,7 @@ export function DeviceFormDialog({ clientId, onCreated, trigger, externalOpen, o
                 <Label className="text-xs">Dysk 1 — typ</Label>
                 <Select value={form.storage1_type} onValueChange={(v) => setForm({ ...form, storage1_type: v })}>
                   <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Wybierz" /></SelectTrigger>
-                  <SelectContent>
-                    {STORAGE_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                  </SelectContent>
+                  <SelectContent>{STORAGE_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div><Label className="text-xs">Dysk 1 — pojemność</Label><Input value={form.storage1_size} onChange={(e) => setForm({ ...form, storage1_size: e.target.value })} placeholder="np. 512 GB" className="h-8 text-sm" /></div>
@@ -222,9 +256,7 @@ export function DeviceFormDialog({ clientId, onCreated, trigger, externalOpen, o
                 <Label className="text-xs">Dysk 2 — typ</Label>
                 <Select value={form.storage2_type} onValueChange={(v) => setForm({ ...form, storage2_type: v })}>
                   <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Wybierz" /></SelectTrigger>
-                  <SelectContent>
-                    {STORAGE_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                  </SelectContent>
+                  <SelectContent>{STORAGE_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div><Label className="text-xs">Dysk 2 — pojemność</Label><Input value={form.storage2_size} onChange={(e) => setForm({ ...form, storage2_size: e.target.value })} placeholder="np. 1 TB" className="h-8 text-sm" /></div>
@@ -241,8 +273,8 @@ export function DeviceFormDialog({ clientId, onCreated, trigger, externalOpen, o
         <div><Label>Notatki</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} /></div>
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={() => setOpen(false)}>Anuluj</Button>
-          <Button type="submit" disabled={createMutation.isPending}>
-            {createMutation.isPending ? "Zapisywanie..." : "Dodaj urządzenie"}
+          <Button type="submit" disabled={saveMutation.isPending}>
+            {saveMutation.isPending ? "Zapisywanie..." : isEdit ? "Zapisz zmiany" : "Dodaj urządzenie"}
           </Button>
         </div>
       </form>
@@ -258,9 +290,7 @@ export function DeviceFormDialog({ clientId, onCreated, trigger, externalOpen, o
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => {
-      setOpen(v);
-    }}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger ?? <Button><Plus className="mr-2 h-4 w-4" />Dodaj urządzenie</Button>}
       </DialogTrigger>

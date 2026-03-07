@@ -1,43 +1,28 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, Phone, Mail } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Search, Phone, Mail, Archive, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { CLIENT_TYPE_LABELS, type Client, type ClientInsert, type ClientType } from "@/types/database";
+import { CLIENT_TYPE_LABELS, type Client, type ClientType } from "@/types/database";
 import { Link } from "react-router-dom";
+import { ClientFormDialog } from "@/components/ClientFormDialog";
 
 export default function ClientsPage() {
   const [search, setSearch] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editClient, setEditClient] = useState<Client | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [archiveClient, setArchiveClient] = useState<Client | null>(null);
   const queryClient = useQueryClient();
-  const { user } = useAuth();
 
   const { data: clients, isLoading } = useQuery({
     queryKey: ["clients", search],
@@ -57,19 +42,23 @@ export default function ClientsPage() {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+      return data as Client[];
     },
   });
 
-  const createClient = useMutation({
-    mutationFn: async (data: ClientInsert) => {
-      const { error } = await supabase.from("clients").insert(data);
+  const archiveMutation = useMutation({
+    mutationFn: async (clientId: string) => {
+      const { error } = await supabase
+        .from("clients")
+        .update({ is_archived: true, is_active: false })
+        .eq("id", clientId);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
-      setDialogOpen(false);
-      toast.success("Klient dodany");
+      queryClient.invalidateQueries({ queryKey: ["clients-select"] });
+      toast.success("Klient zarchiwizowany");
+      setArchiveClient(null);
     },
     onError: (err: any) => toast.error(err.message),
   });
@@ -81,22 +70,7 @@ export default function ClientsPage() {
           <h1 className="text-2xl font-bold tracking-tight">Klienci</h1>
           <p className="text-muted-foreground text-sm">{clients?.length ?? 0} klientów</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-1" /> Dodaj klienta
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Nowy klient</DialogTitle>
-            </DialogHeader>
-            <ClientForm
-              onSubmit={(data) => createClient.mutate({ ...data, created_by: user?.id })}
-              loading={createClient.isPending}
-            />
-          </DialogContent>
-        </Dialog>
+        <ClientFormDialog />
       </div>
 
       <div className="mb-4 relative max-w-sm">
@@ -119,20 +93,21 @@ export default function ClientsPage() {
               <TableHead>E-mail</TableHead>
               <TableHead>Miasto</TableHead>
               <TableHead>NIP</TableHead>
+              <TableHead className="w-20">Akcje</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">Ładowanie...</TableCell>
+                <TableCell colSpan={7} className="text-center text-muted-foreground">Ładowanie...</TableCell>
               </TableRow>
             ) : !clients?.length ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">Brak klientów</TableCell>
+                <TableCell colSpan={7} className="text-center text-muted-foreground">Brak klientów</TableCell>
               </TableRow>
             ) : (
               clients.map((client) => (
-                <TableRow key={client.id} className="cursor-pointer hover:bg-muted/50">
+                <TableRow key={client.id} className="hover:bg-muted/50">
                   <TableCell>
                     <Link to={`/clients/${client.id}`} className="font-medium text-primary hover:underline">
                       {client.display_name}
@@ -159,105 +134,51 @@ export default function ClientsPage() {
                   </TableCell>
                   <TableCell className="text-sm">{client.address_city}</TableCell>
                   <TableCell className="text-sm font-mono">{client.nip}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditClient(client); setEditDialogOpen(true); }}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setArchiveClient(client)}>
+                        <Archive className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
       </div>
+
+      {/* Edit dialog — uses shared ClientFormDialog */}
+      <ClientFormDialog
+        externalOpen={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        editClient={editClient}
+        onUpdated={() => {
+          queryClient.invalidateQueries({ queryKey: ["clients"] });
+          setEditDialogOpen(false);
+        }}
+      />
+
+      {/* Archive confirmation */}
+      <AlertDialog open={!!archiveClient} onOpenChange={(o) => !o && setArchiveClient(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archiwizować klienta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Klient „{archiveClient?.display_name}" zostanie zarchiwizowany i ukryty z listy. Powiązane zlecenia i urządzenia pozostaną w systemie.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction onClick={() => archiveClient && archiveMutation.mutate(archiveClient.id)}>
+              Archiwizuj
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
-  );
-}
-
-function ClientForm({ onSubmit, loading }: { onSubmit: (data: ClientInsert) => void; loading: boolean }) {
-  const [clientType, setClientType] = useState<ClientType>("PRIVATE");
-  const [formData, setFormData] = useState<Partial<ClientInsert>>({});
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit({ ...formData, client_type: clientType } as ClientInsert);
-  };
-
-  const set = (field: keyof ClientInsert, value: string) =>
-    setFormData((prev) => ({ ...prev, [field]: value }));
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-1.5">
-        <Label>Typ klienta</Label>
-        <Select value={clientType} onValueChange={(v) => setClientType(v as ClientType)}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="PRIVATE">Osoba prywatna</SelectItem>
-            <SelectItem value="COMPANY">Firma</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {clientType === "COMPANY" && (
-        <>
-          <div className="space-y-1.5">
-            <Label>Nazwa firmy *</Label>
-            <Input required onChange={(e) => set("company_name", e.target.value)} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>NIP</Label>
-              <Input onChange={(e) => set("nip", e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>REGON</Label>
-              <Input onChange={(e) => set("regon", e.target.value)} />
-            </div>
-          </div>
-        </>
-      )}
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label>{clientType === "COMPANY" ? "Imię kontaktowe" : "Imię *"}</Label>
-          <Input required={clientType === "PRIVATE"} onChange={(e) => set("first_name", e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label>{clientType === "COMPANY" ? "Nazwisko kontaktowe" : "Nazwisko *"}</Label>
-          <Input required={clientType === "PRIVATE"} onChange={(e) => set("last_name", e.target.value)} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label>Telefon</Label>
-          <Input onChange={(e) => set("phone", e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label>E-mail</Label>
-          <Input type="email" onChange={(e) => set("email", e.target.value)} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-3">
-        <div className="space-y-1.5">
-          <Label>Ulica</Label>
-          <Input onChange={(e) => set("address_street", e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Kod pocztowy</Label>
-          <Input onChange={(e) => set("address_postal_code", e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Miasto</Label>
-          <Input onChange={(e) => set("address_city", e.target.value)} />
-        </div>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label>Uwagi</Label>
-        <Textarea rows={2} onChange={(e) => set("notes", e.target.value)} />
-      </div>
-
-      <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? "Zapisywanie..." : "Zapisz klienta"}
-      </Button>
-    </form>
   );
 }

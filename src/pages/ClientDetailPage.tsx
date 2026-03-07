@@ -1,26 +1,40 @@
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Phone, Mail, MapPin, Building2 } from "lucide-react";
-import { CLIENT_TYPE_LABELS, DEVICE_CATEGORY_LABELS, type ClientType, type DeviceCategory } from "@/types/database";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ArrowLeft, Phone, Mail, MapPin, Building2, Pencil, Archive } from "lucide-react";
+import { toast } from "sonner";
+import { CLIENT_TYPE_LABELS, DEVICE_CATEGORY_LABELS, type Client, type ClientType, type Device, type DeviceCategory } from "@/types/database";
 import { OrderStatusBadge } from "@/pages/DashboardPage";
+import { ClientFormDialog } from "@/components/ClientFormDialog";
 import { DeviceFormDialog } from "@/components/DeviceFormDialog";
 
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const queryClient = useQueryClient();
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editDeviceDialogOpen, setEditDeviceDialogOpen] = useState(false);
+  const [editDevice, setEditDevice] = useState<Device | null>(null);
+  const [archiveDevice, setArchiveDevice] = useState<Device | null>(null);
 
   const { data: client, isLoading } = useQuery({
     queryKey: ["client", id],
     queryFn: async () => {
       const { data, error } = await supabase.from("clients").select("*").eq("id", id!).single();
       if (error) throw error;
-      return data;
+      return data as Client;
     },
     enabled: !!id,
   });
@@ -32,8 +46,9 @@ export default function ClientDetailPage() {
         .from("devices")
         .select("*")
         .eq("client_id", id!)
+        .eq("is_archived", false)
         .order("created_at", { ascending: false });
-      return data ?? [];
+      return (data ?? []) as Device[];
     },
     enabled: !!id,
   });
@@ -51,7 +66,20 @@ export default function ClientDetailPage() {
     enabled: !!id,
   });
 
-  // Count orders per device
+  const archiveDeviceMutation = useMutation({
+    mutationFn: async (deviceId: string) => {
+      const { error } = await supabase.from("devices").update({ is_archived: true }).eq("id", deviceId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["client-devices", id] });
+      queryClient.invalidateQueries({ queryKey: ["devices"] });
+      toast.success("Urządzenie zarchiwizowane");
+      setArchiveDevice(null);
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   function getDeviceOrderCount(deviceId: string) {
     return orders.filter((o: any) => o.device_id === deviceId).length;
   }
@@ -76,6 +104,9 @@ export default function ClientDetailPage() {
             <Badge variant="secondary">{CLIENT_TYPE_LABELS[client.client_type as ClientType]}</Badge>
           </div>
         </div>
+        <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(true)}>
+          <Pencil className="mr-1 h-4 w-4" /> Edytuj klienta
+        </Button>
       </div>
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 mb-6">
@@ -165,13 +196,14 @@ export default function ClientDetailPage() {
                   <TableHead>Zlecenia</TableHead>
                   <TableHead>Ostatnie zlecenie</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="w-20">Akcje</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {!devices.length ? (
-                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Brak urządzeń</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Brak urządzeń</TableCell></TableRow>
                 ) : (
-                  devices.map((device: any) => {
+                  devices.map((device) => {
                     const orderCount = getDeviceOrderCount(device.id);
                     const lastOrder = getLastOrder(device.id);
                     return (
@@ -180,9 +212,7 @@ export default function ClientDetailPage() {
                         <TableCell>{device.manufacturer ?? "—"}</TableCell>
                         <TableCell>{device.model ?? "—"}</TableCell>
                         <TableCell className="font-mono text-sm">{device.serial_number ?? "—"}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{orderCount}</Badge>
-                        </TableCell>
+                        <TableCell><Badge variant="secondary">{orderCount}</Badge></TableCell>
                         <TableCell>
                           {lastOrder ? (
                             <Link to={`/orders/${lastOrder.id}`} className="text-primary hover:underline text-sm font-mono">
@@ -191,6 +221,16 @@ export default function ClientDetailPage() {
                           ) : "—"}
                         </TableCell>
                         <TableCell><Badge variant="secondary">{device.status}</Badge></TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditDevice(device); setEditDeviceDialogOpen(true); }}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setArchiveDevice(device)}>
+                              <Archive className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     );
                   })
@@ -200,6 +240,47 @@ export default function ClientDetailPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Edit client dialog */}
+      <ClientFormDialog
+        externalOpen={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        editClient={client}
+        onUpdated={() => {
+          queryClient.invalidateQueries({ queryKey: ["client", id] });
+          setEditDialogOpen(false);
+        }}
+      />
+
+      {/* Edit device dialog */}
+      <DeviceFormDialog
+        clientId={id}
+        externalOpen={editDeviceDialogOpen}
+        onOpenChange={setEditDeviceDialogOpen}
+        editDevice={editDevice}
+        onUpdated={() => {
+          queryClient.invalidateQueries({ queryKey: ["client-devices", id] });
+          setEditDeviceDialogOpen(false);
+        }}
+      />
+
+      {/* Archive device confirmation */}
+      <AlertDialog open={!!archiveDevice} onOpenChange={(o) => !o && setArchiveDevice(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archiwizować urządzenie?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Urządzenie „{archiveDevice?.manufacturer} {archiveDevice?.model}" zostanie zarchiwizowane i ukryte z listy.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction onClick={() => archiveDevice && archiveDeviceMutation.mutate(archiveDevice.id)}>
+              Archiwizuj
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

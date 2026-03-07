@@ -1,18 +1,29 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Search } from "lucide-react";
-import { DEVICE_CATEGORY_LABELS, type DeviceCategory } from "@/types/database";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Search, Pencil, Archive } from "lucide-react";
+import { toast } from "sonner";
+import { DEVICE_CATEGORY_LABELS, type Device, type DeviceCategory } from "@/types/database";
 import { Link } from "react-router-dom";
 import { DeviceFormDialog } from "@/components/DeviceFormDialog";
 
 export default function DevicesPage() {
   const [search, setSearch] = useState("");
+  const [editDevice, setEditDevice] = useState<Device | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [archiveDevice, setArchiveDevice] = useState<Device | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: devices, isLoading } = useQuery({
     queryKey: ["devices", search],
@@ -31,8 +42,21 @@ export default function DevicesPage() {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+      return data as (Device & { clients: { display_name: string } | null })[];
     },
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: async (deviceId: string) => {
+      const { error } = await supabase.from("devices").update({ is_archived: true }).eq("id", deviceId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["devices"] });
+      toast.success("Urządzenie zarchiwizowane");
+      setArchiveDevice(null);
+    },
+    onError: (err: any) => toast.error(err.message),
   });
 
   const statusLabels: Record<string, string> = {
@@ -78,15 +102,16 @@ export default function DevicesPage() {
               <TableHead>IMEI</TableHead>
               <TableHead>Klient</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead className="w-20">Akcje</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Ładowanie...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Ładowanie...</TableCell></TableRow>
             ) : !devices?.length ? (
-              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Brak urządzeń</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Brak urządzeń</TableCell></TableRow>
             ) : (
-              devices.map((device: any) => (
+              devices.map((device) => (
                 <TableRow key={device.id} className="hover:bg-muted/50">
                   <TableCell>
                     <Badge variant="secondary">
@@ -109,12 +134,51 @@ export default function DevicesPage() {
                       {statusLabels[device.status] ?? device.status}
                     </span>
                   </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditDevice(device); setEditDialogOpen(true); }}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setArchiveDevice(device)}>
+                        <Archive className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
       </div>
+
+      {/* Edit dialog */}
+      <DeviceFormDialog
+        externalOpen={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        editDevice={editDevice}
+        onUpdated={() => {
+          queryClient.invalidateQueries({ queryKey: ["devices"] });
+          setEditDialogOpen(false);
+        }}
+      />
+
+      {/* Archive confirmation */}
+      <AlertDialog open={!!archiveDevice} onOpenChange={(o) => !o && setArchiveDevice(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archiwizować urządzenie?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Urządzenie „{archiveDevice?.manufacturer} {archiveDevice?.model}" zostanie zarchiwizowane i ukryte z listy.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction onClick={() => archiveDevice && archiveMutation.mutate(archiveDevice.id)}>
+              Archiwizuj
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
