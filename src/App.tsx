@@ -16,6 +16,7 @@ import OrderDetailPage from "@/pages/OrderDetailPage";
 import ITWorkPage from "@/pages/ITWorkPage";
 import InventoryPage from "@/pages/InventoryPage";
 import OffersPage from "@/pages/OffersPage";
+import CashRegisterPage from "@/pages/CashRegisterPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,6 +58,7 @@ const App = () => (
             <Route path="/it-work" element={<ITWorkPage />} />
             <Route path="/inventory" element={<InventoryPage />} />
             <Route path="/offers" element={<OffersPage />} />
+            <Route path="/cash" element={<CashRegisterPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
