@@ -13,6 +13,7 @@ import DevicesPage from "@/pages/DevicesPage";
 import ServiceOrdersPage from "@/pages/ServiceOrdersPage";
 import KanbanPage from "@/pages/KanbanPage";
 import OrderDetailPage from "@/pages/OrderDetailPage";
+import ITWorkPage from "@/pages/ITWorkPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/orders" element={<ServiceOrdersPage />} />
             <Route path="/orders/kanban" element={<KanbanPage />} />
             <Route path="/orders/:id" element={<OrderDetailPage />} />
+            <Route path="/it-work" element={<ITWorkPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
