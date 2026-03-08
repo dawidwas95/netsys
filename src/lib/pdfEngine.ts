@@ -341,6 +341,13 @@ export async function generateOrderPDF({ order, orderItems, financials }: OrderP
   const b = new PdfBuilder(doc, fontFamily, s);
   const enabledSections = new Set(config.sections.filter(sec => sec.enabled).map(sec => sec.id));
 
+  // Generate QR code
+  let qrDataUrl: string | null = null;
+  try {
+    const orderUrl = `${window.location.origin}/orders/${order.id}`;
+    qrDataUrl = await QRCode.toDataURL(orderUrl, { width: 200, margin: 1, errorCorrectionLevel: "M" });
+  } catch {}
+
   for (const section of config.sections) {
     if (!section.enabled) continue;
 
