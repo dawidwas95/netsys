@@ -141,7 +141,7 @@ export default function WarehouseDocumentsPage() {
         const { data: oldItems } = await supabase.from("warehouse_document_items" as any).select("id").eq("warehouse_document_id", editId);
         if (oldItems?.length) {
           for (const oi of oldItems) {
-            await supabase.from("inventory_movements").delete().eq("source_id", oi.id).eq("source_type", "DOCUMENT");
+            await supabase.from("inventory_movements").delete().eq("source_id", (oi as any).id).eq("source_type", "DOCUMENT" as any);
           }
           await supabase.from("warehouse_document_items" as any).delete().eq("warehouse_document_id", editId);
         }
