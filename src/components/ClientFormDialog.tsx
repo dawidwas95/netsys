@@ -37,6 +37,8 @@ const emptyForm = {
   nip: "",
   regon: "",
   address_street: "",
+  address_building: "",
+  address_local: "",
   address_city: "",
   address_postal_code: "",
   address_country: "Polska",
