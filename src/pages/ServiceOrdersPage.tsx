@@ -311,7 +311,7 @@ export default function ServiceOrdersPage() {
                       <Link to={`/orders/${order.id}`} className="font-medium text-primary hover:underline font-mono">
                         {order.order_number}
                       </Link>
-                      <ScheduleBadge date={(order as any).planned_execution_date} time={(order as any).planned_execution_time} />
+                      <ScheduleBadgeWithAction orderId={order.id} orderNumber={order.order_number} date={(order as any).planned_execution_date} time={(order as any).planned_execution_time} />
                     </div>
                   </TableCell>
                   <TableCell className="text-xs">{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</TableCell>
