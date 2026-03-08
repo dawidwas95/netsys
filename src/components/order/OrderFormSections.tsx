@@ -282,7 +282,7 @@ export function DescriptionSection({ formData, onChange }: { formData: Record<st
           <div className="space-y-1"><Label className="text-xs">Stan wizualny</Label><Input value={formData.visual_condition ?? ""} onChange={(e) => onChange("visual_condition", e.target.value)} placeholder="np. zarysowania, pęknięcia" className="h-9" /></div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="space-y-1"><Label className="text-xs">Kod blokady / hasło</Label><Input value={formData.lock_code ?? ""} onChange={(e) => onChange("lock_code", e.target.value)} placeholder="PIN, wzór, hasło" className="h-9" /></div>
+          <LockCodeField value={formData.lock_code ?? ""} onChange={(v) => onChange("lock_code", v)} />
         </div>
         <div className="space-y-1"><Label className="text-xs">Notatki wewnętrzne</Label><Textarea rows={2} value={formData.internal_notes ?? ""} onChange={(e) => onChange("internal_notes", e.target.value)} placeholder="Notatki widoczne tylko dla serwisu" /></div>
       </div>
