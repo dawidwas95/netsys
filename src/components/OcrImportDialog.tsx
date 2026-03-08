@@ -18,8 +18,10 @@ export interface OcrExtractedData {
   issue_date: string | null;
   sale_date: string | null;
   due_date: string | null;
-  contractor_name: string | null;
-  contractor_nip: string | null;
+  seller_name: string | null;
+  seller_nip: string | null;
+  buyer_name: string | null;
+  buyer_nip: string | null;
   net_amount: number | null;
   vat_amount: number | null;
   gross_amount: number | null;
@@ -35,7 +37,8 @@ export interface OcrExtractedData {
   confidence: {
     document_number: string;
     dates: string;
-    contractor: string;
+    seller: string;
+    buyer: string;
     amounts: string;
     line_items: string;
   };
@@ -93,8 +96,7 @@ export function OcrImportDialog({ open, onOpenChange, onDataExtracted }: OcrImpo
     setProgress(10);
 
     try {
-      // Validate file
-      const maxSize = 10 * 1024 * 1024; // 10MB
+      const maxSize = 10 * 1024 * 1024;
       if (file.size > maxSize) {
         throw new Error("Plik jest zbyt duży. Maksymalny rozmiar to 10 MB.");
       }
@@ -105,17 +107,11 @@ export function OcrImportDialog({ open, onOpenChange, onDataExtracted }: OcrImpo
       }
 
       setProgress(30);
-
-      // Convert to base64
       const base64 = await fileToBase64(file);
       setProgress(50);
 
-      // Call edge function
       const { data: fnData, error: fnError } = await supabase.functions.invoke("ocr-invoice", {
-        body: {
-          image_base64: base64,
-          mime_type: file.type || "application/pdf",
-        },
+        body: { image_base64: base64, mime_type: file.type || "application/pdf" },
       });
 
       setProgress(90);
@@ -127,14 +123,27 @@ export function OcrImportDialog({ open, onOpenChange, onDataExtracted }: OcrImpo
       if (!extracted) throw new Error("Brak danych w odpowiedzi OCR");
 
       const ocrResult: OcrExtractedData = {
-        ...extracted,
+        document_number: extracted.document_number || null,
+        document_type: extracted.document_type || null,
+        issue_date: extracted.issue_date || null,
+        sale_date: extracted.sale_date || null,
+        due_date: extracted.due_date || null,
+        seller_name: extracted.seller_name || extracted.contractor_name || null,
+        seller_nip: extracted.seller_nip || extracted.contractor_nip || null,
+        buyer_name: extracted.buyer_name || null,
+        buyer_nip: extracted.buyer_nip || null,
+        net_amount: extracted.net_amount ?? null,
+        vat_amount: extracted.vat_amount ?? null,
+        gross_amount: extracted.gross_amount ?? null,
+        payment_method: extracted.payment_method || null,
         line_items: extracted.line_items || [],
-        confidence: extracted.confidence || {
-          document_number: "low",
-          dates: "low",
-          contractor: "low",
-          amounts: "low",
-          line_items: "low",
+        confidence: {
+          document_number: extracted.confidence?.document_number || "low",
+          dates: extracted.confidence?.dates || "low",
+          seller: extracted.confidence?.seller || extracted.confidence?.contractor || "low",
+          buyer: extracted.confidence?.buyer || "low",
+          amounts: extracted.confidence?.amounts || "low",
+          line_items: extracted.confidence?.line_items || "low",
         },
         sourceFile: file,
       };
@@ -225,11 +234,7 @@ export function OcrImportDialog({ open, onOpenChange, onDataExtracted }: OcrImpo
                 <p className="font-medium">Przeciągnij fakturę tutaj</p>
                 <p className="text-sm text-muted-foreground mt-1">lub wybierz plik z dysku</p>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-              >
+              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
                 <ScanLine className="h-4 w-4 mr-2" />
                 Wybierz plik
               </Button>
@@ -269,7 +274,6 @@ export function OcrImportDialog({ open, onOpenChange, onDataExtracted }: OcrImpo
 
         {result && (
           <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-            {/* Confidence warnings */}
             {lowConfidenceFields.length > 0 && (
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
@@ -280,7 +284,8 @@ export function OcrImportDialog({ open, onOpenChange, onDataExtracted }: OcrImpo
                     const labels: Record<string, string> = {
                       document_number: "numer dokumentu",
                       dates: "daty",
-                      contractor: "kontrahent",
+                      seller: "sprzedawca",
+                      buyer: "nabywca",
                       amounts: "kwoty",
                       line_items: "pozycje",
                     };
@@ -290,13 +295,8 @@ export function OcrImportDialog({ open, onOpenChange, onDataExtracted }: OcrImpo
               </Alert>
             )}
 
-            {/* Extracted header */}
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <DataField
-                label="Numer dokumentu"
-                value={result.document_number}
-                confidence={result.confidence.document_number}
-              />
+              <DataField label="Numer dokumentu" value={result.document_number} confidence={result.confidence.document_number} />
               <DataField
                 label="Typ"
                 value={
@@ -314,10 +314,28 @@ export function OcrImportDialog({ open, onOpenChange, onDataExtracted }: OcrImpo
               <DataField label="Metoda płatności" value={result.payment_method} confidence="medium" />
             </div>
 
+            {/* Seller */}
             <div className="rounded-lg border border-border p-3 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Kontrahent</p>
-              <DataField label="Nazwa" value={result.contractor_name} confidence={result.confidence.contractor} />
-              <DataField label="NIP" value={result.contractor_nip} confidence={result.confidence.contractor} />
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Sprzedawca</p>
+                <Badge className={CONFIDENCE_COLORS[result.confidence.seller]} variant="secondary">
+                  {CONFIDENCE_LABELS[result.confidence.seller]}
+                </Badge>
+              </div>
+              <DataField label="Nazwa" value={result.seller_name} confidence={result.confidence.seller} />
+              <DataField label="NIP" value={result.seller_nip} confidence={result.confidence.seller} />
+            </div>
+
+            {/* Buyer */}
+            <div className="rounded-lg border border-border p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Nabywca</p>
+                <Badge className={CONFIDENCE_COLORS[result.confidence.buyer]} variant="secondary">
+                  {CONFIDENCE_LABELS[result.confidence.buyer]}
+                </Badge>
+              </div>
+              <DataField label="Nazwa" value={result.buyer_name} confidence={result.confidence.buyer} />
+              <DataField label="NIP" value={result.buyer_nip} confidence={result.confidence.buyer} />
             </div>
 
             <div className="rounded-lg border border-border p-3 space-y-2">
@@ -353,7 +371,6 @@ export function OcrImportDialog({ open, onOpenChange, onDataExtracted }: OcrImpo
               </div>
             )}
 
-            {/* Source file info */}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               {result.sourceFile.type?.startsWith("image/") ? <Image className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
               <span>{result.sourceFile.name}</span>

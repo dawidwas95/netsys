@@ -97,9 +97,9 @@ const TYPE_CONFIG: Record<string, {
   showInventoryType: boolean;
   showPayment: boolean;
 }> = {
-  PURCHASE_INVOICE: { contractorLabel: "Dostawca", dateLabel: "Data zakupu", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje zakupu", direction: "EXPENSE", showInventoryType: true, showPayment: true },
-  SALES_INVOICE: { contractorLabel: "Klient", dateLabel: "Data sprzedaży", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje sprzedaży", direction: "INCOME", showInventoryType: true, showPayment: true },
-  PROFORMA: { contractorLabel: "Klient", dateLabel: "Data wystawienia", dueDateLabel: "Termin ważności", itemsLabel: "Pozycje", direction: "INCOME", showInventoryType: true, showPayment: false },
+  PURCHASE_INVOICE: { contractorLabel: "Sprzedawca", dateLabel: "Data zakupu", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje zakupu", direction: "EXPENSE", showInventoryType: true, showPayment: true },
+  SALES_INVOICE: { contractorLabel: "Nabywca", dateLabel: "Data sprzedaży", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje sprzedaży", direction: "INCOME", showInventoryType: true, showPayment: true },
+  PROFORMA: { contractorLabel: "Nabywca", dateLabel: "Data wystawienia", dueDateLabel: "Termin ważności", itemsLabel: "Pozycje", direction: "INCOME", showInventoryType: true, showPayment: false },
   CORRECTION: { contractorLabel: "Kontrahent", dateLabel: "Data wystawienia", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje korekty", direction: "INCOME", showInventoryType: true, showPayment: true },
   RECEIPT: { contractorLabel: "Kontrahent", dateLabel: "Data wystawienia", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje", direction: "INCOME", showInventoryType: true, showPayment: true },
   OTHER: { contractorLabel: "Kontrahent", dateLabel: "Data wystawienia", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje", direction: "INCOME", showInventoryType: true, showPayment: true },
@@ -113,6 +113,8 @@ interface Document {
   client_id: string | null;
   contractor_name: string | null;
   contractor_nip: string | null;
+  buyer_name: string | null;
+  buyer_nip: string | null;
   issue_date: string;
   sale_date: string | null;
   due_date: string | null;
@@ -152,6 +154,8 @@ const emptyForm = {
   client_id: "",
   contractor_name: "",
   contractor_nip: "",
+  buyer_name: "",
+  buyer_nip: "",
   issue_date: new Date().toISOString().split("T")[0],
   sale_date: "",
   due_date: "",
@@ -228,6 +232,14 @@ export default function DocumentsPage() {
 
   const { data: attachmentCounts = {} } = useDocumentAttachmentCounts();
 
+  const { data: companySettings } = useQuery({
+    queryKey: ["company-settings"],
+    queryFn: async () => {
+      const { data } = await supabase.from("company_settings").select("*").limit(1).maybeSingle();
+      return data;
+    },
+  });
+
   const { data: inventoryItems = [] } = useQuery({
     queryKey: ["inventory-items-select"],
     queryFn: async () => {
@@ -278,6 +290,8 @@ export default function DocumentsPage() {
         client_id: values.client_id || null,
         contractor_name: values.contractor_name || null,
         contractor_nip: values.contractor_nip || null,
+        buyer_name: values.buyer_name || null,
+        buyer_nip: values.buyer_nip || null,
         issue_date: values.issue_date,
         sale_date: values.sale_date || null,
         due_date: values.due_date || null,
@@ -442,7 +456,10 @@ export default function DocumentsPage() {
 
   function openNewDocument(docType: DocType) {
     const cfg = TYPE_CONFIG[docType] || TYPE_CONFIG.OTHER;
-    setForm({ ...emptyForm, document_type: docType, direction: cfg.direction });
+    const buyerDefaults = (docType === "PURCHASE_INVOICE" && companySettings)
+      ? { buyer_name: companySettings.company_name || "", buyer_nip: companySettings.nip || "" }
+      : {};
+    setForm({ ...emptyForm, document_type: docType, direction: cfg.direction, ...buyerDefaults });
     setEditId(null);
     setLineItems([{ ...emptyLineItem }]);
     setTypePickerOpen(false);
@@ -454,6 +471,7 @@ export default function DocumentsPage() {
     setForm({
       document_number: doc.document_number, document_type: doc.document_type, direction: doc.direction,
       client_id: doc.client_id ?? "", contractor_name: doc.contractor_name ?? "", contractor_nip: doc.contractor_nip ?? "",
+      buyer_name: doc.buyer_name ?? "", buyer_nip: doc.buyer_nip ?? "",
       issue_date: doc.issue_date, sale_date: doc.sale_date ?? "", due_date: doc.due_date ?? "",
       received_date: doc.received_date ?? "", net_amount: doc.net_amount.toString(), vat_rate: doc.vat_rate.toString(),
       payment_status: doc.payment_status, payment_method: doc.payment_method ?? "", paid_amount: doc.paid_amount.toString(),
@@ -519,6 +537,11 @@ export default function DocumentsPage() {
   function handleOcrData(data: OcrExtractedData) {
     const docType = (data.document_type as DocType) || "PURCHASE_INVOICE";
     const cfg = TYPE_CONFIG[docType] || TYPE_CONFIG.OTHER;
+
+    // For purchase invoices: seller = contractor (external party), buyer = our company
+    // For sales invoices: seller = our company, buyer = contractor (external party)
+    const isPurchase = docType === "PURCHASE_INVOICE";
+
     setForm({
       ...emptyForm,
       document_type: docType,
@@ -527,8 +550,12 @@ export default function DocumentsPage() {
       issue_date: data.issue_date || new Date().toISOString().split("T")[0],
       sale_date: data.sale_date || "",
       due_date: data.due_date || "",
-      contractor_name: data.contractor_name || "",
-      contractor_nip: data.contractor_nip || "",
+      // For purchase: contractor = seller, buyer = nabywca
+      // For sales: contractor = buyer, buyer (our company) = seller
+      contractor_name: isPurchase ? (data.seller_name || "") : (data.buyer_name || ""),
+      contractor_nip: isPurchase ? (data.seller_nip || "") : (data.buyer_nip || ""),
+      buyer_name: isPurchase ? (data.buyer_name || "") : (data.seller_name || ""),
+      buyer_nip: isPurchase ? (data.buyer_nip || "") : (data.seller_nip || ""),
       net_amount: data.net_amount != null ? data.net_amount.toString() : "",
       vat_rate: data.net_amount && data.vat_amount
         ? ((data.vat_amount / data.net_amount) * 100).toFixed(0)
@@ -538,9 +565,10 @@ export default function DocumentsPage() {
       paid_amount: "",
     });
 
-    // Match contractor by NIP
-    if (data.contractor_nip) {
-      const match = clients.find((c: any) => c.nip === data.contractor_nip);
+    // Match contractor by NIP (the external party)
+    const contractorNip = isPurchase ? data.seller_nip : data.buyer_nip;
+    if (contractorNip) {
+      const match = clients.find((c: any) => c.nip === contractorNip);
       if (match) {
         setForm(prev => ({
           ...prev,
@@ -549,6 +577,15 @@ export default function DocumentsPage() {
         }));
         toast.info(`Dopasowano kontrahenta: ${match.display_name || match.company_name}`);
       }
+    }
+
+    // If buyer not detected for purchase invoices, prefill from company settings
+    if (isPurchase && !data.buyer_name && companySettings) {
+      setForm(prev => ({
+        ...prev,
+        buyer_name: companySettings.company_name || "",
+        buyer_nip: companySettings.nip || "",
+      }));
     }
 
     // Set line items if available
@@ -818,10 +855,17 @@ export default function DocumentsPage() {
                   <p className="font-medium">{DIRECTION_LABELS[(TYPE_CONFIG[previewDoc.document_type] || TYPE_CONFIG.OTHER).direction]}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Kontrahent</p>
+                  <p className="text-muted-foreground">{(TYPE_CONFIG[previewDoc.document_type] || TYPE_CONFIG.OTHER).contractorLabel}</p>
                   <p className="font-medium">{previewDoc.contractor_name || getClientName(previewDoc.clients)}</p>
                   {previewDoc.contractor_nip && <p className="text-xs text-muted-foreground">NIP: {previewDoc.contractor_nip}</p>}
                 </div>
+                {(previewDoc.buyer_name || previewDoc.buyer_nip) && (
+                  <div>
+                    <p className="text-muted-foreground">Nabywca</p>
+                    <p className="font-medium">{previewDoc.buyer_name || "—"}</p>
+                    {previewDoc.buyer_nip && <p className="text-xs text-muted-foreground">NIP: {previewDoc.buyer_nip}</p>}
+                  </div>
+                )}
                 <div>
                   <p className="text-muted-foreground">Status płatności</p>
                   <Badge className={PAYMENT_STATUS_COLORS[previewDoc.payment_status]} variant="secondary">{PAYMENT_STATUS_LABELS[previewDoc.payment_status]}</Badge>
@@ -1081,6 +1125,31 @@ export default function DocumentsPage() {
                         </div>
                       )}
                     </div>
+                  </div>
+
+                  {/* Section: Nabywca (Buyer) */}
+                  <Separator />
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      Nabywca
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Nazwa nabywcy</Label>
+                        <Input value={form.buyer_name} onChange={e => setForm({ ...form, buyer_name: e.target.value })} placeholder="np. W3-Support" className="h-10" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">NIP nabywcy</Label>
+                        <Input value={form.buyer_nip} onChange={e => setForm({ ...form, buyer_nip: e.target.value })} placeholder="000-000-00-00" className="h-10 font-mono" />
+                      </div>
+                    </div>
+                    {companySettings && !form.buyer_name && (
+                      <Button type="button" variant="link" size="sm" className="text-xs mt-1 h-auto p-0"
+                        onClick={() => setForm({ ...form, buyer_name: companySettings.company_name || "", buyer_nip: companySettings.nip || "" })}>
+                        Użyj: {companySettings.company_name}
+                      </Button>
+                    )}
                   </div>
 
                   <Separator />

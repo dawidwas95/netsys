@@ -15,7 +15,15 @@ serve(async (req) => {
     const { image_base64, mime_type } = await req.json();
     if (!image_base64) throw new Error("No image data provided");
 
-    const systemPrompt = `You are an expert invoice OCR system. Analyze the provided invoice image and extract structured data.
+    const systemPrompt = `You are an expert invoice OCR system specialized in Polish invoices (faktury). Analyze the provided invoice image and extract structured data.
+
+IMPORTANT: Polish invoices have two clearly labeled parties:
+- SPRZEDAWCA (Seller/Vendor) — the company issuing the invoice
+- NABYWCA (Buyer/Customer) — the company receiving goods/services
+
+Look for section headers like:
+- "Sprzedawca", "Seller", "Vendor", "Wystawca" → map to seller
+- "Nabywca", "Buyer", "Customer", "Odbiorca", "Płatnik" → map to buyer
 
 Return a JSON object with these fields (use null for fields you cannot find or are uncertain about):
 
@@ -25,8 +33,10 @@ Return a JSON object with these fields (use null for fields you cannot find or a
   "issue_date": "YYYY-MM-DD or null",
   "sale_date": "YYYY-MM-DD or null",
   "due_date": "YYYY-MM-DD or null",
-  "contractor_name": "string or null - company/person name",
-  "contractor_nip": "string or null - tax ID (NIP), digits only",
+  "seller_name": "string or null - company/person name from SPRZEDAWCA section",
+  "seller_nip": "string or null - tax ID (NIP) from SPRZEDAWCA section, digits only",
+  "buyer_name": "string or null - company/person name from NABYWCA section",
+  "buyer_nip": "string or null - tax ID (NIP) from NABYWCA section, digits only",
   "net_amount": "number or null",
   "vat_amount": "number or null",
   "gross_amount": "number or null",
@@ -44,7 +54,8 @@ Return a JSON object with these fields (use null for fields you cannot find or a
   "confidence": {
     "document_number": "high or medium or low",
     "dates": "high or medium or low",
-    "contractor": "high or medium or low",
+    "seller": "high or medium or low",
+    "buyer": "high or medium or low",
     "amounts": "high or medium or low",
     "line_items": "high or medium or low"
   }
@@ -54,6 +65,7 @@ Rules:
 - Extract Polish invoices (faktury). Dates in Polish format DD.MM.YYYY should be converted to YYYY-MM-DD.
 - NIP should contain only digits (remove dashes/spaces).
 - Amounts should be numbers without currency symbols.
+- ALWAYS try to identify SPRZEDAWCA and NABYWCA separately. Do NOT merge them.
 - For line_items, extract what you can see. If uncertain, return empty array.
 - Be conservative with confidence ratings. If text is blurry or partially visible, mark as "low".
 - Return ONLY valid JSON, no markdown, no explanation.`;
@@ -71,7 +83,7 @@ Rules:
           {
             role: "user",
             content: [
-              { type: "text", text: "Extract invoice data from this document image. Return only JSON." },
+              { type: "text", text: "Extract invoice data from this document image. Identify Sprzedawca (seller) and Nabywca (buyer) separately. Return only JSON." },
               {
                 type: "image_url",
                 image_url: {
@@ -123,6 +135,12 @@ Rules:
         status: 422,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Backward compatibility: if old format with contractor_name/nip, map to seller
+    if (parsed.contractor_name && !parsed.seller_name) {
+      parsed.seller_name = parsed.contractor_name;
+      parsed.seller_nip = parsed.contractor_nip;
     }
 
     return new Response(JSON.stringify({ data: parsed }), {
