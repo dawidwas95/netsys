@@ -362,30 +362,29 @@ export async function generateOrderPDF({ order, orderItems, financials }: OrderP
         doc.rect(0, 0, b.pageW, 2, "F");
 
         // Company info - left side
-        b.y = s.margins.top + 2;
-        b.setFont("bold", 14, PdfBuilder.PRIMARY);
+        b.y = s.margins.top;
+        b.setFont("bold", 12, PdfBuilder.PRIMARY);
         doc.text(company.company_name, b.ml, b.y);
-        b.y += 5.5;
+        b.y += 4.5;
 
-        b.setFont("normal", 7.5, PdfBuilder.GRAY);
+        b.setFont("normal", 7, PdfBuilder.GRAY);
         const addressParts = [company.address_street, company.address_postal_code, company.address_city].filter(Boolean);
-        if (addressParts.length) { doc.text(addressParts.join(", "), b.ml, b.y); b.y += 3.5; }
+        if (addressParts.length) { doc.text(addressParts.join(", "), b.ml, b.y); b.y += 3; }
         const contactLine = [company.phone ? `tel. ${company.phone}` : null, company.email].filter(Boolean).join("  |  ");
-        if (contactLine) { doc.text(contactLine, b.ml, b.y); b.y += 3.5; }
-        if (company.nip) { doc.text(`NIP: ${company.nip}`, b.ml, b.y); b.y += 3.5; }
-        if (company.website) { doc.text(company.website, b.ml, b.y); b.y += 3.5; }
+        if (contactLine) { doc.text(contactLine, b.ml, b.y); b.y += 3; }
+        if (company.nip) { doc.text(`NIP: ${company.nip}`, b.ml, b.y); b.y += 3; }
 
         // QR code top-right
         if (qrDataUrl) {
-          try { doc.addImage(qrDataUrl, "PNG", b.mr - 24, 5, 22, 22); } catch {}
+          try { doc.addImage(qrDataUrl, "PNG", b.mr - 20, 4, 18, 18); } catch {}
         }
 
         // Separator under header
-        b.y += 2;
+        b.y += 1;
         doc.setDrawColor(...PdfBuilder.PRIMARY);
-        doc.setLineWidth(0.5);
+        doc.setLineWidth(0.4);
         doc.line(b.ml, b.y, b.mr, b.y);
-        b.y += 6;
+        b.y += 4;
 
         break;
       }
