@@ -19,12 +19,14 @@ interface TechnicianAvatarProps {
 }
 
 export function TechnicianAvatar({ name, isPrimary, size = "md" }: TechnicianAvatarProps) {
-  const initials = name
+  const safeName = (name || "?").trim();
+  const initials = safeName
     .split(" ")
     .map((n) => n[0])
+    .filter(Boolean)
     .join("")
     .toUpperCase()
-    .slice(0, 2);
+    .slice(0, 2) || "?";
 
   const sizeClasses = size === "sm" ? "h-6 w-6 text-[10px]" : "h-7 w-7 text-xs";
 
