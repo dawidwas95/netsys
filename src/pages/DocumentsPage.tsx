@@ -336,6 +336,15 @@ export default function DocumentsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["documents"] });
       qc.invalidateQueries({ queryKey: ["inventory-items"] });
+      // Audit log for document save
+      const docNum = form.document_number || "auto";
+      supabase.from("activity_logs").insert({
+        entity_type: "document", entity_id: editId || "new", action_type: editId ? "UPDATE" : "CREATE",
+        user_id: user?.id,
+        // @ts-ignore
+        entity_name: docNum,
+        description: editId ? `Edycja dokumentu ${docNum}` : `Utworzono dokument ${docNum}`,
+      }).then();
       toast.success(editId ? "Zaktualizowano dokument" : "Dodano dokument");
       resetForm();
     },
