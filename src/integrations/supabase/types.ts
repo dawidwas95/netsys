@@ -246,6 +246,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           dns_servers: string | null
+          file_name: string | null
+          file_path: string | null
           gateway: string | null
           id: string
           ip_address: string | null
@@ -270,6 +272,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           dns_servers?: string | null
+          file_name?: string | null
+          file_path?: string | null
           gateway?: string | null
           id?: string
           ip_address?: string | null
@@ -294,6 +298,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           dns_servers?: string | null
+          file_name?: string | null
+          file_path?: string | null
           gateway?: string | null
           id?: string
           ip_address?: string | null
@@ -845,6 +851,38 @@ export type Database = {
           },
         ]
       }
+      it_work_comments: {
+        Row: {
+          comment: string
+          created_at: string
+          entry_id: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          comment: string
+          created_at?: string
+          entry_id: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          entry_id?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "it_work_comments_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "it_work_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       it_work_entries: {
         Row: {
           amount_gross: number
@@ -941,6 +979,65 @@ export type Database = {
             columns: ["device_id"]
             isOneToOne: false
             referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      network_devices: {
+        Row: {
+          created_at: string
+          device_name: string
+          device_type: string
+          dns_servers: string | null
+          document_id: string
+          gateway: string | null
+          id: string
+          ip_address: string | null
+          notes: string | null
+          password_encrypted: string | null
+          sort_order: number
+          subnet_mask: string | null
+          username: string | null
+          vlan: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_name: string
+          device_type?: string
+          dns_servers?: string | null
+          document_id: string
+          gateway?: string | null
+          id?: string
+          ip_address?: string | null
+          notes?: string | null
+          password_encrypted?: string | null
+          sort_order?: number
+          subnet_mask?: string | null
+          username?: string | null
+          vlan?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_name?: string
+          device_type?: string
+          dns_servers?: string | null
+          document_id?: string
+          gateway?: string | null
+          id?: string
+          ip_address?: string | null
+          notes?: string | null
+          password_encrypted?: string | null
+          sort_order?: number
+          subnet_mask?: string | null
+          username?: string | null
+          vlan?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "network_devices_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "client_it_documents"
             referencedColumns: ["id"]
           },
         ]
@@ -1114,6 +1211,33 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      service_categories: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          name?: string
+          sort_order?: number
         }
         Relationships: []
       }
