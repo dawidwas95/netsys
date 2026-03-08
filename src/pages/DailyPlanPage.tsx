@@ -9,11 +9,12 @@ import { Button } from "@/components/ui/button";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Calendar, Clock, AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, User } from "lucide-react";
 import { OrderStatusBadge } from "@/pages/DashboardPage";
-import { ORDER_STATUS_LABELS, type OrderStatus } from "@/types/database";
 import { format, addDays, subDays, isToday } from "date-fns";
 import { pl } from "date-fns/locale";
+
+const COMPLETED_STATUSES = ["COMPLETED", "ARCHIVED", "CANCELLED"];
 
 export default function DailyPlanPage() {
   const { user } = useAuth();
@@ -21,9 +22,8 @@ export default function DailyPlanPage() {
   const isManager = isAdmin || isKierownik;
 
   const [selectedDate, setSelectedDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
-  const [techFilter, setTechFilter] = useState<string>(() => (isSerwisant && !isManager) ? (user?.id ?? "all") : "all");
+  const [techFilter, setTechFilter] = useState<string>("all");
 
-  // When role loads and user is SERWISANT, lock to own
   const effectiveTechFilter = (isSerwisant && !isManager) ? (user?.id ?? "all") : techFilter;
 
   const { data: staffUsers = [] } = useQuery({
@@ -40,42 +40,111 @@ export default function DailyPlanPage() {
     },
   });
 
-  const { data: orders = [], isLoading } = useQuery({
-    queryKey: ["daily-plan", selectedDate, effectiveTechFilter],
+  // Fetch all orders for the date + their technician assignments
+  const { data: rawOrders = [], isLoading } = useQuery({
+    queryKey: ["daily-plan-orders", selectedDate],
     queryFn: async () => {
-      // Get orders for the selected date
-      let query = supabase
+      const { data, error } = await supabase
         .from("service_orders")
         .select("id, order_number, status, priority, problem_description, planned_execution_date, planned_execution_time, client_id, device_id, clients(display_name), devices(manufacturer, model)")
-        .eq("planned_execution_date", selectedDate)
-        .order("planned_execution_time", { ascending: true, nullsFirst: false });
-
-      const { data, error } = await query;
+        .eq("planned_execution_date", selectedDate);
       if (error) throw error;
-
-      let results = data ?? [];
-
-      // Filter by technician if needed
-      if (effectiveTechFilter !== "all") {
-        const { data: techOrders } = await supabase
-          .from("order_technicians")
-          .select("order_id")
-          .eq("user_id", effectiveTechFilter);
-        const techOrderIds = new Set((techOrders ?? []).map((r: any) => r.order_id));
-        results = results.filter((o: any) => techOrderIds.has(o.id));
-      }
-
-      return results;
+      return data ?? [];
     },
   });
 
+  const { data: techAssignments = [] } = useQuery({
+    queryKey: ["daily-plan-techs", selectedDate, rawOrders.map((o: any) => o.id).join(",")],
+    queryFn: async () => {
+      if (!rawOrders.length) return [];
+      const orderIds = rawOrders.map((o: any) => o.id);
+      const { data } = await supabase
+        .from("order_technicians")
+        .select("order_id, user_id, is_primary")
+        .in("order_id", orderIds);
+      return data ?? [];
+    },
+    enabled: rawOrders.length > 0,
+  });
+
+  // Build a map: orderId -> techUserIds
+  const orderTechMap = useMemo(() => {
+    const map = new Map<string, string[]>();
+    (techAssignments as any[]).forEach((t) => {
+      const list = map.get(t.order_id) ?? [];
+      list.push(t.user_id);
+      map.set(t.order_id, list);
+    });
+    return map;
+  }, [techAssignments]);
+
+  // Sort: orders with time first (ascending), then without time at bottom
+  const sortOrders = (list: any[]) =>
+    [...list].sort((a, b) => {
+      const at = a.planned_execution_time ?? "";
+      const bt = b.planned_execution_time ?? "";
+      if (at && !bt) return -1;
+      if (!at && bt) return 1;
+      return at.localeCompare(bt);
+    });
+
+  // Filter orders by technician
+  const filteredOrders = useMemo(() => {
+    let list = rawOrders as any[];
+    if (effectiveTechFilter !== "all") {
+      list = list.filter((o) => {
+        const techs = orderTechMap.get(o.id) ?? [];
+        return techs.includes(effectiveTechFilter);
+      });
+    }
+    return sortOrders(list);
+  }, [rawOrders, effectiveTechFilter, orderTechMap]);
+
+  // Grouped by technician (for manager "all" view)
+  const groupedByTech = useMemo(() => {
+    if (effectiveTechFilter !== "all") return null;
+    if (!isManager) return null;
+
+    const groups = new Map<string, any[]>();
+    const unassigned: any[] = [];
+
+    (rawOrders as any[]).forEach((order) => {
+      const techs = orderTechMap.get(order.id) ?? [];
+      if (techs.length === 0) {
+        unassigned.push(order);
+      } else {
+        techs.forEach((techId: string) => {
+          const list = groups.get(techId) ?? [];
+          list.push(order);
+          groups.set(techId, list);
+        });
+      }
+    });
+
+    // Sort each group
+    const result: { techId: string; techName: string; orders: any[] }[] = [];
+    staffUsers.forEach((staff) => {
+      const orders = groups.get(staff.id);
+      if (orders?.length) {
+        result.push({ techId: staff.id, techName: staff.name, orders: sortOrders(orders) });
+      }
+    });
+    if (unassigned.length) {
+      result.push({ techId: "__unassigned__", techName: "Nieprzypisane", orders: sortOrders(unassigned) });
+    }
+    return result;
+  }, [rawOrders, orderTechMap, staffUsers, effectiveTechFilter, isManager]);
+
   const now = new Date();
   const currentTime = format(now, "HH:mm");
+  const todayStr = format(now, "yyyy-MM-dd");
 
-  const isOverdue = (time: string | null) => {
-    if (!time) return false;
-    if (selectedDate < format(now, "yyyy-MM-dd")) return true;
-    if (selectedDate > format(now, "yyyy-MM-dd")) return false;
+  const isOverdue = (order: any) => {
+    if (COMPLETED_STATUSES.includes(order.status)) return false;
+    const time = order.planned_execution_time;
+    if (!time) return selectedDate < todayStr;
+    if (selectedDate < todayStr) return true;
+    if (selectedDate > todayStr) return false;
     return time.slice(0, 5) < currentTime;
   };
 
@@ -85,7 +154,9 @@ export default function DailyPlanPage() {
     return format(d, "EEEE, d MMMM", { locale: pl });
   }, [selectedDate]);
 
-  const techName = (id: string) => staffUsers.find((u) => u.id === id)?.name ?? "—";
+  const totalCount = isManager && groupedByTech
+    ? groupedByTech.reduce((s, g) => s + g.orders.length, 0)
+    : filteredOrders.length;
 
   return (
     <div>
@@ -95,7 +166,7 @@ export default function DailyPlanPage() {
             <Calendar className="h-6 w-6 text-primary" />
             Plan dnia
           </h1>
-          <p className="text-muted-foreground text-sm">{orders.length} zaplanowanych zadań</p>
+          <p className="text-muted-foreground text-sm">{totalCount} zaplanowanych zadań</p>
         </div>
       </div>
 
@@ -111,8 +182,8 @@ export default function DailyPlanPage() {
           <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setSelectedDate(format(addDays(new Date(selectedDate + "T00:00:00"), 1), "yyyy-MM-dd"))}>
             <ChevronRight className="h-4 w-4" />
           </Button>
-          {selectedDate !== format(new Date(), "yyyy-MM-dd") && (
-            <Button variant="outline" size="sm" className="text-xs" onClick={() => setSelectedDate(format(new Date(), "yyyy-MM-dd"))}>
+          {selectedDate !== todayStr && (
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => setSelectedDate(todayStr)}>
               Dziś
             </Button>
           )}
@@ -121,7 +192,7 @@ export default function DailyPlanPage() {
         <input
           type="date"
           value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
+          onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
           className="h-9 rounded-md border border-input bg-background px-3 text-sm"
         />
 
@@ -140,67 +211,100 @@ export default function DailyPlanPage() {
         )}
       </div>
 
-      {/* Task list */}
+      {/* Content */}
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">Ładowanie...</div>
-      ) : !orders.length ? (
+      ) : totalCount === 0 ? (
         <div className="text-center py-12">
           <CheckCircle2 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
           <p className="text-muted-foreground">Brak zaplanowanych zadań na ten dzień</p>
         </div>
-      ) : (
-        <div className="space-y-2">
-          {orders.map((order: any) => {
-            const time = order.planned_execution_time?.slice(0, 5);
-            const overdue = isOverdue(order.planned_execution_time);
-            const device = order.devices ? `${order.devices.manufacturer ?? ""} ${order.devices.model ?? ""}`.trim() : "—";
-
-            return (
-              <Link
-                key={order.id}
-                to={`/orders/${order.id}`}
-                className={`block rounded-lg border p-3 sm:p-4 transition-colors hover:bg-muted/50 ${overdue ? "border-destructive/40 bg-destructive/5" : "border-border"}`}
-              >
-                <div className="flex items-start gap-3">
-                  {/* Time column */}
-                  <div className="shrink-0 w-14 text-center">
-                    {time ? (
-                      <span className={`text-lg font-bold tabular-nums ${overdue ? "text-destructive" : "text-primary"}`}>
-                        {time}
-                      </span>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">—</span>
-                    )}
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono font-medium text-sm">{order.order_number}</span>
-                      <OrderStatusBadge status={order.status} />
-                      {overdue && (
-                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
-                          <AlertTriangle className="h-3 w-3 mr-0.5" /> Zaległe
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="mt-1 text-sm text-muted-foreground">
-                      <span className="font-medium text-foreground">{order.clients?.display_name ?? "—"}</span>
-                      <span className="mx-1.5">·</span>
-                      <span>{device}</span>
-                    </div>
-                    {order.problem_description && (
-                      <p className="mt-1 text-xs text-muted-foreground line-clamp-1">
-                        {order.problem_description}
-                      </p>
-                    )}
-                  </div>
+      ) : isManager && groupedByTech ? (
+        /* Manager grouped view */
+        <div className="space-y-6">
+          {groupedByTech.map((group) => (
+            <div key={group.techId}>
+              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <User className="h-4 w-4 text-primary" />
                 </div>
-              </Link>
-            );
-          })}
+                <div>
+                  <h2 className="font-semibold text-sm">{group.techName}</h2>
+                  <span className="text-xs text-muted-foreground">{group.orders.length} zadań</span>
+                </div>
+              </div>
+              <div className="space-y-2 ml-2">
+                {group.orders.map((order: any) => (
+                  <OrderCard key={order.id} order={order} isOverdue={isOverdue(order)} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        /* Single technician flat list */
+        <div className="space-y-2">
+          {filteredOrders.map((order: any) => (
+            <OrderCard key={order.id} order={order} isOverdue={isOverdue(order)} />
+          ))}
         </div>
       )}
     </div>
+  );
+}
+
+function OrderCard({ order, isOverdue }: { order: any; isOverdue: boolean }) {
+  const time = order.planned_execution_time?.slice(0, 5);
+  const device = order.devices ? `${order.devices.manufacturer ?? ""} ${order.devices.model ?? ""}`.trim() : "—";
+  const isDone = COMPLETED_STATUSES.includes(order.status);
+
+  return (
+    <Link
+      to={`/orders/${order.id}`}
+      className={`block rounded-lg border p-3 sm:p-4 transition-colors hover:bg-muted/50 ${
+        isDone ? "opacity-60 border-border" : isOverdue ? "border-destructive/40 bg-destructive/5" : "border-border"
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        {/* Time column */}
+        <div className="shrink-0 w-14 text-center">
+          {time ? (
+            <span className={`text-lg font-bold tabular-nums ${isDone ? "text-muted-foreground line-through" : isOverdue ? "text-destructive" : "text-primary"}`}>
+              {time}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">brak godz.</span>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-mono font-medium text-sm">{order.order_number}</span>
+            <OrderStatusBadge status={order.status} />
+            {isOverdue && (
+              <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                <AlertTriangle className="h-3 w-3 mr-0.5" /> Zaległe
+              </Badge>
+            )}
+            {!time && !isDone && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">
+                Bez godziny
+              </Badge>
+            )}
+          </div>
+          <div className="mt-1 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">{order.clients?.display_name ?? "—"}</span>
+            <span className="mx-1.5">·</span>
+            <span>{device}</span>
+          </div>
+          {order.problem_description && (
+            <p className="mt-1 text-xs text-muted-foreground line-clamp-1">
+              {order.problem_description}
+            </p>
+          )}
+        </div>
+      </div>
+    </Link>
   );
 }
