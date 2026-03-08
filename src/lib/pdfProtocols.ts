@@ -416,7 +416,8 @@ export async function generatePickupPDF({ order, orderItems, financials }: Order
   const ff = hasFont ? "Roboto" : "helvetica";
   const b = new DocBuilder(doc, ff, config.settings.margins.left, doc.internal.pageSize.getWidth() - config.settings.margins.right, config.settings.fontScale);
 
-  const qr = await generateQRDataURL(order.order_number);
+  const statusToken2 = (order as any).status_token || order.id;
+  const qr = await generateQRDataURL(`${window.location.origin}/status?token=${statusToken2}`);
 
   for (const sec of config.sections) {
     if (!sec.enabled) continue;
