@@ -657,7 +657,7 @@ export default function DocumentsPage() {
               label: "Dodaj kontrahenta",
               onClick: () => {
                 setClientInitialData({
-                  client_type: "BUSINESS",
+                  client_type: "COMPANY",
                   business_role: isPurchase ? "SUPPLIER" : "CUSTOMER",
                   company_name: ocrName || "",
                   nip: contractorNip,
