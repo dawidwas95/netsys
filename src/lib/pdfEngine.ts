@@ -655,51 +655,51 @@ export async function generateOrderPDF({ order, orderItems, financials }: OrderP
         }
 
         // ── Summary box ──
-        b.checkPage(42);
-        const boxH = 36;
+        b.checkPage(30);
+        const boxH = 28;
         const boxY = b.y;
 
         // Left column - breakdown
         doc.setFillColor(248, 249, 250);
         doc.setDrawColor(...PdfBuilder.BORDER);
         doc.setLineWidth(0.3);
-        doc.roundedRect(b.ml, boxY, b.cw / 2 - 2, boxH, 2, 2, "FD");
+        doc.roundedRect(b.ml, boxY, b.cw / 2 - 2, boxH, 1.5, 1.5, "FD");
 
-        let iy = boxY + 6;
-        b.setFont("normal", 7.5, PdfBuilder.GRAY); doc.text("Usługa (netto):", b.ml + 4, iy);
-        b.setFont("normal", 8.5, PdfBuilder.DARK); doc.text(formatCurrency(financials.laborNet), b.ml + 45, iy);
+        let iy = boxY + 5;
+        b.setFont("normal", 7, PdfBuilder.GRAY); doc.text("Usługa (netto):", b.ml + 3, iy);
+        b.setFont("normal", 8, PdfBuilder.DARK); doc.text(formatCurrency(financials.laborNet), b.ml + 40, iy);
+        iy += 4.5;
+        b.setFont("normal", 7, PdfBuilder.GRAY); doc.text("Części (netto):", b.ml + 3, iy);
+        b.setFont("normal", 8, PdfBuilder.DARK); doc.text(formatCurrency(financials.partsCost), b.ml + 40, iy);
+        iy += 4.5;
+        b.setFont("normal", 7, PdfBuilder.GRAY); doc.text("Koszty dodatkowe:", b.ml + 3, iy);
+        b.setFont("normal", 8, PdfBuilder.DARK); doc.text(formatCurrency(financials.extraCost), b.ml + 40, iy);
         iy += 5.5;
-        b.setFont("normal", 7.5, PdfBuilder.GRAY); doc.text("Części (netto):", b.ml + 4, iy);
-        b.setFont("normal", 8.5, PdfBuilder.DARK); doc.text(formatCurrency(financials.partsCost), b.ml + 45, iy);
-        iy += 5.5;
-        b.setFont("normal", 7.5, PdfBuilder.GRAY); doc.text("Koszty dodatkowe:", b.ml + 4, iy);
-        b.setFont("normal", 8.5, PdfBuilder.DARK); doc.text(formatCurrency(financials.extraCost), b.ml + 45, iy);
-        iy += 7;
         doc.setDrawColor(...PdfBuilder.BORDER);
-        doc.line(b.ml + 4, iy - 2.5, b.ml + b.cw / 2 - 6, iy - 2.5);
-        b.setFont("bold", 8.5, PdfBuilder.DARK); doc.text("Razem netto:", b.ml + 4, iy);
-        b.setFont("bold", 9, PdfBuilder.DARK); doc.text(formatCurrency(financials.revenue), b.ml + 45, iy);
+        doc.line(b.ml + 3, iy - 2, b.ml + b.cw / 2 - 6, iy - 2);
+        b.setFont("bold", 8, PdfBuilder.DARK); doc.text("Razem netto:", b.ml + 3, iy);
+        b.setFont("bold", 8.5, PdfBuilder.DARK); doc.text(formatCurrency(financials.revenue), b.ml + 40, iy);
 
         // Right column - total to pay
         const rightX = b.ml + b.cw / 2 + 2;
         const rightW = b.cw / 2 - 2;
         doc.setFillColor(...PdfBuilder.PRIMARY);
-        doc.roundedRect(rightX, boxY, rightW, boxH, 2, 2, "F");
+        doc.roundedRect(rightX, boxY, rightW, boxH, 1.5, 1.5, "F");
 
-        b.setFont("normal", 8, PdfBuilder.WHITE);
-        doc.text("DO ZAPŁATY (brutto):", rightX + 6, boxY + 9);
-        b.setFont("bold", 18, PdfBuilder.WHITE);
-        doc.text(formatCurrency(financials.revenue * 1.23), rightX + 6, boxY + 20);
+        b.setFont("normal", 7.5, PdfBuilder.WHITE);
+        doc.text("DO ZAPŁATY (brutto):", rightX + 5, boxY + 7);
+        b.setFont("bold", 15, PdfBuilder.WHITE);
+        doc.text(formatCurrency(financials.revenue * 1.23), rightX + 5, boxY + 16);
 
-        let payY = boxY + 27;
-        b.setFont("normal", 7.5, [200, 210, 230] as [number, number, number]);
+        let payY = boxY + 22;
+        b.setFont("normal", 7, [200, 210, 230] as [number, number, number]);
         if (order.payment_method) {
-          doc.text(`Płatność: ${PAYMENT_METHOD_LABELS[order.payment_method as PaymentMethod] ?? order.payment_method}`, rightX + 6, payY);
-          payY += 4;
+          doc.text(`Płatność: ${PAYMENT_METHOD_LABELS[order.payment_method as PaymentMethod] ?? order.payment_method}`, rightX + 5, payY);
+          payY += 3.5;
         }
-        doc.text(`Status: ${order.is_paid ? "✓ Opłacone" : "Nieopłacone"}`, rightX + 6, payY);
+        doc.text(`Status: ${order.is_paid ? "✓ Opłacone" : "Nieopłacone"}`, rightX + 5, payY);
 
-        b.y = boxY + boxH + 5;
+        b.y = boxY + boxH + 3;
         break;
       }
 
