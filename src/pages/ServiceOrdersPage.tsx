@@ -33,9 +33,28 @@ export default function ServiceOrdersPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [techFilter, setTechFilter] = useState<string>("all");
+  const [deptFilter, setDeptFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const queryClient = useQueryClient();
   const { user } = useAuth();
+
+  // Load user's default department
+  const { data: myProfile } = useQuery({
+    queryKey: ["my-profile-dept", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase.from("profiles").select("default_department").eq("user_id", user.id).maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Set default dept filter from profile on first load
+  useState(() => {
+    if (myProfile?.default_department && deptFilter === "all") {
+      setDeptFilter(myProfile.default_department);
+    }
+  });
 
   const { data: staffUsers = [] } = useQuery({
     queryKey: ["all-staff-users"],
