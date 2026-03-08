@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,10 +17,21 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import {
   Bell, Mail, MessageSquare, Save, Info, FileText, Building2,
-  ChevronUp, ChevronDown, Eye, GripVertical,
+  ChevronUp, ChevronDown, Eye, GripVertical, Users, MoreHorizontal,
+  Pencil, UserX, Trash2, Shield,
 } from "lucide-react";
 import type { PdfSection, PdfSettings, PdfTemplateConfig } from "@/lib/pdfEngine";
 import { DEFAULT_SETTINGS, SERVICE_ORDER_SECTIONS } from "@/lib/pdfEngine";
