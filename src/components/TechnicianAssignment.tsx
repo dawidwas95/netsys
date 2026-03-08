@@ -149,13 +149,16 @@ export function TechnicianAssignment({ orderId, orderNumber }: TechnicianAssignm
 
   const assignTech = useMutation({
     mutationFn: async (userId: string) => {
+      if (assignedIds.has(userId)) {
+        throw new Error("Ten technik jest już przypisany do tego zlecenia");
+      }
       const isPrimary = assigned.length === 0;
-      const { error } = await supabase.from("order_technicians").insert({
+      const { error } = await supabase.from("order_technicians").upsert({
         order_id: orderId,
         user_id: userId,
         is_primary: isPrimary,
         assigned_by: user?.id,
-      } as any);
+      } as any, { onConflict: "order_id,user_id", ignoreDuplicates: true });
       if (error) throw error;
 
       const techName = allUsers.find((u) => u.id === userId)?.name ?? "?";
@@ -174,7 +177,7 @@ export function TechnicianAssignment({ orderId, orderNumber }: TechnicianAssignm
       queryClient.invalidateQueries({ queryKey: ["order-logs", orderId] });
       toast.success("Technik przypisany");
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message || "Błąd przypisywania technika"),
   });
 
   const removeTech = useMutation({
