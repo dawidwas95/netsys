@@ -789,12 +789,13 @@ export default function DocumentsPage() {
 
       {/* ── Form Dialog (Create / Edit) ── */}
       <Dialog open={formOpen} onOpenChange={v => { if (!v) resetForm(); else setFormOpen(true); }}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editId ? "Edytuj dokument" : "Nowy dokument"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-5">
+            {/* Top row: type, direction, number */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <Label>Typ dokumentu *</Label>
                 <Select value={form.document_type} onValueChange={v => onDocTypeChange(v as DocType)}>
@@ -823,28 +824,42 @@ export default function DocumentsPage() {
               </div>
             </div>
 
-            {/* Contractor */}
+            {/* Contractor section */}
             <div className="rounded-lg border border-border p-4 space-y-3">
               <p className="text-sm font-medium text-muted-foreground">Kontrahent</p>
-              <div>
-                <Label>Klient z bazy</Label>
-                <SearchableSelect
-                  options={clientOptions}
-                  value={form.client_id}
-                  onChange={onClientSelect}
-                  placeholder="Wybierz klienta..."
-                  onAddNew={() => setClientDialogOpen(true)}
-                  addNewLabel="Dodaj kontrahenta"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><Label>Nazwa kontrahenta</Label><Input value={form.contractor_name} onChange={e => setForm({ ...form, contractor_name: e.target.value })} /></div>
-                <div><Label>NIP</Label><Input value={form.contractor_nip} onChange={e => setForm({ ...form, contractor_nip: e.target.value })} /></div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div>
+                    <Label>Klient z bazy</Label>
+                    <SearchableSelect
+                      options={clientOptions}
+                      value={form.client_id}
+                      onChange={onClientSelect}
+                      placeholder="Szukaj po nazwie, NIP, mieście..."
+                      onAddNew={() => setClientDialogOpen(true)}
+                      addNewLabel="Dodaj kontrahenta"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>Nazwa kontrahenta</Label><Input value={form.contractor_name} onChange={e => setForm({ ...form, contractor_name: e.target.value })} /></div>
+                    <div><Label>NIP</Label><Input value={form.contractor_nip} onChange={e => setForm({ ...form, contractor_nip: e.target.value })} /></div>
+                  </div>
+                </div>
+                {/* Contractor details block */}
+                {selectedClient && (
+                  <div className="rounded-md bg-muted/50 p-3 text-sm space-y-1">
+                    <p className="font-medium">{selectedClient.display_name || selectedClient.company_name || [selectedClient.first_name, selectedClient.last_name].filter(Boolean).join(" ")}</p>
+                    {selectedClient.nip && <p className="text-muted-foreground">NIP: <span className="font-mono">{selectedClient.nip}</span></p>}
+                    {getClientAddress(selectedClient) && <p className="text-muted-foreground">{getClientAddress(selectedClient)}</p>}
+                    {selectedClient.email && <p className="text-muted-foreground">{selectedClient.email}</p>}
+                    {selectedClient.phone && <p className="text-muted-foreground">{selectedClient.phone}</p>}
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Dates */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div><Label>Data wystawienia *</Label><Input type="date" value={form.issue_date} onChange={e => setForm({ ...form, issue_date: e.target.value })} /></div>
               <div><Label>Data sprzedaży</Label><Input type="date" value={form.sale_date} onChange={e => setForm({ ...form, sale_date: e.target.value })} /></div>
               <div><Label>Termin płatności</Label><Input type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} /></div>
@@ -860,7 +875,7 @@ export default function DocumentsPage() {
                 </Button>
               </div>
               {/* Header */}
-              <div className="grid grid-cols-[1fr_80px_80px_100px_70px_100px_36px] gap-2 text-xs font-medium text-muted-foreground">
+              <div className="hidden sm:grid grid-cols-[1fr_100px_70px_120px_70px_120px_36px] gap-2 text-xs font-medium text-muted-foreground">
                 <span>Nazwa</span>
                 <span>Typ</span>
                 <span>Ilość</span>
@@ -870,7 +885,7 @@ export default function DocumentsPage() {
                 <span></span>
               </div>
               {lineItems.map((item, idx) => (
-                <div key={idx} className="grid grid-cols-[1fr_80px_80px_100px_70px_100px_36px] gap-2 items-center">
+                <div key={idx} className="grid grid-cols-1 sm:grid-cols-[1fr_100px_70px_120px_70px_120px_36px] gap-2 items-center">
                   <Input value={item.name} onChange={e => updateLineItem(idx, "name", e.target.value)} placeholder="Nazwa pozycji" className="h-9 text-sm" />
                   <Select value={item.item_type} onValueChange={v => updateLineItem(idx, "item_type", v)}>
                     <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
@@ -888,16 +903,15 @@ export default function DocumentsPage() {
                   <Input value={formatCurrency(
                     (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_net) || 0) * (1 + (parseFloat(item.vat_rate) || 23) / 100)
                   )} disabled className="h-9 text-sm bg-muted tabular-nums" />
-                  {lineItems.length > 1 && (
+                  {lineItems.length > 1 ? (
                     <Button type="button" variant="ghost" size="icon" className="h-9 w-9" onClick={() => setLineItems(lineItems.filter((_, i) => i !== idx))}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
-                  )}
-                  {lineItems.length <= 1 && <div />}
+                  ) : <div />}
                 </div>
               ))}
               {/* Summary */}
-              <div className="border-t border-border pt-3 space-y-1 text-sm">
+              <div className="border-t border-border pt-3 space-y-1 text-sm max-w-xs ml-auto">
                 <div className="flex justify-between"><span className="text-muted-foreground">Suma netto</span><span className="font-mono font-medium tabular-nums">{formatCurrency(computedFromItems.net)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Suma VAT</span><span className="font-mono tabular-nums">{formatCurrency(computedFromItems.vat)}</span></div>
                 <div className="flex justify-between font-bold"><span>Suma brutto</span><span className="font-mono tabular-nums">{formatCurrency(computedFromItems.gross)}</span></div>
@@ -923,35 +937,58 @@ export default function DocumentsPage() {
               </div>
             )}
 
-            {/* Payment */}
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label>Status płatności</Label>
-                <Select value={form.payment_status} onValueChange={v => setForm({ ...form, payment_status: v as PaymentStatus })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).map(k => (
-                      <SelectItem key={k} value={k}>{PAYMENT_STATUS_LABELS[k]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {/* Payment section */}
+            <div className="rounded-lg border border-border p-4 space-y-3">
+              <p className="text-sm font-medium text-muted-foreground">Płatność</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <Label>Status płatności</Label>
+                  <Select value={form.payment_status} onValueChange={v => onPaymentStatusChange(v as PaymentStatus)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).map(k => (
+                        <SelectItem key={k} value={k}>{PAYMENT_STATUS_LABELS[k]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Metoda płatności</Label>
+                  <Select value={form.payment_method} onValueChange={v => setForm({ ...form, payment_method: v })}>
+                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[]).map(k => (
+                        <SelectItem key={k} value={k}>{PAYMENT_METHOD_LABELS[k]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Kwota opłacona</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={form.paid_amount}
+                    onChange={e => setForm({ ...form, paid_amount: e.target.value })}
+                    disabled={form.payment_status === "PAID" || form.payment_status === "UNPAID"}
+                    className={form.payment_status === "PAID" || form.payment_status === "UNPAID" ? "bg-muted" : ""}
+                  />
+                  {(() => {
+                    const grossTotal = hasLineItems ? computedFromItems.gross : ((parseFloat(form.net_amount) || 0) * (1 + (parseFloat(form.vat_rate) || 23) / 100));
+                    const paid = parseFloat(form.paid_amount) || 0;
+                    const remaining = Math.max(0, grossTotal - paid);
+                    return remaining > 0 ? (
+                      <p className="text-xs text-muted-foreground mt-1 tabular-nums">Pozostało do zapłaty: <span className="font-medium text-destructive">{formatCurrency(remaining)}</span></p>
+                    ) : null;
+                  })()}
+                </div>
               </div>
-              <div>
-                <Label>Metoda płatności</Label>
-                <Select value={form.payment_method} onValueChange={v => setForm({ ...form, payment_method: v })}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[]).map(k => (
-                      <SelectItem key={k} value={k}>{PAYMENT_METHOD_LABELS[k]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div><Label>Zapłacono</Label><Input type="number" step="0.01" value={form.paid_amount} onChange={e => setForm({ ...form, paid_amount: e.target.value })} /></div>
             </div>
 
-            <div><Label>Opis</Label><Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
-            <div><Label>Notatki</Label><Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div><Label>Opis</Label><Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
+              <div><Label>Notatki</Label><Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} /></div>
+            </div>
 
             {/* Attachments */}
             <div className="rounded-lg border border-border p-4">
@@ -970,8 +1007,6 @@ export default function DocumentsPage() {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* ── Inline Client Create Dialog ── */}
       <ClientFormDialog
         externalOpen={clientDialogOpen}
         onOpenChange={setClientDialogOpen}
