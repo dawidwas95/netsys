@@ -111,11 +111,12 @@ export default function DashboardPage() {
   const { data: cashBalance } = useQuery({
     queryKey: ["dashboard-cash-balance"],
     queryFn: async () => {
-      const { data } = await supabase.from("cash_transactions").select("transaction_type, amount");
+      const { data } = await supabase.from("cash_transactions").select("transaction_type, amount, gross_amount");
       if (!data) return 0;
       return data.reduce((sum, t) => {
-        if (t.transaction_type === "IN") return sum + Number(t.amount);
-        if (t.transaction_type === "OUT") return sum - Number(t.amount);
+        const amt = Number(t.gross_amount) > 0 ? Number(t.gross_amount) : Number(t.amount);
+        if (t.transaction_type === "IN") return sum + amt;
+        if (t.transaction_type === "OUT") return sum - amt;
         return sum;
       }, 0);
     },
