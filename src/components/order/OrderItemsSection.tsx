@@ -559,9 +559,58 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                     </Button>
                   </div>
                 </TabsContent>
+
+                <TabsContent value="cost" className="space-y-4 mt-3">
+                  <div className="space-y-1">
+                    <Label>Opis kosztu *</Label>
+                    <Input
+                      value={customItem.name}
+                      onChange={(e) => setCustomItem({ ...customItem, name: e.target.value })}
+                      placeholder="np. Bolt kurier, parking, paliwo, transport"
+                      autoFocus={dialogTab === "cost"}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Kwota brutto *</Label>
+                      <Input type="number" step="0.01"
+                        value={(() => { const net = parseFloat(customItem.purchase_net) || 0; return net > 0 ? (net * 1.23).toFixed(2) : ""; })()}
+                        onChange={(e) => { const gross = parseFloat(e.target.value) || 0; setCustomItem({ ...customItem, purchase_net: (gross / 1.23).toFixed(2), sale_net: "0" }); }}
+                        placeholder="0.00" />
+                      <p className="text-[10px] text-muted-foreground tabular-nums">netto: {(parseFloat(customItem.purchase_net) || 0).toFixed(2)} zł</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Typ kosztu</Label>
+                      <Select value={customItem.item_type} onValueChange={(v) => setCustomItem({ ...customItem, item_type: v as OrderItemType })}>
+                        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="INTERNAL_COST">Koszt wewnętrzny</SelectItem>
+                          <SelectItem value="SERVICE">Usługa zewnętrzna</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Notatka</Label>
+                    <Input value={customItem.note} onChange={(e) => setCustomItem({ ...customItem, note: e.target.value })} placeholder="Opcjonalna notatka" />
+                  </div>
+                  <div className="rounded-lg bg-muted/30 p-3 text-sm">
+                    <p className="text-muted-foreground text-xs">Koszt zostanie dodany do zlecenia i obniży zysk. Nie wpływa na stany magazynowe.</p>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={resetDialog}>Anuluj</Button>
+                    <Button
+                      onClick={() => addCustomItem.mutate()}
+                      disabled={!customItem.name.trim() || !(parseFloat(customItem.purchase_net) > 0) || addCustomItem.isPending}
+                    >
+                      {addCustomItem.isPending ? "Dodawanie..." : "Dodaj koszt"}
+                    </Button>
+                  </div>
+                </TabsContent>
               </Tabs>
             </DialogContent>
           </Dialog>
+          </div>
         )}
       </div>
 
