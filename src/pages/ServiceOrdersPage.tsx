@@ -24,7 +24,7 @@ import {
 } from "@/types/database";
 import { OrderStatusBadge } from "@/pages/DashboardPage";
 import {
-  ClientSection, DeviceSection, OrderDataSection, DescriptionSection,
+  ClientSection, DeviceSection, OrderDataSection, DescriptionSection, TechnicianSelectSection,
 } from "@/components/order/OrderFormSections";
 
 export default function ServiceOrdersPage() {
