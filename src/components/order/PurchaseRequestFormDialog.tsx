@@ -34,7 +34,6 @@ interface PurchaseRequestFormData {
   estimated_gross: string;
   description: string;
   urgency: string;
-  client_approval: string;
   status: string;
 }
 
