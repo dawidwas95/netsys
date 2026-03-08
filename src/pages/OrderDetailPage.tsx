@@ -689,10 +689,13 @@ export default function OrderDetailPage() {
         {/* LEFT COLUMN */}
         <div className="space-y-5">
           <Tabs defaultValue="edit">
-            <TabsList>
+            <TabsList className="flex-wrap">
               <TabsTrigger value="edit">Edycja</TabsTrigger>
               <TabsTrigger value="photos">Zdjęcia</TabsTrigger>
               <TabsTrigger value="comments">Komentarze ({comments?.length ?? 0})</TabsTrigger>
+              <TabsTrigger value="customer-messages">
+                <MessageSquare className="mr-1 h-3 w-3" />Wiadomości klienta
+              </TabsTrigger>
               <TabsTrigger value="history">Historia</TabsTrigger>
               <TabsTrigger value="documents">Dokumenty</TabsTrigger>
               <TabsTrigger value="signatures"><PenLine className="mr-1 h-3 w-3" />Podpisy</TabsTrigger>
