@@ -580,8 +580,10 @@ function ItemDetailView({ item, categoryLabel }: { item: any; categoryLabel: str
       <div className="grid grid-cols-2 gap-3 text-sm">
         <div><span className="text-muted-foreground">Stan:</span> <span className="font-medium">{Number(item.stock_quantity)} {item.unit}</span></div>
         <div><span className="text-muted-foreground">Minimum:</span> <span>{Number(item.minimum_quantity)}</span></div>
-        <div><span className="text-muted-foreground">Zakup netto:</span> <span className="tabular-nums">{Number(item.purchase_net).toFixed(2)} zł</span></div>
-        <div><span className="text-muted-foreground">Sprzedaż netto:</span> <span className="tabular-nums">{Number(item.sale_net).toFixed(2)} zł</span></div>
+        <div><span className="text-muted-foreground">Zakup brutto:</span> <span className="tabular-nums">{(Number(item.purchase_net) * (1 + (Number(item.vat_rate) || 23) / 100)).toFixed(2)} zł</span></div>
+        <div><span className="text-muted-foreground">Sprzedaż brutto:</span> <span className="tabular-nums">{(Number(item.sale_net) * (1 + (Number(item.vat_rate) || 23) / 100)).toFixed(2)} zł</span></div>
+        <div><span className="text-muted-foreground">Zakup netto:</span> <span className="tabular-nums text-muted-foreground">{Number(item.purchase_net).toFixed(2)} zł</span></div>
+        <div><span className="text-muted-foreground">Sprzedaż netto:</span> <span className="tabular-nums text-muted-foreground">{Number(item.sale_net).toFixed(2)} zł</span></div>
         {item.sku && <div className="col-span-2"><span className="text-muted-foreground">SKU:</span> <span className="font-mono text-xs">{item.sku}</span></div>}
       </div>
 
