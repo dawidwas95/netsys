@@ -348,6 +348,7 @@ export type Database = {
           address_local: string | null
           address_postal_code: string | null
           address_street: string | null
+          business_role: Database["public"]["Enums"]["business_role"]
           client_type: Database["public"]["Enums"]["client_type"]
           company_name: string | null
           created_at: string
@@ -376,6 +377,7 @@ export type Database = {
           address_local?: string | null
           address_postal_code?: string | null
           address_street?: string | null
+          business_role?: Database["public"]["Enums"]["business_role"]
           client_type?: Database["public"]["Enums"]["client_type"]
           company_name?: string | null
           created_at?: string
@@ -404,6 +406,7 @@ export type Database = {
           address_local?: string | null
           address_postal_code?: string | null
           address_street?: string | null
+          business_role?: Database["public"]["Enums"]["business_role"]
           client_type?: Database["public"]["Enums"]["client_type"]
           company_name?: string | null
           created_at?: string
@@ -2230,6 +2233,7 @@ export type Database = {
         | "KIEROWNIK"
         | "SERWISANT"
       billing_status: "UNBILLED" | "BILLED" | "CANCELLED"
+      business_role: "CUSTOMER" | "SUPPLIER" | "CUSTOMER_AND_SUPPLIER"
       cash_source_type: "SERVICE_ORDER" | "MANUAL" | "WITHDRAWAL" | "CORRECTION"
       cash_transaction_type: "IN" | "OUT" | "RESET"
       client_approval_status: "PENDING" | "APPROVED" | "REJECTED"
@@ -2448,6 +2452,7 @@ export const Constants = {
         "SERWISANT",
       ],
       billing_status: ["UNBILLED", "BILLED", "CANCELLED"],
+      business_role: ["CUSTOMER", "SUPPLIER", "CUSTOMER_AND_SUPPLIER"],
       cash_source_type: ["SERVICE_ORDER", "MANUAL", "WITHDRAWAL", "CORRECTION"],
       cash_transaction_type: ["IN", "OUT", "RESET"],
       client_approval_status: ["PENDING", "APPROVED", "REJECTED"],
