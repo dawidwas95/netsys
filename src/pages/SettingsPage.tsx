@@ -245,6 +245,7 @@ function TeamManagement() {
       email: u.email ?? "",
       role: u.role ?? "EMPLOYEE",
       is_active: u.is_active ? "true" : "false",
+      default_department: u.default_department ?? "",
     });
   };
 
