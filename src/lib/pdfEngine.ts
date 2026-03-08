@@ -745,17 +745,14 @@ export async function generateOrderPDF({ order, orderItems, financials }: OrderP
 
       /* ═══════════════ FOOTER ═══════════════ */
       case "footer": {
-        const footerY = b.pageH - 10;
+        const footerY = b.pageH - 7;
         doc.setDrawColor(...PdfBuilder.BORDER);
-        doc.setLineWidth(0.15);
-        doc.line(b.ml, footerY - 3, b.mr, footerY - 3);
+        doc.setLineWidth(0.1);
+        doc.line(b.ml, footerY - 2, b.mr, footerY - 2);
 
         const footerText = s.footerText || `Dokument wygenerowany elektronicznie — ${company.company_name}`;
-        b.setFont("normal", 6.5, PdfBuilder.LIGHT_GRAY);
-        doc.text(footerText, b.pageW / 2, footerY, { align: "center" });
-
         b.setFont("normal", 6, PdfBuilder.LIGHT_GRAY);
-        doc.text(`Strona 1`, b.mr, footerY, { align: "right" });
+        doc.text(footerText, b.pageW / 2, footerY, { align: "center" });
         break;
       }
     }
