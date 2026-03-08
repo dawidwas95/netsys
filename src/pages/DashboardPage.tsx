@@ -68,12 +68,12 @@ export default function DashboardPage() {
 
       const { data: completedOrders } = await supabase
         .from("service_orders")
-        .select("id, labor_net, parts_net, extra_cost_net, total_net, is_paid, payment_method, completed_at")
+        .select("id, labor_net, parts_net, extra_cost_net, total_net, total_gross, is_paid, payment_method, completed_at")
         .eq("status", "COMPLETED")
         .eq("is_paid", true)
         .gte("completed_at", monthStart.toISOString());
 
-      if (!completedOrders?.length) return { revenue: 0, cost: 0, profit: 0, margin: 0 };
+      if (!completedOrders?.length) return { revenue: 0, cost: 0, profit: 0, margin: 0, revenueGross: 0, costGross: 0, profitGross: 0 };
 
       const orderIds = completedOrders.map((o) => o.id);
 
@@ -100,8 +100,11 @@ export default function DashboardPage() {
 
       const profit = revenue - cost;
       const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
+      const revenueGross = revenue * 1.23;
+      const costGross = cost * 1.23;
+      const profitGross = revenueGross - costGross;
 
-      return { revenue, cost, profit, margin };
+      return { revenue, cost, profit, margin, revenueGross, costGross, profitGross };
     },
   });
 
