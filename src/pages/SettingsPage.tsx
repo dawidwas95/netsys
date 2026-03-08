@@ -504,12 +504,12 @@ function TeamManagement() {
             <div className="space-y-1">
               <Label>Domyślny dział serwisu</Label>
               <Select
-                value={editForm.default_department ?? ""}
-                onValueChange={(v) => setEditForm((p) => ({ ...p, default_department: v }))}
+                value={editForm.default_department ?? "ALL"}
+                onValueChange={(v) => setEditForm((p) => ({ ...p, default_department: v === "ALL" ? null : v }))}
               >
                 <SelectTrigger><SelectValue placeholder="Wszystkie działy" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Wszystkie działy</SelectItem>
+                  <SelectItem value="ALL">Wszystkie działy</SelectItem>
                   <SelectItem value="COMPUTER_SERVICE">💻 Serwis komputerów</SelectItem>
                   <SelectItem value="PHONE_SERVICE">📱 Serwis telefonów</SelectItem>
                 </SelectContent>
