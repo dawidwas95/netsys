@@ -393,11 +393,19 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                             Zmień
                           </Button>
                         </div>
-                        <div className="flex gap-4 text-sm">
+                        <div className="flex gap-4 text-sm flex-wrap">
                           <div>
-                            <span className="text-muted-foreground">Stan: </span>
-                            <span className={cn("font-medium", selectedInvItem.stock_quantity <= selectedInvItem.minimum_quantity && "text-amber-400")}>
-                              {selectedInvItem.stock_quantity} {selectedInvItem.unit}
+                            <span className="text-muted-foreground">Magazyn: </span>
+                            <span className="font-medium">{selectedInvItem.stock_quantity} {selectedInvItem.unit}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Rezerw: </span>
+                            <span className="font-medium">{reservedMap[selectedInvItem.id] || 0}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Dostępne: </span>
+                            <span className={cn("font-medium", availableStock <= selectedInvItem.minimum_quantity && "text-amber-400")}>
+                              {availableStock} {selectedInvItem.unit}
                             </span>
                           </div>
                           <div>
