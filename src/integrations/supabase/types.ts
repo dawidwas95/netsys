@@ -1653,6 +1653,7 @@ export type Database = {
             | null
           service_type: Database["public"]["Enums"]["service_type"]
           status: Database["public"]["Enums"]["order_status"]
+          status_token: string | null
           technician_signature_url: string | null
           technician_signed_at: string | null
           total_gross: number | null
@@ -1702,6 +1703,7 @@ export type Database = {
             | null
           service_type?: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["order_status"]
+          status_token?: string | null
           technician_signature_url?: string | null
           technician_signed_at?: string | null
           total_gross?: number | null
@@ -1751,6 +1753,7 @@ export type Database = {
             | null
           service_type?: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["order_status"]
+          status_token?: string | null
           technician_signature_url?: string | null
           technician_signed_at?: string | null
           total_gross?: number | null
