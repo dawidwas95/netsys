@@ -507,6 +507,62 @@ export default function DocumentsPage() {
 
   const relatedDoc = form.related_document_id ? docs.find(d => d.id === form.related_document_id) : null;
 
+  function handleOcrData(data: OcrExtractedData) {
+    const docType = (data.document_type as DocType) || "PURCHASE_INVOICE";
+    const cfg = TYPE_CONFIG[docType] || TYPE_CONFIG.OTHER;
+    setForm({
+      ...emptyForm,
+      document_type: docType,
+      direction: cfg.direction,
+      document_number: data.document_number || "",
+      issue_date: data.issue_date || new Date().toISOString().split("T")[0],
+      sale_date: data.sale_date || "",
+      due_date: data.due_date || "",
+      contractor_name: data.contractor_name || "",
+      contractor_nip: data.contractor_nip || "",
+      net_amount: data.net_amount != null ? data.net_amount.toString() : "",
+      vat_rate: data.net_amount && data.vat_amount
+        ? ((data.vat_amount / data.net_amount) * 100).toFixed(0)
+        : "23",
+      payment_method: data.payment_method || "",
+      payment_status: "UNPAID",
+      paid_amount: "",
+    });
+
+    // Match contractor by NIP
+    if (data.contractor_nip) {
+      const match = clients.find((c: any) => c.nip === data.contractor_nip);
+      if (match) {
+        setForm(prev => ({
+          ...prev,
+          client_id: match.id,
+          contractor_name: match.display_name || match.company_name || [match.first_name, match.last_name].filter(Boolean).join(" ") || prev.contractor_name,
+        }));
+        toast.info(`Dopasowano kontrahenta: ${match.display_name || match.company_name}`);
+      }
+    }
+
+    // Set line items if available
+    if (data.line_items?.length > 0) {
+      setLineItems(data.line_items.map(item => ({
+        name: item.name || "",
+        quantity: (item.quantity || 1).toString(),
+        unit: item.unit || "szt.",
+        unit_net: (item.unit_net || 0).toString(),
+        vat_rate: (item.vat_rate || 23).toString(),
+        item_type: "SERVICE" as DocItemType,
+      })));
+    } else {
+      setLineItems([{ ...emptyLineItem }]);
+    }
+
+    // Store source file for auto-attachment
+    setOcrSourceFile(data.sourceFile);
+
+    setEditId(null);
+    setFormOpen(true);
+  }
+
   // Filtering
   const filtered = docs.filter((d) => {
     if (filterTab === "PURCHASE" && d.document_type !== "PURCHASE_INVOICE") return false;
