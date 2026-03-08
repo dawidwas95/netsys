@@ -28,6 +28,7 @@ import SystemLogsPage from "@/pages/SystemLogsPage";
 import DataManagementPage from "@/pages/DataManagementPage";
 import SettingsPage from "@/pages/SettingsPage";
 import OrderStatusPage from "@/pages/OrderStatusPage";
+import ServiceBoardDisplay from "@/pages/ServiceBoardDisplay";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -59,6 +60,7 @@ const App = () => (
         <Routes>
           <Route path="/auth" element={<AuthPageWrapper />} />
           <Route path="/status" element={<OrderStatusPage />} />
+          <Route path="/service-board-display" element={<ServiceBoardDisplay />} />
           <Route element={<ProtectedRoutes />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/mobile" element={<MobileHomePage />} />
