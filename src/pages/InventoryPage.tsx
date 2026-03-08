@@ -162,7 +162,10 @@ export default function InventoryPage() {
 
   const activeItems = useMemo(() => items.filter((i: any) => !i.is_archived), [items]);
   const lowStock = useMemo(() =>
-    activeItems.filter((i: any) => i.stock_quantity <= i.minimum_quantity && i.is_active), [activeItems]
+    activeItems.filter((i: any) => {
+      const available = Number(i.stock_quantity) - (reservedMap[i.id] || 0);
+      return available <= i.minimum_quantity && i.is_active;
+    }), [activeItems, reservedMap]
   );
   const totalValue = useMemo(() =>
     activeItems.reduce((sum: number, i: any) => {
@@ -176,6 +179,7 @@ export default function InventoryPage() {
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ["inventory_items"] });
     queryClient.invalidateQueries({ queryKey: ["inventory_movements"] });
+    queryClient.invalidateQueries({ queryKey: ["inventory-reservations-active"] });
   };
 
   const addItem = useMutation({
