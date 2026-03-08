@@ -1754,6 +1754,7 @@ export type Database = {
       service_orders: {
         Row: {
           accessories_received: string | null
+          appointment_note: string | null
           archive_reason: string | null
           assigned_user_id: string | null
           client_description: string | null
@@ -1782,6 +1783,8 @@ export type Database = {
           parts_net: number | null
           payment_method: Database["public"]["Enums"]["payment_method"] | null
           pickup_code: string | null
+          planned_execution_date: string | null
+          planned_execution_time: string | null
           priority: Database["public"]["Enums"]["order_priority"]
           problem_description: string | null
           received_at: string
@@ -1804,6 +1807,7 @@ export type Database = {
         }
         Insert: {
           accessories_received?: string | null
+          appointment_note?: string | null
           archive_reason?: string | null
           assigned_user_id?: string | null
           client_description?: string | null
@@ -1832,6 +1836,8 @@ export type Database = {
           parts_net?: number | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           pickup_code?: string | null
+          planned_execution_date?: string | null
+          planned_execution_time?: string | null
           priority?: Database["public"]["Enums"]["order_priority"]
           problem_description?: string | null
           received_at?: string
@@ -1854,6 +1860,7 @@ export type Database = {
         }
         Update: {
           accessories_received?: string | null
+          appointment_note?: string | null
           archive_reason?: string | null
           assigned_user_id?: string | null
           client_description?: string | null
@@ -1882,6 +1889,8 @@ export type Database = {
           parts_net?: number | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           pickup_code?: string | null
+          planned_execution_date?: string | null
+          planned_execution_time?: string | null
           priority?: Database["public"]["Enums"]["order_priority"]
           problem_description?: string | null
           received_at?: string
