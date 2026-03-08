@@ -479,6 +479,7 @@ export default function InventoryPage() {
           <DialogHeader><DialogTitle>Korekta stanu: {adjustOpen?.itemName}</DialogTitle></DialogHeader>
           {adjustOpen && (
             <AdjustmentForm
+              currentStock={adjustOpen.currentStock}
               onSubmit={(d) => addAdjustment.mutate({ item_id: adjustOpen.itemId, ...d })}
               loading={addAdjustment.isPending}
             />
