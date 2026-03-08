@@ -336,6 +336,12 @@ function TeamManagement() {
                               <UserX className="mr-2 h-4 w-4" />
                               {u.is_active ? "Dezaktywuj" : "Aktywuj"}
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              setResetPasswordUserId(u.user_id);
+                              setNewPassword("");
+                            }}>
+                              <KeyRound className="mr-2 h-4 w-4" /> Resetuj hasło
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive"
                               onClick={() => {
