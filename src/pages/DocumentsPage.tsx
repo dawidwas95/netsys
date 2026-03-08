@@ -767,7 +767,7 @@ export default function DocumentsPage() {
                       {previewItems.map((pi: any) => (
                         <TableRow key={pi.id}>
                           <TableCell className="text-sm">{pi.name}</TableCell>
-                          <TableCell className="text-xs text-center"><Badge variant="outline" className="text-xs">{pi.description === "PRODUCT" ? "Produkt" : "Usługa"}</Badge></TableCell>
+                          <TableCell className="text-xs text-center"><Badge variant="outline" className="text-xs">{(pi.item_type || pi.description) === "PRODUCT" ? "Produkt" : (pi.item_type || pi.description) === "INTERNAL_COST" ? "Koszt" : "Usługa"}</Badge></TableCell>
                           <TableCell className="text-right text-sm tabular-nums">{pi.quantity}</TableCell>
                           <TableCell className="text-right text-sm tabular-nums">{formatCurrency(pi.unit_net)}</TableCell>
                           <TableCell className="text-right text-sm tabular-nums">{pi.vat_rate}%</TableCell>
