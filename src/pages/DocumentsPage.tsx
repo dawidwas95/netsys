@@ -26,13 +26,13 @@ import {
 import {
   Plus, Search, FileText, ArrowDownCircle, ArrowUpCircle, Pencil, Trash2, Eye,
   DollarSign, ShoppingCart, Receipt, FileCheck, FileMinus2, CalendarDays,
-  Building2, MapPin, Mail, Phone as PhoneIcon, Hash,
+  Building2, MapPin, Mail, Phone as PhoneIcon, Hash, Paperclip,
 } from "lucide-react";
 import { toast } from "sonner";
 import { SearchableSelect } from "@/components/SearchableSelect";
 import { ClientFormDialog } from "@/components/ClientFormDialog";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/types/database";
-import { DocumentAttachments } from "@/components/DocumentAttachments";
+import { DocumentAttachments, useDocumentAttachmentCounts } from "@/components/DocumentAttachments";
 import { createWarehouseDocument } from "@/lib/warehouseDocuments";
 
 type DocType = "PURCHASE_INVOICE" | "SALES_INVOICE" | "RECEIPT" | "PROFORMA" | "CORRECTION" | "OTHER";
@@ -221,6 +221,8 @@ export default function DocumentsPage() {
 
   const supplierClients = clients.filter((c: any) => c.business_role === "SUPPLIER" || c.business_role === "CUSTOMER_AND_SUPPLIER");
   const customerClients = clients.filter((c: any) => c.business_role === "CUSTOMER" || c.business_role === "CUSTOMER_AND_SUPPLIER");
+
+  const { data: attachmentCounts = {} } = useDocumentAttachmentCounts();
 
   const { data: inventoryItems = [] } = useQuery({
     queryKey: ["inventory-items-select"],
@@ -588,6 +590,7 @@ export default function DocumentsPage() {
                       {DOC_TYPE_SHORT[doc.document_type]}
                     </Badge>
                     <span className="font-medium font-mono text-sm">{doc.document_number}</span>
+                    {attachmentCounts[doc.id] && <Paperclip className="h-3 w-3 text-muted-foreground" />}
                   </div>
                   <Badge className={PAYMENT_STATUS_COLORS[doc.payment_status]} variant="secondary">{PAYMENT_STATUS_LABELS[doc.payment_status]}</Badge>
                 </div>
@@ -638,6 +641,7 @@ export default function DocumentsPage() {
                     </TableCell>
                     <TableCell>
                       <span className="font-medium font-mono text-sm">{doc.document_number}</span>
+                      {attachmentCounts[doc.id] && <span className="inline-flex ml-1.5" title={`${attachmentCounts[doc.id]} załącznik(ów)`}><Paperclip className="h-3 w-3 text-muted-foreground" /></span>}
                     </TableCell>
                     <TableCell>
                       <div>
@@ -1163,15 +1167,16 @@ export default function DocumentsPage() {
                   </div>
 
                   {/* Section: Attachments */}
-                  {editId && (
-                    <>
-                      <Separator />
-                      <div>
-                        <h3 className="text-sm font-semibold text-foreground mb-3">Załączniki</h3>
-                        <DocumentAttachments documentId={editId} />
-                      </div>
-                    </>
-                  )}
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <Paperclip className="h-4 w-4 text-muted-foreground" />
+                        Załączniki
+                      </h3>
+                      <DocumentAttachments documentId={editId} />
+                    </div>
+                  </>
                 </div>
 
                 {/* RIGHT: Summary Panel */}
