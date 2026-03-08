@@ -321,8 +321,10 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                               </TableRow>
                             ) : (
                               filteredInventory.map((item: any) => {
-                                const isLow = item.stock_quantity <= item.minimum_quantity;
-                                const noStock = item.stock_quantity <= 0;
+                                const available = getAvailableStock(item);
+                                const reserved = reservedMap[item.id] || 0;
+                                const isLow = available <= item.minimum_quantity;
+                                const noStock = available <= 0;
                                 return (
                                   <TableRow
                                     key={item.id}
