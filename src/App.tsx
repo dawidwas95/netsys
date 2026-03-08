@@ -31,6 +31,7 @@ import WarehouseDocumentsPage from "@/pages/WarehouseDocumentsPage";
 import OrderStatusPage from "@/pages/OrderStatusPage";
 import ServiceBoardDisplay from "@/pages/ServiceBoardDisplay";
 import DailyPlanPage from "@/pages/DailyPlanPage";
+import TechnicianStatsPage from "@/pages/TechnicianStatsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
