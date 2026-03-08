@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, Building2, User, MapPin, Phone, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { CLIENT_TYPE_LABELS, BUSINESS_ROLE_LABELS, type ClientType, type Client, type BusinessRole } from "@/types/database";
 
