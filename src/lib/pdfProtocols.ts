@@ -291,7 +291,6 @@ export const INTAKE_SECTIONS: PdfSection[] = [
   { id: "problem_description", label: "Opis usterki", enabled: true },
   { id: "visual_condition", label: "Stan wizualny", enabled: true },
   { id: "accessories", label: "Akcesoria", enabled: true },
-  { id: "lock_code", label: "Kod / hasło", enabled: true },
   { id: "terms", label: "Warunki serwisu", enabled: true },
   { id: "signatures", label: "Podpisy", enabled: true },
   { id: "footer", label: "Stopka", enabled: true },
