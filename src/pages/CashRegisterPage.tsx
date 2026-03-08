@@ -16,8 +16,12 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, ArrowDownToLine, ArrowUpFromLine, Wallet, TrendingUp, TrendingDown } from "lucide-react";
+import { Plus, ArrowDownToLine, ArrowUpFromLine, Wallet, TrendingUp, TrendingDown, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -32,6 +36,7 @@ export default function CashRegisterPage() {
   const queryClient = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [revertTx, setRevertTx] = useState<any | null>(null);
   const [filterDate, setFilterDate] = useState("");
 
   const { data: transactions = [], isLoading } = useQuery({
@@ -79,6 +84,17 @@ export default function CashRegisterPage() {
       .reduce((sum: number, t: any) => sum + (t.display_amount || Number(t.amount)), 0);
   }, [transactions]);
 
+  const { data: myRoles = [] } = useQuery({
+    queryKey: ["my-roles-cash"],
+    queryFn: async () => {
+      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user?.id);
+      return data ?? [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const canCorrectCash = myRoles.some((r: any) => r.role === "ADMIN" || r.role === "MANAGER");
+
   const addTransaction = useMutation({
     mutationFn: async (data: any) => {
       const { error } = await supabase.from("cash_transactions").insert({
@@ -94,6 +110,32 @@ export default function CashRegisterPage() {
       toast.success("Zapisano operację kasową");
     },
     onError: () => toast.error("Błąd zapisu operacji"),
+  });
+
+  const reverseTransaction = useMutation({
+    mutationFn: async (tx: any) => {
+      const amount = Number(tx.display_amount || tx.gross_amount || tx.amount || 0);
+      if (amount <= 0) throw new Error("Nieprawidłowa kwota do korekty");
+      const { error } = await supabase.from("cash_transactions").insert({
+        transaction_type: tx.transaction_type === "IN" ? "OUT" : "IN",
+        source_type: "CORRECTION",
+        related_order_id: tx.related_order_id ?? null,
+        amount,
+        gross_amount: amount,
+        vat_amount: 0,
+        payment_method: tx.payment_method ?? "CASH",
+        description: `Korekta wpisu kasowego ${tx.id}`,
+        transaction_date: new Date().toISOString().split("T")[0],
+        user_id: user?.id,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cash_transactions"] });
+      toast.success("Dodano korektę wpisu kasowego");
+      setRevertTx(null);
+    },
+    onError: (err: any) => toast.error(err?.message || "Błąd korekty kasowej"),
   });
 
   return (
@@ -196,13 +238,14 @@ export default function CashRegisterPage() {
                 <TableHead>Opis</TableHead>
                 <TableHead>Zlecenie</TableHead>
                 <TableHead className="text-right">Kwota</TableHead>
+                <TableHead className="w-[110px] text-right">Akcje</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Ładowanie...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Ładowanie...</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Brak operacji</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Brak operacji</TableCell></TableRow>
               ) : (
                 filtered.map((t: any) => (
                   <TableRow key={t.id}>
@@ -227,6 +270,13 @@ export default function CashRegisterPage() {
                     <TableCell className={`text-right tabular-nums font-medium ${t.transaction_type === "IN" ? "text-emerald-400" : "text-red-400"}`}>
                       {t.transaction_type === "IN" ? "+" : "-"}{Number(t.display_amount || t.amount).toFixed(2)} zł
                     </TableCell>
+                    <TableCell className="text-right">
+                      {canCorrectCash && t.source_type !== "CORRECTION" && (
+                        <Button variant="outline" size="sm" onClick={() => setRevertTx(t)}>
+                          <RotateCcw className="h-3.5 w-3.5 mr-1" /> Korekta
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -234,6 +284,23 @@ export default function CashRegisterPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!revertTx} onOpenChange={(open) => { if (!open) setRevertTx(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cofnąć wpis kasowy?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Zamiast usuwania zostanie dodana transakcja korygująca o przeciwnej wartości. To zachowuje pełną historię kasy.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction onClick={() => revertTx && reverseTransaction.mutate(revertTx)}>
+              {reverseTransaction.isPending ? "Korygowanie..." : "Dodaj korektę"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

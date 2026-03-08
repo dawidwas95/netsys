@@ -90,6 +90,35 @@ export default function OrderDetailPage() {
     enabled: !!id,
   });
 
+  const { data: myRoles = [] } = useQuery({
+    queryKey: ["my-roles"],
+    queryFn: async () => {
+      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user?.id);
+      return data ?? [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const isAdmin = myRoles.some((r: any) => r.role === "ADMIN" || r.role === "MANAGER");
+
+  const { data: linkedStats } = useQuery({
+    queryKey: ["order-linked-stats", id],
+    queryFn: async () => {
+      const [cashRes, docsRes] = await Promise.all([
+        supabase.from("cash_transactions").select("id, transaction_type, amount, gross_amount", { count: "exact" }).eq("related_order_id", id!),
+        supabase.from("documents").select("id", { count: "exact" }).eq("related_order_id", id!),
+      ]);
+      if (cashRes.error) throw cashRes.error;
+      if (docsRes.error) throw docsRes.error;
+      return {
+        cashCount: cashRes.count ?? 0,
+        docCount: docsRes.count ?? 0,
+        cashRows: cashRes.data ?? [],
+      };
+    },
+    enabled: !!id,
+  });
+
   // Profiles for comment authors
   const { data: profiles = [] } = useQuery({
     queryKey: ["profiles"],
@@ -256,6 +285,119 @@ export default function OrderDetailPage() {
       toast.success("Zlecenie zaktualizowane");
     },
     onError: (err: any) => toast.error(err.message),
+  });
+
+  const safeDeleteOrder = useMutation({
+    mutationFn: async () => {
+      const hasFinancialLinks = (linkedStats?.cashCount ?? 0) > 0 || (linkedStats?.docCount ?? 0) > 0;
+
+      if (hasFinancialLinks) {
+        // create reversing cash corrections for linked service-order cash entries
+        const serviceOrderCash = (linkedStats?.cashRows ?? []).filter((r: any) => r);
+        for (const t of serviceOrderCash) {
+          const baseAmount = Number(t.gross_amount || t.amount || 0);
+          if (baseAmount <= 0) continue;
+          await supabase.from("cash_transactions").insert({
+            transaction_type: t.transaction_type === "IN" ? "OUT" : "IN",
+            source_type: "CORRECTION",
+            related_order_id: id,
+            amount: baseAmount,
+            gross_amount: baseAmount,
+            vat_amount: 0,
+            payment_method: "CASH",
+            description: `Korekta do zlecenia ${order?.order_number}`,
+            transaction_date: new Date().toISOString().split("T")[0],
+            user_id: user?.id,
+          });
+        }
+
+        // linked records exist -> safe cancellation/archive instead of delete
+        const { error: updError } = await supabase
+          .from("service_orders")
+          .update({
+            status: "CANCELLED",
+            is_archived: true,
+            is_paid: false,
+            paid_at: null,
+            archive_reason: "Anulowane automatycznie (powiązania finansowe)",
+            updated_by: user?.id,
+          })
+          .eq("id", id!);
+        if (updError) throw updError;
+        return "cancelled";
+      }
+
+      // no links -> admin can soft-delete, others cancel+archive
+      if (!isAdmin) {
+        const { error: cancelError } = await supabase
+          .from("service_orders")
+          .update({ status: "CANCELLED", is_archived: true, archive_reason: "Anulowane przez użytkownika", updated_by: user?.id })
+          .eq("id", id!);
+        if (cancelError) throw cancelError;
+        return "cancelled";
+      }
+
+      const { error } = await supabase
+        .from("service_orders")
+        .update({ deleted_at: new Date().toISOString(), updated_by: user?.id })
+        .eq("id", id!);
+      if (error) throw error;
+      return "deleted";
+    },
+    onSuccess: (mode) => {
+      queryClient.invalidateQueries({ queryKey: ["service-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["kanban-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["cash_transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["order", id] });
+      if (mode === "deleted") toast.success("Zlecenie usunięte");
+      else toast.success("Zlecenie anulowane i zarchiwizowane (bezpieczny tryb)");
+      navigate("/orders");
+    },
+    onError: (err: any) => toast.error(err?.message || "Błąd operacji"),
+  });
+
+  const safeCancelOrder = useMutation({
+    mutationFn: async () => {
+      const serviceOrderCash = (linkedStats?.cashRows ?? []).filter((r: any) => r);
+      for (const t of serviceOrderCash) {
+        const baseAmount = Number(t.gross_amount || t.amount || 0);
+        if (baseAmount <= 0) continue;
+        await supabase.from("cash_transactions").insert({
+          transaction_type: t.transaction_type === "IN" ? "OUT" : "IN",
+          source_type: "CORRECTION",
+          related_order_id: id,
+          amount: baseAmount,
+          gross_amount: baseAmount,
+          vat_amount: 0,
+          payment_method: "CASH",
+          description: `Korekta anulowanego zlecenia ${order?.order_number}`,
+          transaction_date: new Date().toISOString().split("T")[0],
+          user_id: user?.id,
+        });
+      }
+
+      const { error } = await supabase
+        .from("service_orders")
+        .update({
+          status: "CANCELLED",
+          is_archived: true,
+          is_paid: false,
+          paid_at: null,
+          archive_reason: "Anulowane ręcznie",
+          updated_by: user?.id,
+        })
+        .eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["order", id] });
+      queryClient.invalidateQueries({ queryKey: ["cash_transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["service-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["kanban-orders"] });
+      toast.success("Zlecenie anulowane z korektą finansową");
+      setCancelDialogOpen(false);
+    },
+    onError: (err: any) => toast.error(err?.message || "Nie udało się anulować zlecenia"),
   });
 
   function handleSave() { if (!editForm) return; updateOrder.mutate(editForm); }
@@ -456,11 +598,8 @@ export default function OrderDetailPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Nie</AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              updateOrder.mutate({ status: "CANCELLED" });
-              setCancelDialogOpen(false);
-            }}>
-              Anuluj zlecenie
+            <AlertDialogAction onClick={() => safeCancelOrder.mutate()}>
+              {safeCancelOrder.isPending ? "Anulowanie..." : "Anuluj zlecenie"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -470,20 +609,19 @@ export default function OrderDetailPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Usunąć zlecenie?</AlertDialogTitle>
+            <AlertDialogTitle>{(linkedStats?.cashCount ?? 0) > 0 || (linkedStats?.docCount ?? 0) > 0 ? "Usunąć / anulować zlecenie?" : "Usunąć zlecenie?"}</AlertDialogTitle>
             <AlertDialogDescription>
-              Zlecenie {order.order_number} zostanie trwale usunięte (soft delete). Tej operacji nie można cofnąć z poziomu aplikacji.
+              {(linkedStats?.cashCount ?? 0) > 0 || (linkedStats?.docCount ?? 0) > 0
+                ? `Wykryto powiązania finansowe (kasa: ${linkedStats?.cashCount ?? 0}, dokumenty: ${linkedStats?.docCount ?? 0}). System wykona bezpieczne anulowanie, archiwizację i korekty finansowe.`
+                : isAdmin
+                  ? "Brak powiązań finansowych — zlecenie może zostać usunięte."
+                  : "Brak uprawnień do trwałego usunięcia. Zlecenie zostanie anulowane i zarchiwizowane."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Anuluj</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={async () => {
-              const { error } = await supabase.from("service_orders").update({ deleted_at: new Date().toISOString(), updated_by: user?.id }).eq("id", id!);
-              if (error) { toast.error(error.message); return; }
-              toast.success("Zlecenie usunięte");
-              navigate("/orders");
-            }}>
-              Usuń trwale
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => safeDeleteOrder.mutate()}>
+              {safeDeleteOrder.isPending ? "Przetwarzanie..." : ((linkedStats?.cashCount ?? 0) > 0 || (linkedStats?.docCount ?? 0) > 0 || !isAdmin) ? "Anuluj bezpiecznie" : "Usuń trwale"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
