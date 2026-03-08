@@ -56,6 +56,7 @@ import { TechnicianAssignment } from "@/components/TechnicianAssignment";
 import { MobileQuickActions } from "@/components/MobileQuickActions";
 import { OrderPurchaseRequests } from "@/components/order/OrderPurchaseRequests";
 import { MentionTextarea, renderCommentWithMentions } from "@/components/MentionTextarea";
+import { ScheduleOrderDialog } from "@/components/ScheduleOrderDialog";
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(v);
@@ -655,6 +656,14 @@ export default function OrderDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {!isCompleted && (
+            <ScheduleOrderDialog
+              orderId={order.id}
+              orderNumber={order.order_number}
+              currentDate={(order as any).planned_execution_date}
+              currentTime={(order as any).planned_execution_time}
+            />
+          )}
           {editDirty && (
             <Button size="sm" onClick={handleSave} disabled={updateOrder.isPending}>
               <Save className="mr-1 h-4 w-4" /> {updateOrder.isPending ? "Zapis..." : "Zapisz zmiany"}

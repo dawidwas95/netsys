@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { TechnicianBadges, QuickAssignButton } from "@/components/TechnicianAssignment";
+import { ScheduleBadgeWithAction } from "@/components/ScheduleOrderDialog";
 import {
   ORDER_STATUS_LABELS, ORDER_PRIORITY_LABELS, SERVICE_TYPE_LABELS,
   DEPARTMENT_LABELS, DEPARTMENT_ICONS,
@@ -248,7 +249,7 @@ export default function ServiceOrdersPage() {
                   {order.order_number}
                 </span>
                 <div className="flex items-center gap-1">
-                  <ScheduleBadge date={(order as any).planned_execution_date} time={(order as any).planned_execution_time} />
+                  <ScheduleBadgeWithAction orderId={order.id} orderNumber={order.order_number} date={(order as any).planned_execution_date} time={(order as any).planned_execution_time} />
                   <OrderStatusBadge status={order.status} />
                 </div>
               </div>
@@ -310,7 +311,7 @@ export default function ServiceOrdersPage() {
                       <Link to={`/orders/${order.id}`} className="font-medium text-primary hover:underline font-mono">
                         {order.order_number}
                       </Link>
-                      <ScheduleBadge date={(order as any).planned_execution_date} time={(order as any).planned_execution_time} />
+                      <ScheduleBadgeWithAction orderId={order.id} orderNumber={order.order_number} date={(order as any).planned_execution_date} time={(order as any).planned_execution_time} />
                     </div>
                   </TableCell>
                   <TableCell className="text-xs">{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</TableCell>
@@ -337,32 +338,6 @@ export default function ServiceOrdersPage() {
   );
 }
 
-function ScheduleBadge({ date, time }: { date?: string; time?: string }) {
-  if (!date) return null;
-  const today = new Date().toISOString().split("T")[0];
-  const isToday = date === today;
-  const isOverdue = date < today;
-
-  if (isToday) {
-    return (
-      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
-        📅 {time ? time.slice(0, 5) : "Dziś"}
-      </Badge>
-    );
-  }
-  if (isOverdue) {
-    return (
-      <Badge variant="destructive" className="text-[10px] px-1.5 py-0 shrink-0">
-        ⚠ Zaległe
-      </Badge>
-    );
-  }
-  return (
-    <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 text-muted-foreground">
-      📅 {new Date(date).toLocaleDateString("pl-PL", { day: "numeric", month: "short" })}
-    </Badge>
-  );
-}
 
 // ── New Order Form (uses shared sections) ──
 function NewOrderForm({ onSubmit, loading }: {
