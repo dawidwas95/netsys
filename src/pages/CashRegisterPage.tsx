@@ -238,6 +238,7 @@ export default function CashRegisterPage() {
                 <TableHead>Opis</TableHead>
                 <TableHead>Zlecenie</TableHead>
                 <TableHead className="text-right">Kwota</TableHead>
+                <TableHead className="w-[110px] text-right">Akcje</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
