@@ -369,8 +369,9 @@ export function QuickAssignButton({ orderId, orderNumber }: { orderId: string; o
 
   const assignTech = useMutation({
     mutationFn: async (userId: string) => {
+      console.info("[QuickAssignButton] assign start", { orderId, userId });
       if (assigned.includes(userId)) {
-        throw new Error("Ten technik jest już przypisany do tego zlecenia");
+        throw new Error("Technik jest już przypisany do tego zlecenia");
       }
       const { error } = await supabase.from("order_technicians").upsert({
         order_id: orderId,
@@ -378,14 +379,24 @@ export function QuickAssignButton({ orderId, orderNumber }: { orderId: string; o
         is_primary: true,
         assigned_by: user?.id,
       } as any, { onConflict: "order_id,user_id", ignoreDuplicates: true });
-      if (error) throw error;
+      if (error) {
+        console.error("[QuickAssignButton] assign db error", { orderId, userId, error });
+        throw error;
+      }
+      console.info("[QuickAssignButton] assign success", { orderId, userId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-technicians", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["order-technician-ids", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["service-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["kanban-orders"] });
       toast.success("Technik przypisany");
       setOpen(false);
     },
-    onError: (err: any) => toast.error(err.message || "Błąd przypisywania technika"),
+    onError: (err: any) => {
+      console.error("[QuickAssignButton] assign failed", { orderId, error: err });
+      toast.error(err?.message || "Błąd przypisywania technika");
+    },
   });
 
   return (
