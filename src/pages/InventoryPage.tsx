@@ -277,15 +277,15 @@ export default function InventoryPage() {
         </TabsList>
 
         <TabsContent value="items" className="space-y-4">
-          <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-wrap">
             <Input
               placeholder="Szukaj: ID, nazwa, producent, model kompatybilny..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="max-w-md"
+              className="flex-1 min-h-[44px]"
             />
             <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Kategoria" /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-[180px] min-h-[44px]"><SelectValue placeholder="Kategoria" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">Wszystkie kategorie</SelectItem>
                 {categories.map((c: any) => (
