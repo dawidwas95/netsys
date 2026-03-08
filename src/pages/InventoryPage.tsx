@@ -351,15 +351,15 @@ export default function InventoryPage() {
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <div className="flex gap-1 flex-wrap">
                                 <Button size="sm" variant="ghost" className="h-7 px-2" title="Przyjęcie"
-                                  onClick={() => setMoveOpen({ itemId: item.id, itemName: item.name, type: "IN" })}>
+                                  onClick={(e) => { e.stopPropagation(); setMoveOpen({ itemId: item.id, itemName: item.name, type: "IN", currentStock: Number(item.stock_quantity) }); }}>
                                   <ArrowDownToLine className="h-3 w-3 text-emerald-400" />
                                 </Button>
                                 <Button size="sm" variant="ghost" className="h-7 px-2" title="Wydanie"
-                                  onClick={() => setMoveOpen({ itemId: item.id, itemName: item.name, type: "OUT" })}>
+                                  onClick={(e) => { e.stopPropagation(); setMoveOpen({ itemId: item.id, itemName: item.name, type: "OUT", currentStock: Number(item.stock_quantity) }); }}>
                                   <ArrowUpFromLine className="h-3 w-3 text-red-400" />
                                 </Button>
                                 <Button size="sm" variant="ghost" className="h-7 px-2" title="Korekta"
-                                  onClick={() => setAdjustOpen({ itemId: item.id, itemName: item.name })}>
+                                  onClick={(e) => { e.stopPropagation(); setAdjustOpen({ itemId: item.id, itemName: item.name, currentStock: Number(item.stock_quantity) }); }}>
                                   <MinusCircle className="h-3 w-3 text-amber-400" />
                                 </Button>
                                 <Button size="sm" variant="ghost" className="h-7 px-2" title="Edytuj"
