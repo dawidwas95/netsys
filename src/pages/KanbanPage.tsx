@@ -27,14 +27,19 @@ import { OrderStatusBadge } from "@/pages/DashboardPage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Calendar, User, Monitor, AlertTriangle, CheckCircle, UserPlus, Building2 } from "lucide-react";
+import { Search, Calendar, User, Monitor, AlertTriangle, CheckCircle, UserPlus, Building2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { TechnicianBadges, QuickAssignButton } from "@/components/TechnicianAssignment";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
+import { NewOrderForm } from "@/pages/ServiceOrdersPage";
+import { type ServiceOrderInsert } from "@/types/database";
 
 export default function KanbanPage() {
   const [search, setSearch] = useState("");
