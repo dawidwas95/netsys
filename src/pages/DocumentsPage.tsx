@@ -930,6 +930,11 @@ export default function DocumentsPage() {
             <div><Label>Opis</Label><Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
             <div><Label>Notatki</Label><Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} /></div>
 
+            {/* Attachments */}
+            <div className="rounded-lg border border-border p-4">
+              <DocumentAttachments documentId={editId} />
+            </div>
+
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={resetForm}>Anuluj</Button>
               <Button
