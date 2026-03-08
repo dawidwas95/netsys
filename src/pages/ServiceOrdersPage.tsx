@@ -294,7 +294,7 @@ export default function ServiceOrdersPage() {
                       <ScheduleBadge date={(order as any).planned_execution_date} time={(order as any).planned_execution_time} />
                     </div>
                   </TableCell>
-                  <TableCell className="text-xs">{SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</TableCell>
+                  <TableCell className="text-xs">{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</TableCell>
                   <TableCell>{order.clients?.display_name}</TableCell>
                   <TableCell className="text-sm">
                     {order.devices ? `${order.devices.manufacturer} ${order.devices.model}` : "—"}
