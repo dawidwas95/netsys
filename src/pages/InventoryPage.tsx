@@ -52,8 +52,8 @@ export default function InventoryPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
   const [detailItem, setDetailItem] = useState<any>(null);
-  const [moveOpen, setMoveOpen] = useState<{ itemId: string; itemName: string; type: "IN" | "OUT" } | null>(null);
-  const [adjustOpen, setAdjustOpen] = useState<{ itemId: string; itemName: string } | null>(null);
+  const [moveOpen, setMoveOpen] = useState<{ itemId: string; itemName: string; type: "IN" | "OUT"; currentStock: number } | null>(null);
+  const [adjustOpen, setAdjustOpen] = useState<{ itemId: string; itemName: string; currentStock: number } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<any>(null);
   const [archiveConfirm, setArchiveConfirm] = useState<any>(null);
   const [search, setSearch] = useState("");
@@ -351,15 +351,15 @@ export default function InventoryPage() {
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <div className="flex gap-1 flex-wrap">
                                 <Button size="sm" variant="ghost" className="h-7 px-2" title="Przyjęcie"
-                                  onClick={() => setMoveOpen({ itemId: item.id, itemName: item.name, type: "IN" })}>
+                                  onClick={(e) => { e.stopPropagation(); setMoveOpen({ itemId: item.id, itemName: item.name, type: "IN", currentStock: Number(item.stock_quantity) }); }}>
                                   <ArrowDownToLine className="h-3 w-3 text-emerald-400" />
                                 </Button>
                                 <Button size="sm" variant="ghost" className="h-7 px-2" title="Wydanie"
-                                  onClick={() => setMoveOpen({ itemId: item.id, itemName: item.name, type: "OUT" })}>
+                                  onClick={(e) => { e.stopPropagation(); setMoveOpen({ itemId: item.id, itemName: item.name, type: "OUT", currentStock: Number(item.stock_quantity) }); }}>
                                   <ArrowUpFromLine className="h-3 w-3 text-red-400" />
                                 </Button>
                                 <Button size="sm" variant="ghost" className="h-7 px-2" title="Korekta"
-                                  onClick={() => setAdjustOpen({ itemId: item.id, itemName: item.name })}>
+                                  onClick={(e) => { e.stopPropagation(); setAdjustOpen({ itemId: item.id, itemName: item.name, currentStock: Number(item.stock_quantity) }); }}>
                                   <MinusCircle className="h-3 w-3 text-amber-400" />
                                 </Button>
                                 <Button size="sm" variant="ghost" className="h-7 px-2" title="Edytuj"
@@ -442,6 +442,7 @@ export default function InventoryPage() {
           </DialogHeader>
           <MovementForm
             type={moveOpen?.type || "IN"}
+            currentStock={moveOpen?.currentStock ?? 0}
             onSubmit={(d) => addMovement.mutate({ ...d, item_id: moveOpen?.itemId, movement_type: moveOpen?.type })}
             loading={addMovement.isPending}
           />
@@ -478,6 +479,7 @@ export default function InventoryPage() {
           <DialogHeader><DialogTitle>Korekta stanu: {adjustOpen?.itemName}</DialogTitle></DialogHeader>
           {adjustOpen && (
             <AdjustmentForm
+              currentStock={adjustOpen.currentStock}
               onSubmit={(d) => addAdjustment.mutate({ item_id: adjustOpen.itemId, ...d })}
               loading={addAdjustment.isPending}
             />
@@ -729,15 +731,63 @@ function ItemForm({ onSubmit, loading, initialData, isEdit, categories }: {
 }
 
 // ── Movement Form ──
-function MovementForm({ type, onSubmit, loading }: { type: "IN" | "OUT"; onSubmit: (d: any) => void; loading: boolean }) {
+function MovementForm({ type, currentStock, onSubmit, loading }: { type: "IN" | "OUT"; currentStock: number; onSubmit: (d: any) => void; loading: boolean }) {
   const [quantity, setQuantity] = useState("1");
   const [sourceType, setSourceType] = useState("MANUAL");
   const [notes, setNotes] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false);
+  const qty = parseFloat(quantity) || 0;
+  const newStock = type === "IN" ? currentStock + qty : currentStock - qty;
+  const isInvalid = type === "OUT" && qty > currentStock;
+
+  function handleSubmit() {
+    if (isInvalid) { toast.error("Niewystarczający stan magazynowy"); return; }
+    if (qty <= 0) { toast.error("Podaj ilość większą od 0"); return; }
+    setShowConfirm(true);
+  }
+
+  function handleConfirm() {
+    setShowConfirm(false);
+    onSubmit({ quantity: qty, source_type: sourceType, notes: notes || null });
+  }
+
+  if (showConfirm) {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-lg border p-4 space-y-2">
+          <div className="text-sm font-medium">Potwierdzenie operacji</div>
+          <div className="grid grid-cols-3 gap-2 text-sm">
+            <div><span className="text-muted-foreground">Przed:</span> <span className="font-bold">{currentStock}</span></div>
+            <div className="text-center"><span className="font-bold">{type === "IN" ? "+" : "−"}{qty}</span></div>
+            <div className="text-right"><span className="text-muted-foreground">Po:</span> <span className="font-bold">{newStock}</span></div>
+          </div>
+          {notes && <div className="text-xs text-muted-foreground">Notatka: {notes}</div>}
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" className="flex-1" onClick={() => setShowConfirm(false)}>Cofnij</Button>
+          <Button className="flex-1" disabled={loading} onClick={handleConfirm}>
+            {loading ? "Zapisywanie..." : "Potwierdź"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
+      <div className="rounded-lg border p-3 text-sm">
+        <span className="text-muted-foreground">Aktualny stan:</span>{" "}
+        <span className="font-bold">{currentStock}</span>
+        {qty > 0 && (
+          <span className="ml-2">
+            → <span className={`font-bold ${isInvalid ? "text-destructive" : ""}`}>{newStock}</span>
+          </span>
+        )}
+      </div>
       <div className="space-y-1">
         <Label>Ilość</Label>
         <Input type="number" min="0.01" step="0.01" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+        {isInvalid && <p className="text-xs text-destructive">Niewystarczający stan magazynowy (dostępne: {currentStock})</p>}
       </div>
       <div className="space-y-1">
         <Label>Źródło</Label>
@@ -751,50 +801,107 @@ function MovementForm({ type, onSubmit, loading }: { type: "IN" | "OUT"; onSubmi
         </Select>
       </div>
       <div className="space-y-1"><Label>Notatki</Label><Input value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
-      <Button className="w-full" disabled={loading} onClick={() => onSubmit({
-        quantity: parseFloat(quantity) || 0, source_type: sourceType, notes: notes || null,
-      })}>
-        {loading ? "Zapisywanie..." : type === "IN" ? "Przyjmij towar" : "Wydaj towar"}
+      <Button className="w-full" disabled={loading || isInvalid || qty <= 0} onClick={handleSubmit}>
+        {type === "IN" ? "Przyjmij towar" : "Wydaj towar"}
       </Button>
     </div>
   );
 }
 
 // ── Adjustment Form ──
-function AdjustmentForm({ onSubmit, loading }: {
+function AdjustmentForm({ currentStock, onSubmit, loading }: {
+  currentStock: number;
   onSubmit: (d: { quantity: number; movement_type: MovementType; notes: string }) => void;
   loading: boolean;
 }) {
   const [quantity, setQuantity] = useState("1");
-  const [reason, setReason] = useState<MovementType>("ADJUSTMENT");
+  const [reason, setReason] = useState<MovementType>("OUT");
   const [notes, setNotes] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false);
+  const qty = parseFloat(quantity) || 0;
+
+  let newStock = currentStock;
+  if (reason === "IN") newStock = currentStock + qty;
+  else if (reason === "ADJUSTMENT") newStock = qty;
+  else newStock = currentStock - qty;
+
+  const isDecrease = ["OUT", "DAMAGE", "INTERNAL_USE"].includes(reason);
+  const isInvalid = isDecrease && qty > currentStock;
+
+  function handleSubmit() {
+    if (qty <= 0 && reason !== "ADJUSTMENT") { toast.error("Podaj ilość większą od 0"); return; }
+    if (isInvalid) { toast.error("Niewystarczający stan magazynowy"); return; }
+    if (!notes.trim()) { toast.error("Podaj powód korekty"); return; }
+    setShowConfirm(true);
+  }
+
+  function handleConfirm() {
+    setShowConfirm(false);
+    onSubmit({ quantity: qty, movement_type: reason, notes: notes.trim() });
+  }
+
+  if (showConfirm) {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-lg border p-4 space-y-2">
+          <div className="text-sm font-medium">Potwierdzenie korekty</div>
+          <div className="grid grid-cols-3 gap-2 text-sm">
+            <div><span className="text-muted-foreground">Przed:</span> <span className="font-bold">{currentStock}</span></div>
+            <div className="text-center">
+              <span className="font-bold">
+                {reason === "ADJUSTMENT" ? `= ${qty}` : reason === "IN" ? `+${qty}` : `−${qty}`}
+              </span>
+            </div>
+            <div className="text-right"><span className="text-muted-foreground">Po:</span> <span className="font-bold">{newStock}</span></div>
+          </div>
+          <div className="text-xs text-muted-foreground">Typ: {MOVEMENT_LABELS[reason]}</div>
+          <div className="text-xs text-muted-foreground">Powód: {notes}</div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" className="flex-1" onClick={() => setShowConfirm(false)}>Cofnij</Button>
+          <Button className="flex-1" disabled={loading} onClick={handleConfirm}>
+            {loading ? "Zapisywanie..." : "Potwierdź korektę"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
+      <div className="rounded-lg border p-3 text-sm">
+        <span className="text-muted-foreground">Aktualny stan:</span>{" "}
+        <span className="font-bold">{currentStock}</span>
+        {qty > 0 && (
+          <span className="ml-2">
+            → <span className={`font-bold ${isInvalid ? "text-destructive" : ""}`}>{newStock}</span>
+          </span>
+        )}
+      </div>
       <div className="space-y-1">
         <Label>Rodzaj korekty</Label>
         <Select value={reason} onValueChange={(v) => setReason(v as MovementType)}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="IN">Zwiększenie stanu (+)</SelectItem>
-            <SelectItem value="ADJUSTMENT">Korekta (ustawienie stanu)</SelectItem>
             <SelectItem value="OUT">Zmniejszenie stanu (−)</SelectItem>
-            <SelectItem value="DAMAGE">Uszkodzenie / utrata</SelectItem>
-            <SelectItem value="INTERNAL_USE">Użycie wewnętrzne</SelectItem>
+            <SelectItem value="ADJUSTMENT">Korekta absolutna (ustaw stan)</SelectItem>
+            <SelectItem value="DAMAGE">Uszkodzenie / utrata (−)</SelectItem>
+            <SelectItem value="INTERNAL_USE">Użycie wewnętrzne (−)</SelectItem>
           </SelectContent>
         </Select>
       </div>
       <div className="space-y-1">
         <Label>{reason === "ADJUSTMENT" ? "Nowy stan" : "Ilość"}</Label>
         <Input type="number" min="0" step="0.01" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+        {isInvalid && <p className="text-xs text-destructive">Niewystarczający stan magazynowy (dostępne: {currentStock})</p>}
       </div>
       <div className="space-y-1">
         <Label>Powód / notatka *</Label>
         <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Opisz powód korekty..." rows={3} />
       </div>
-      <Button className="w-full" disabled={loading || !notes.trim()} onClick={() => onSubmit({
-        quantity: parseFloat(quantity) || 0, movement_type: reason, notes: notes.trim(),
-      })}>
-        {loading ? "Zapisywanie..." : "Zapisz korektę"}
+      <Button className="w-full" disabled={loading || !notes.trim() || isInvalid || (qty <= 0 && reason !== "ADJUSTMENT")} onClick={handleSubmit}>
+        Zapisz korektę
       </Button>
     </div>
   );
