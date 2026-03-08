@@ -1068,10 +1068,11 @@ export default function DocumentsPage() {
 
                   {/* Section: Line Items */}
                   <div>
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-4">
                       <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                         <Receipt className="h-4 w-4 text-muted-foreground" />
                         {typeConfig.itemsLabel}
+                        {hasLineItems && <Badge variant="secondary" className="text-xs ml-1">{lineItems.filter(i => i.name.trim()).length}</Badge>}
                       </h3>
                       <div className="flex items-center gap-2">
                         <Button type="button" variant="outline" size="sm" className="h-8" onClick={() => setLineItems([...lineItems, { ...emptyLineItem, item_type: "SERVICE" }])}>
@@ -1080,21 +1081,24 @@ export default function DocumentsPage() {
                         <Button type="button" variant="outline" size="sm" className="h-8" onClick={() => setLineItems([...lineItems, { ...emptyLineItem, item_type: "PRODUCT" }])}>
                           <Plus className="h-3 w-3 mr-1" /> Towar
                         </Button>
+                        <Button type="button" variant="outline" size="sm" className="h-8" onClick={() => setLineItems([...lineItems, { ...emptyLineItem, item_type: "INTERNAL_COST" }])}>
+                          <Plus className="h-3 w-3 mr-1" /> Koszt
+                        </Button>
                       </div>
                     </div>
                     {/* Items header */}
-                    <div className="hidden sm:grid grid-cols-[1fr_100px_70px_110px_60px_110px_36px] gap-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2 px-1">
+                    <div className="hidden sm:grid grid-cols-[1fr_110px_70px_110px_65px_120px_36px] gap-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2 px-2 pb-2 border-b border-border">
                       <span>Nazwa pozycji</span>
                       <span>Typ</span>
-                      <span>Ilość</span>
-                      <span>Cena brutto</span>
-                      <span>VAT%</span>
-                      <span>Wartość brutto</span>
+                      <span className="text-center">Ilość</span>
+                      <span className="text-right">Cena brutto</span>
+                      <span className="text-center">VAT%</span>
+                      <span className="text-right">Wartość brutto</span>
                       <span></span>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       {lineItems.map((item, idx) => (
-                        <div key={idx} className="grid grid-cols-1 sm:grid-cols-[1fr_100px_70px_110px_60px_110px_36px] gap-2 items-center rounded-md border border-border/50 p-2 sm:p-0 sm:border-0 hover:bg-muted/20 transition-colors">
+                        <div key={idx} className="grid grid-cols-1 sm:grid-cols-[1fr_110px_70px_110px_65px_120px_36px] gap-2 items-center rounded-md border border-border/50 p-2 sm:p-1.5 sm:px-2 sm:border-0 hover:bg-muted/30 transition-colors">
                           <Input value={item.name} onChange={e => updateLineItem(idx, "name", e.target.value)} placeholder="Nazwa pozycji" className="h-9 text-sm" />
                           <Select value={item.item_type} onValueChange={v => updateLineItem(idx, "item_type", v)}>
                             <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
@@ -1104,13 +1108,13 @@ export default function DocumentsPage() {
                               <SelectItem value="INTERNAL_COST">Koszt wewn.</SelectItem>
                             </SelectContent>
                           </Select>
-                          <Input type="number" min="0" step="1" value={item.quantity} placeholder="1" onChange={e => updateLineItem(idx, "quantity", e.target.value)} className="h-9 text-sm tabular-nums" />
+                          <Input type="number" min="0" step="1" value={item.quantity} placeholder="1" onChange={e => updateLineItem(idx, "quantity", e.target.value)} className="h-9 text-sm tabular-nums text-center" />
                           <Input type="number" step="0.01"
                             value={(() => { const net = parseFloat(item.unit_net) || 0; const vat = parseFloat(item.vat_rate) || 23; return net > 0 ? (net * (1 + vat / 100)).toFixed(2) : ""; })()}
                             onChange={e => { const gross = parseFloat(e.target.value) || 0; const vat = parseFloat(item.vat_rate) || 23; updateLineItem(idx, "unit_net", (gross / (1 + vat / 100)).toFixed(2)); }}
-                            placeholder="0.00" className="h-9 text-sm tabular-nums" />
+                            placeholder="0.00" className="h-9 text-sm tabular-nums text-right" />
                           <Input type="number" min="0" max="100" value={item.vat_rate} placeholder="23" onChange={e => updateLineItem(idx, "vat_rate", e.target.value)} className="h-9 text-sm tabular-nums text-center" />
-                          <Input value={formatCurrency((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_net) || 0) * (1 + (parseFloat(item.vat_rate) || 23) / 100))} disabled className="h-9 text-sm bg-muted/50 tabular-nums font-medium" />
+                          <Input value={formatCurrency((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_net) || 0) * (1 + (parseFloat(item.vat_rate) || 23) / 100))} disabled className="h-9 text-sm bg-muted/50 tabular-nums font-medium text-right" />
                           {lineItems.length > 1 ? (
                             <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive" onClick={() => setLineItems(lineItems.filter((_, i) => i !== idx))}><Trash2 className="h-3.5 w-3.5" /></Button>
                           ) : <div />}
