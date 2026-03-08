@@ -72,7 +72,6 @@ export function PurchaseRequestFormDialog({ open, onOpenChange, orderId, editing
         description: editingRequest.description || "",
         urgency: editingRequest.urgency || "NORMAL",
         status: editingRequest.status || "NEW",
-        status: editingRequest.status || "NEW",
       });
     } else if (open && !editingRequest) {
       setForm(emptyForm);

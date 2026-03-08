@@ -38,15 +38,8 @@ const ALL_STATUSES = ["NEW", "TO_ORDER", "ORDERED", "DELIVERED", "CANCELLED"];
 
 const formatCurrency = (v: number | null | undefined) => v && v > 0 ? `${Number(v).toFixed(2)} zł` : null;
 
-const ApprovalBadge = ({ status }: { status: string }) => {
-  const cfg = APPROVAL_BADGE_CFG[status] || APPROVAL_BADGE_CFG.PENDING;
-  const Icon = cfg.icon;
-  return (
-    <Badge className={`text-[10px] px-1.5 gap-1 ${cfg.className}`} variant="outline">
-      <Icon className="h-3 w-3" />{APPROVAL_LABELS[status] || status}
-    </Badge>
-  );
-};
+
+
 
 const ProductLink = ({ url, supplier }: { url?: string | null; supplier?: string | null }) => {
   if (!url) return supplier ? <span className="text-xs text-muted-foreground">{supplier}</span> : <span className="text-muted-foreground">—</span>;
