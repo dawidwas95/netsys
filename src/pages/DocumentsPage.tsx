@@ -804,6 +804,9 @@ export default function DocumentsPage() {
                     value={(() => { const net = parseFloat(item.unit_net) || 0; const vat = parseFloat(item.vat_rate) || 23; return net > 0 ? (net * (1 + vat / 100)).toFixed(2) : ""; })()}
                     onChange={e => { const gross = parseFloat(e.target.value) || 0; const vat = parseFloat(item.vat_rate) || 23; updateLineItem(idx, "unit_net", (gross / (1 + vat / 100)).toFixed(2)); }}
                     placeholder="0.00" className="h-9 text-sm tabular-nums" />
+                  <Input type="number" min="0" max="100" value={item.vat_rate} placeholder="23" onChange={e => updateLineItem(idx, "vat_rate", e.target.value)} className="h-9 text-sm tabular-nums" />
+                  <Input value={formatCurrency(
+                    (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_net) || 0) * (1 + (parseFloat(item.vat_rate) || 23) / 100)
                   )} disabled className="h-9 text-sm bg-muted tabular-nums" />
                   {lineItems.length > 1 && (
                     <Button type="button" variant="ghost" size="icon" className="h-9 w-9" onClick={() => setLineItems(lineItems.filter((_, i) => i !== idx))}>
