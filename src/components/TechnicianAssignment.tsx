@@ -417,7 +417,13 @@ export function QuickAssignButton({ orderId, orderNumber }: { orderId: string; o
                   key={u.id}
                   value={u.name}
                   disabled={assigned.includes(u.id)}
-                  onSelect={() => assignTech.mutate(u.id)}
+                  onSelect={() => {
+                    if (assigned.includes(u.id)) {
+                      toast.error("Technik jest już przypisany do tego zlecenia");
+                      return;
+                    }
+                    assignTech.mutate(u.id);
+                  }}
                 >
                   <Check className={cn("mr-2 h-3 w-3", assigned.includes(u.id) ? "opacity-100" : "opacity-0")} />
                   <span className="text-xs">{u.name}</span>
