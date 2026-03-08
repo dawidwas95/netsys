@@ -285,6 +285,73 @@ export default function OrderDetailPage() {
       toast.success("Zlecenie zaktualizowane");
     },
     onError: (err: any) => toast.error(err.message),
+  const safeDeleteOrder = useMutation({
+    mutationFn: async () => {
+      const hasFinancialLinks = (linkedStats?.cashCount ?? 0) > 0 || (linkedStats?.docCount ?? 0) > 0;
+
+      if (hasFinancialLinks) {
+        // create reversing cash corrections for linked service-order cash entries
+        const serviceOrderCash = (linkedStats?.cashRows ?? []).filter((r: any) => r);
+        for (const t of serviceOrderCash) {
+          const baseAmount = Number(t.gross_amount || t.amount || 0);
+          if (baseAmount <= 0) continue;
+          await supabase.from("cash_transactions").insert({
+            transaction_type: t.transaction_type === "IN" ? "OUT" : "IN",
+            source_type: "CORRECTION",
+            related_order_id: id,
+            amount: baseAmount,
+            gross_amount: baseAmount,
+            vat_amount: 0,
+            payment_method: "CASH",
+            description: `Korekta do zlecenia ${order?.order_number}`,
+            transaction_date: new Date().toISOString().split("T")[0],
+            user_id: user?.id,
+          });
+        }
+
+        // linked records exist -> safe cancellation/archive instead of delete
+        const { error: updError } = await supabase
+          .from("service_orders")
+          .update({
+            status: "CANCELLED",
+            is_archived: true,
+            is_paid: false,
+            paid_at: null,
+            archive_reason: "Anulowane automatycznie (powiązania finansowe)",
+            updated_by: user?.id,
+          })
+          .eq("id", id!);
+        if (updError) throw updError;
+        return "cancelled";
+      }
+
+      // no links -> admin can soft-delete, others cancel+archive
+      if (!isAdmin) {
+        const { error: cancelError } = await supabase
+          .from("service_orders")
+          .update({ status: "CANCELLED", is_archived: true, archive_reason: "Anulowane przez użytkownika", updated_by: user?.id })
+          .eq("id", id!);
+        if (cancelError) throw cancelError;
+        return "cancelled";
+      }
+
+      const { error } = await supabase
+        .from("service_orders")
+        .update({ deleted_at: new Date().toISOString(), updated_by: user?.id })
+        .eq("id", id!);
+      if (error) throw error;
+      return "deleted";
+    },
+    onSuccess: (mode) => {
+      queryClient.invalidateQueries({ queryKey: ["service-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["kanban-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["cash_transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["order", id] });
+      if (mode === "deleted") toast.success("Zlecenie usunięte");
+      else toast.success("Zlecenie anulowane i zarchiwizowane (bezpieczny tryb)");
+      navigate("/orders");
+    },
+    onError: (err: any) => toast.error(err?.message || "Błąd operacji"),
   });
 
   function handleSave() { if (!editForm) return; updateOrder.mutate(editForm); }
