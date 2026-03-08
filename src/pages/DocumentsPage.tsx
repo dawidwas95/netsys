@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Plus, Search, FileText, ArrowDownCircle, ArrowUpCircle, Pencil, Trash2, Eye,
-  DollarSign, ShoppingCart, Receipt, FileCheck, FileMinus2,
+  DollarSign, ShoppingCart, Receipt, FileCheck, FileMinus2, CalendarDays,
 } from "lucide-react";
 import { toast } from "sonner";
 import { SearchableSelect } from "@/components/SearchableSelect";
