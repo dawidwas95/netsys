@@ -1929,7 +1929,13 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "ADMIN" | "MANAGER" | "EMPLOYEE" | "READONLY"
+      app_role:
+        | "ADMIN"
+        | "MANAGER"
+        | "EMPLOYEE"
+        | "READONLY"
+        | "TECHNICIAN"
+        | "OFFICE"
       billing_status: "UNBILLED" | "BILLED" | "CANCELLED"
       cash_source_type: "SERVICE_ORDER" | "MANUAL" | "WITHDRAWAL" | "CORRECTION"
       cash_transaction_type: "IN" | "OUT" | "RESET"
@@ -2125,7 +2131,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["ADMIN", "MANAGER", "EMPLOYEE", "READONLY"],
+      app_role: [
+        "ADMIN",
+        "MANAGER",
+        "EMPLOYEE",
+        "READONLY",
+        "TECHNICIAN",
+        "OFFICE",
+      ],
       billing_status: ["UNBILLED", "BILLED", "CANCELLED"],
       cash_source_type: ["SERVICE_ORDER", "MANUAL", "WITHDRAWAL", "CORRECTION"],
       cash_transaction_type: ["IN", "OUT", "RESET"],

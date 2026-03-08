@@ -1,0 +1,4 @@
+
+-- Add TECHNICIAN and OFFICE to app_role enum
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'TECHNICIAN';
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'OFFICE';
