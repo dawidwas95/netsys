@@ -69,18 +69,14 @@ export default function SettingsPage() {
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: "Administrator",
-  MANAGER: "Manager",
-  TECHNICIAN: "Technik",
-  OFFICE: "Biuro",
-  EMPLOYEE: "Pracownik",
+  KIEROWNIK: "Kierownik",
+  SERWISANT: "Serwisant",
 };
 
 const ROLE_OPTIONS = [
   { value: "ADMIN", label: "Administrator" },
-  { value: "TECHNICIAN", label: "Technik" },
-  { value: "OFFICE", label: "Biuro" },
-  { value: "MANAGER", label: "Manager" },
-  { value: "EMPLOYEE", label: "Pracownik" },
+  { value: "KIEROWNIK", label: "Kierownik" },
+  { value: "SERWISANT", label: "Serwisant" },
 ];
 
 function TeamManagement() {
