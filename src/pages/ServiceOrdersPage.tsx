@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUnreadOrders } from "@/hooks/useNotifications";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -35,6 +36,7 @@ export default function ServiceOrdersPage() {
   const [techFilter, setTechFilter] = useState<string>("all");
   const [deptFilter, setDeptFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { unreadOrderIds } = useUnreadOrders();
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
@@ -239,9 +241,12 @@ export default function ServiceOrdersPage() {
           <div className="text-center py-8 text-muted-foreground">Brak zleceń</div>
         ) : (
           orders.map((order: any) => (
-            <Link key={order.id} to={`/orders/${order.id}`} className="mobile-data-card block">
+            <Link key={order.id} to={`/orders/${order.id}`} className={`mobile-data-card block ${unreadOrderIds.has(order.id) ? "ring-2 ring-primary/30" : ""}`}>
               <div className="mobile-card-header">
-                <span className="font-medium font-mono text-primary">{order.order_number}</span>
+                <span className="font-medium font-mono text-primary flex items-center gap-1.5">
+                  {unreadOrderIds.has(order.id) && <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />}
+                  {order.order_number}
+                </span>
                 <div className="flex items-center gap-1">
                   <ScheduleBadge date={(order as any).planned_execution_date} time={(order as any).planned_execution_time} />
                   <OrderStatusBadge status={order.status} />
@@ -298,9 +303,10 @@ export default function ServiceOrdersPage() {
               <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Brak zleceń</TableCell></TableRow>
             ) : (
               orders.map((order: any) => (
-                <TableRow key={order.id} className="hover:bg-muted/50">
+                <TableRow key={order.id} className={`hover:bg-muted/50 ${unreadOrderIds.has(order.id) ? "bg-primary/5" : ""}`}>
                   <TableCell>
                     <div className="flex items-center gap-1.5">
+                      {unreadOrderIds.has(order.id) && <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />}
                       <Link to={`/orders/${order.id}`} className="font-medium text-primary hover:underline font-mono">
                         {order.order_number}
                       </Link>

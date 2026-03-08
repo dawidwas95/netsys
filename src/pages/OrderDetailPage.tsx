@@ -35,7 +35,8 @@ import { sendOrderNotification } from "@/lib/notifications";
 import { toast } from "sonner";
 import SignatureCanvas from "@/components/SignatureCanvas";
 import OrderQRCode from "@/components/OrderQRCode";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useMarkOrderAsRead, createMentionNotifications, createCommentNotification } from "@/hooks/useNotifications";
 import {
   ORDER_STATUS_LABELS, ORDER_PRIORITY_LABELS, SERVICE_TYPE_LABELS,
   PAYMENT_METHOD_LABELS, INTAKE_CHANNEL_LABELS, DEVICE_CATEGORY_LABELS,
@@ -94,6 +95,8 @@ export default function OrderDetailPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDirty, setEditDirty] = useState(false);
   const [editForm, setEditForm] = useState<Record<string, any> | null>(null);
+
+  const markAsRead = useMarkOrderAsRead();
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", id],
@@ -155,6 +158,24 @@ export default function OrderDetailPage() {
     });
     return map;
   }, [profiles]);
+
+  // Build mention-friendly profile map
+  const mentionProfileMap = useMemo(() => {
+    const map: Record<string, { userId: string; name: string }> = {};
+    profiles.forEach((p: any) => {
+      const name = [p.first_name, p.last_name].filter(Boolean).join(" ");
+      map[p.user_id] = { userId: p.user_id, name: name || p.email || "Użytkownik" };
+    });
+    return map;
+  }, [profiles]);
+
+  // Mark order as read when opened
+  useEffect(() => {
+    if (id && user?.id) {
+      markAsRead.mutate(id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, user?.id]);
 
   const currentForm = useMemo(() => {
     if (editForm) return editForm;
@@ -516,10 +537,20 @@ export default function OrderDetailPage() {
   const addComment = useMutation({
     mutationFn: async () => {
       if (!comment.trim()) return;
-      const { error } = await supabase.from("service_order_comments").insert({
+      const { data: inserted, error } = await supabase.from("service_order_comments").insert({
         order_id: id!, user_id: user?.id, comment: comment.trim(),
-      });
+      }).select("id").single();
       if (error) throw error;
+
+      // Create notifications for mentions and assigned technicians
+      const authorName = profileMap[user?.id ?? ""] || "Użytkownik";
+      const orderNum = order?.order_number || "";
+      if (inserted?.id) {
+        await Promise.all([
+          createMentionNotifications(comment.trim(), id!, inserted.id, authorName, orderNum, mentionProfileMap),
+          createCommentNotification(id!, inserted.id, user?.id ?? "", authorName, orderNum),
+        ]);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-comments", id] });
@@ -815,11 +846,19 @@ export default function OrderDetailPage() {
                           </span>
                         </div>
                       </div>
-                      <p className="text-sm ml-9">{c.comment}</p>
+                      <p className="text-sm ml-9">
+                        {c.comment.split(/(@\S+)/g).map((part: string, i: number) =>
+                          part.startsWith("@") ? (
+                            <span key={i} className="text-primary font-medium bg-primary/10 px-0.5 rounded">{part}</span>
+                          ) : (
+                            <span key={i}>{part}</span>
+                          )
+                        )}
+                      </p>
                     </div>
                   ))}
                   <div className="flex gap-2">
-                    <Textarea placeholder="Dodaj komentarz..." value={comment} onChange={(e) => setComment(e.target.value)} rows={2} className="flex-1" />
+                    <Textarea placeholder="Dodaj komentarz... Użyj @imię aby oznaczyć osobę" value={comment} onChange={(e) => setComment(e.target.value)} rows={2} className="flex-1" />
                     <Button size="icon" onClick={() => addComment.mutate()} disabled={!comment.trim() || addComment.isPending}>
                       <Send className="h-4 w-4" />
                     </Button>
