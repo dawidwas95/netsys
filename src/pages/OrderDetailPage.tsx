@@ -830,58 +830,13 @@ export default function OrderDetailPage() {
           <FinanceSection formData={currentForm} onChange={handleFieldChange} orderItems={orderItems} />
           <PaymentSection formData={currentForm} onChange={handleFieldChange} />
 
-          {/* Order Items */}
-          <FormSection icon={Plus} title="Pozycje zlecenia" className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">Sprzedane części / produkty</p>
-              <Dialog open={itemDialogOpen} onOpenChange={setItemDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm"><Plus className="mr-1 h-3 w-3" />Dodaj</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader><DialogTitle>Dodaj pozycję</DialogTitle></DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label>Nazwa *</Label>
-                      <Input value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} placeholder="np. Dysk SSD 256GB" />
-                    </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div><Label className="text-xs">Ilość</Label><Input type="number" min="1" value={newItem.quantity} onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })} /></div>
-                      <div><Label className="text-xs">Cena sprzedaży</Label><Input type="number" step="0.01" value={newItem.sale_net} onChange={(e) => setNewItem({ ...newItem, sale_net: e.target.value })} placeholder="0.00" /></div>
-                      <div><Label className="text-xs">Cena zakupu</Label><Input type="number" step="0.01" value={newItem.purchase_net} onChange={(e) => setNewItem({ ...newItem, purchase_net: e.target.value })} placeholder="0.00" /></div>
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" onClick={() => setItemDialogOpen(false)}>Anuluj</Button>
-                      <Button onClick={() => addItemMutation.mutate()} disabled={!newItem.name || addItemMutation.isPending}>Dodaj</Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            {orderItems.length > 0 ? (
-              <div className="space-y-2">
-                {orderItems.map((item) => {
-                  const itemProfit = item.total_sale_net - item.total_purchase_net;
-                  return (
-                    <div key={item.id} className="rounded-md border border-border p-2.5 text-xs flex items-center justify-between">
-                      <div className="space-y-0.5 min-w-0 flex-1">
-                        <div className="font-medium truncate">{item.item_name_snapshot}</div>
-                        <div className="text-muted-foreground">
-                          {item.quantity}× · Sprzedaż: {formatCurrency(item.total_sale_net)} · Zakup: {formatCurrency(item.total_purchase_net)}
-                        </div>
-                      </div>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive shrink-0" onClick={() => deleteItemMutation.mutate(item.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground text-center py-4 border border-dashed border-border rounded-md">Brak pozycji</p>
-            )}
-          </FormSection>
+          {/* Order Items - New Component */}
+          <OrderItemsSection
+            orderId={id!}
+            orderItems={orderItems}
+            isCompleted={isCompleted}
+            onItemsChanged={handleItemsChanged}
+          />
 
           {editDirty && (
             <Button className="w-full" onClick={handleSave} disabled={updateOrder.isPending}>
