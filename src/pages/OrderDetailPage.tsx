@@ -26,12 +26,13 @@ import {
 import {
   ArrowLeft, Send, Clock, User, Monitor, Plus, Trash2,
   DollarSign, TrendingUp, TrendingDown, Percent, FileDown, Printer,
-  CheckCircle, AlertTriangle, Save, Archive, XCircle,
+  CheckCircle, AlertTriangle, Save, Archive, XCircle, PenLine,
 } from "lucide-react";
 import { generateOrderPDF } from "@/lib/generateOrderPDF";
 import { generateIntakePDF, generatePickupPDF } from "@/lib/pdfProtocols";
 import { sendOrderNotification } from "@/lib/notifications";
 import { toast } from "sonner";
+import SignatureCanvas from "@/components/SignatureCanvas";
 import { useState, useMemo, useCallback } from "react";
 import {
   ORDER_STATUS_LABELS, ORDER_PRIORITY_LABELS, SERVICE_TYPE_LABELS,
@@ -502,6 +503,43 @@ export default function OrderDetailPage() {
     onError: (err: any) => toast.error(err.message),
   });
 
+  async function uploadSignature(dataUrl: string, type: "client" | "technician"): Promise<string> {
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const fileName = `${order!.id}/${type}-${Date.now()}.png`;
+    const { error } = await supabase.storage.from("signatures").upload(fileName, blob, { contentType: "image/png", upsert: true });
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
+    return urlData.publicUrl;
+  }
+
+  async function handleSaveSignature(dataUrl: string, type: "client" | "technician") {
+    if (!order) return;
+    try {
+      const url = await uploadSignature(dataUrl, type);
+      const update = type === "client"
+        ? { client_signature_url: url, client_signed_at: new Date().toISOString() }
+        : { technician_signature_url: url, technician_signed_at: new Date().toISOString() };
+      const { error } = await supabase.from("service_orders").update(update).eq("id", order.id);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["order", id] });
+      toast.success(`Podpis ${type === "client" ? "klienta" : "serwisanta"} zapisany`);
+    } catch (err: any) {
+      toast.error("Błąd zapisu podpisu: " + err.message);
+    }
+  }
+
+  async function handleClearSignature(type: "client" | "technician") {
+    if (!order) return;
+    const update = type === "client"
+      ? { client_signature_url: null, client_signed_at: null }
+      : { technician_signature_url: null, technician_signed_at: null };
+    const { error } = await supabase.from("service_orders").update(update).eq("id", order.id);
+    if (error) { toast.error(error.message); return; }
+    queryClient.invalidateQueries({ queryKey: ["order", id] });
+    toast.success("Podpis usunięty");
+  }
+
   async function handleDownloadPDF() {
     if (!order) return;
     const doc = await generateOrderPDF({ order, orderItems, financials });
@@ -687,6 +725,7 @@ export default function OrderDetailPage() {
               <TabsTrigger value="comments">Komentarze ({comments?.length ?? 0})</TabsTrigger>
               <TabsTrigger value="history">Historia</TabsTrigger>
               <TabsTrigger value="documents">Dokumenty</TabsTrigger>
+              <TabsTrigger value="signatures"><PenLine className="mr-1 h-3 w-3" />Podpisy</TabsTrigger>
             </TabsList>
 
             <TabsContent value="edit" className="mt-4 space-y-5">
@@ -788,6 +827,26 @@ export default function OrderDetailPage() {
                   <p className="text-xs text-muted-foreground">PDF generowany na żywo z aktualnych danych zlecenia. Zawiera kod QR.</p>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="signatures" className="mt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <SignatureCanvas
+                  title="Podpis klienta"
+                  existingUrl={order?.client_signature_url}
+                  signedAt={order?.client_signed_at}
+                  onSave={(dataUrl) => handleSaveSignature(dataUrl, "client")}
+                  onClear={() => handleClearSignature("client")}
+                />
+                <SignatureCanvas
+                  title="Podpis serwisanta"
+                  existingUrl={order?.technician_signature_url}
+                  signedAt={order?.technician_signed_at}
+                  onSave={(dataUrl) => handleSaveSignature(dataUrl, "technician")}
+                  onClear={() => handleClearSignature("technician")}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">Podpisy cyfrowe są automatycznie dołączane do generowanych dokumentów PDF.</p>
             </TabsContent>
           </Tabs>
         </div>

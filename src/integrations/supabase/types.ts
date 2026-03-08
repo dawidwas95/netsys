@@ -1585,6 +1585,8 @@ export type Database = {
           assigned_user_id: string | null
           client_description: string | null
           client_id: string
+          client_signature_url: string | null
+          client_signed_at: string | null
           closed_at: string | null
           completed_at: string | null
           created_at: string
@@ -1617,6 +1619,8 @@ export type Database = {
             | null
           service_type: Database["public"]["Enums"]["service_type"]
           status: Database["public"]["Enums"]["order_status"]
+          technician_signature_url: string | null
+          technician_signed_at: string | null
           total_gross: number | null
           total_net: number | null
           updated_at: string
@@ -1629,6 +1633,8 @@ export type Database = {
           assigned_user_id?: string | null
           client_description?: string | null
           client_id: string
+          client_signature_url?: string | null
+          client_signed_at?: string | null
           closed_at?: string | null
           completed_at?: string | null
           created_at?: string
@@ -1661,6 +1667,8 @@ export type Database = {
             | null
           service_type?: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["order_status"]
+          technician_signature_url?: string | null
+          technician_signed_at?: string | null
           total_gross?: number | null
           total_net?: number | null
           updated_at?: string
@@ -1673,6 +1681,8 @@ export type Database = {
           assigned_user_id?: string | null
           client_description?: string | null
           client_id?: string
+          client_signature_url?: string | null
+          client_signed_at?: string | null
           closed_at?: string | null
           completed_at?: string | null
           created_at?: string
@@ -1705,6 +1715,8 @@ export type Database = {
             | null
           service_type?: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["order_status"]
+          technician_signature_url?: string | null
+          technician_signed_at?: string | null
           total_gross?: number | null
           total_net?: number | null
           updated_at?: string
