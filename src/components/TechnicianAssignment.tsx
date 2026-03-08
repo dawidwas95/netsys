@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,12 +19,14 @@ interface TechnicianAvatarProps {
 }
 
 export function TechnicianAvatar({ name, isPrimary, size = "md" }: TechnicianAvatarProps) {
-  const initials = name
+  const safeName = (name || "?").trim();
+  const initials = safeName
     .split(" ")
     .map((n) => n[0])
+    .filter(Boolean)
     .join("")
     .toUpperCase()
-    .slice(0, 2);
+    .slice(0, 2) || "?";
 
   const sizeClasses = size === "sm" ? "h-6 w-6 text-[10px]" : "h-7 w-7 text-xs";
 
@@ -134,13 +136,13 @@ export function TechnicianAssignment({ orderId, orderNumber }: TechnicianAssignm
     queryFn: async () => {
       const { data } = await supabase
         .from("order_technicians")
-        .select("id, user_id, is_primary, profiles!inner(first_name, last_name, email)")
+        .select("id, user_id, is_primary, profiles(first_name, last_name, email)")
         .eq("order_id", orderId) as any;
       return (data ?? []).map((t: any) => ({
         id: t.id,
         userId: t.user_id,
-        isPrimary: t.is_primary,
-        name: [t.profiles?.first_name, t.profiles?.last_name].filter(Boolean).join(" ") || t.profiles?.email || "?",
+        isPrimary: Boolean(t.is_primary),
+        name: [t.profiles?.first_name, t.profiles?.last_name].filter(Boolean).join(" ") || t.profiles?.email || "Użytkownik",
       }));
     },
   });
@@ -149,9 +151,11 @@ export function TechnicianAssignment({ orderId, orderNumber }: TechnicianAssignm
 
   const assignTech = useMutation({
     mutationFn: async (userId: string) => {
+      console.info("[TechnicianAssignment] assign start", { orderId, userId });
       if (assignedIds.has(userId)) {
-        throw new Error("Ten technik jest już przypisany do tego zlecenia");
+        throw new Error("Technik jest już przypisany do tego zlecenia");
       }
+
       const isPrimary = assigned.length === 0;
       const { error } = await supabase.from("order_technicians").upsert({
         order_id: orderId,
@@ -159,7 +163,11 @@ export function TechnicianAssignment({ orderId, orderNumber }: TechnicianAssignm
         is_primary: isPrimary,
         assigned_by: user?.id,
       } as any, { onConflict: "order_id,user_id", ignoreDuplicates: true });
-      if (error) throw error;
+
+      if (error) {
+        console.error("[TechnicianAssignment] assign db error", { orderId, userId, error });
+        throw error;
+      }
 
       const techName = allUsers.find((u) => u.id === userId)?.name ?? "?";
       await supabase.from("activity_logs").insert({
@@ -171,13 +179,21 @@ export function TechnicianAssignment({ orderId, orderNumber }: TechnicianAssignm
         user_id: user?.id,
         new_value_json: { technician_id: userId, technician_name: techName, is_primary: isPrimary } as any,
       });
+
+      console.info("[TechnicianAssignment] assign success", { orderId, userId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-technicians", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["order-technician-ids", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["service-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["kanban-orders"] });
       queryClient.invalidateQueries({ queryKey: ["order-logs", orderId] });
       toast.success("Technik przypisany");
     },
-    onError: (err: any) => toast.error(err.message || "Błąd przypisywania technika"),
+    onError: (err: any) => {
+      console.error("[TechnicianAssignment] assign failed", { orderId, error: err });
+      toast.error(err?.message || "Błąd przypisywania technika");
+    },
   });
 
   const removeTech = useMutation({
@@ -196,18 +212,23 @@ export function TechnicianAssignment({ orderId, orderNumber }: TechnicianAssignm
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-technicians", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["order-technician-ids", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["service-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["kanban-orders"] });
       queryClient.invalidateQueries({ queryKey: ["order-logs", orderId] });
       toast.success("Technik usunięty");
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: any) => toast.error(err?.message || "Błąd usuwania technika"),
   });
 
   const setPrimary = useMutation({
     mutationFn: async ({ rowId, userId, name }: { rowId: string; userId: string; name: string }) => {
-      // Unset all primary first
-      await supabase.from("order_technicians").update({ is_primary: false } as any).eq("order_id", orderId);
+      const { error: unsetError } = await supabase.from("order_technicians").update({ is_primary: false } as any).eq("order_id", orderId);
+      if (unsetError) throw unsetError;
+
       const { error } = await supabase.from("order_technicians").update({ is_primary: true } as any).eq("id", rowId);
       if (error) throw error;
+
       await supabase.from("activity_logs").insert({
         entity_type: "service_order",
         entity_id: orderId,
@@ -220,10 +241,13 @@ export function TechnicianAssignment({ orderId, orderNumber }: TechnicianAssignm
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-technicians", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["order-technician-ids", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["service-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["kanban-orders"] });
       queryClient.invalidateQueries({ queryKey: ["order-logs", orderId] });
       toast.success("Główny technik zmieniony");
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: any) => toast.error(err?.message || "Błąd zmiany głównego technika"),
   });
 
   const sorted = [...assigned].sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0));
@@ -249,9 +273,12 @@ export function TechnicianAssignment({ orderId, orderNumber }: TechnicianAssignm
                       key={u.id}
                       value={u.name}
                       onSelect={() => {
-                        if (!assignedIds.has(u.id)) {
-                          assignTech.mutate(u.id);
+                        if (assignedIds.has(u.id)) {
+                          toast.error("Technik jest już przypisany do tego zlecenia");
+                          setOpen(false);
+                          return;
                         }
+                        assignTech.mutate(u.id);
                         setOpen(false);
                       }}
                       disabled={assignedIds.has(u.id)}
@@ -330,7 +357,7 @@ export function QuickAssignButton({ orderId, orderNumber }: { orderId: string; o
   });
 
   const { data: assigned = [] } = useQuery({
-    queryKey: ["order-technicians", orderId],
+    queryKey: ["order-technician-ids", orderId],
     queryFn: async () => {
       const { data } = await supabase
         .from("order_technicians")
@@ -342,8 +369,9 @@ export function QuickAssignButton({ orderId, orderNumber }: { orderId: string; o
 
   const assignTech = useMutation({
     mutationFn: async (userId: string) => {
+      console.info("[QuickAssignButton] assign start", { orderId, userId });
       if (assigned.includes(userId)) {
-        throw new Error("Ten technik jest już przypisany do tego zlecenia");
+        throw new Error("Technik jest już przypisany do tego zlecenia");
       }
       const { error } = await supabase.from("order_technicians").upsert({
         order_id: orderId,
@@ -351,14 +379,24 @@ export function QuickAssignButton({ orderId, orderNumber }: { orderId: string; o
         is_primary: true,
         assigned_by: user?.id,
       } as any, { onConflict: "order_id,user_id", ignoreDuplicates: true });
-      if (error) throw error;
+      if (error) {
+        console.error("[QuickAssignButton] assign db error", { orderId, userId, error });
+        throw error;
+      }
+      console.info("[QuickAssignButton] assign success", { orderId, userId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-technicians", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["order-technician-ids", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["service-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["kanban-orders"] });
       toast.success("Technik przypisany");
       setOpen(false);
     },
-    onError: (err: any) => toast.error(err.message || "Błąd przypisywania technika"),
+    onError: (err: any) => {
+      console.error("[QuickAssignButton] assign failed", { orderId, error: err });
+      toast.error(err?.message || "Błąd przypisywania technika");
+    },
   });
 
   return (
@@ -379,7 +417,13 @@ export function QuickAssignButton({ orderId, orderNumber }: { orderId: string; o
                   key={u.id}
                   value={u.name}
                   disabled={assigned.includes(u.id)}
-                  onSelect={() => assignTech.mutate(u.id)}
+                  onSelect={() => {
+                    if (assigned.includes(u.id)) {
+                      toast.error("Technik jest już przypisany do tego zlecenia");
+                      return;
+                    }
+                    assignTech.mutate(u.id);
+                  }}
                 >
                   <Check className={cn("mr-2 h-3 w-3", assigned.includes(u.id) ? "opacity-100" : "opacity-0")} />
                   <span className="text-xs">{u.name}</span>
