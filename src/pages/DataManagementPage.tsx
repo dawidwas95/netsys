@@ -49,7 +49,7 @@ export default function DataManagementPage() {
     },
     enabled: !!user?.id,
   });
-  const isAdmin = myRoles.some((r: any) => r.role === "ADMIN" || r.role === "MANAGER");
+  const isAdmin = myRoles.some((r: any) => r.role === "ADMIN");
 
   // Fetch deleted records
   const { data: deletedRecords = [], refetch: refetchDeleted } = useQuery({
