@@ -8,9 +8,10 @@ import {
 } from "@/components/ui/table";
 import {
   Wrench, CheckCircle, AlertCircle, Users, TrendingUp, TrendingDown,
-  Clock, DollarSign, Wallet, Percent, AlertTriangle, Package,
+  Clock, DollarSign, Wallet, Percent, AlertTriangle, Package, ShoppingCart,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(v);
@@ -183,6 +184,8 @@ export default function DashboardPage() {
 
       <LowStockAlerts />
 
+      <PurchaseListWidget />
+
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 mb-6">
         <Card>
           <CardHeader><CardTitle className="text-lg">Ostatnie zlecenia</CardTitle></CardHeader>
@@ -327,6 +330,40 @@ function LowStockAlerts() {
 }
 
 import { ORDER_STATUS_LABELS, type OrderStatus } from "@/types/database";
+
+function PurchaseListWidget() {
+  const { data: count = 0 } = useQuery({
+    queryKey: ["dashboard-purchase-list-count"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("inventory_items")
+        .select("id, stock_quantity, minimum_quantity")
+        .eq("is_active", true)
+        .is("deleted_at", null);
+      if (error) throw error;
+      return (data ?? []).filter((i) => Number(i.minimum_quantity) > 0 && Number(i.stock_quantity) <= Number(i.minimum_quantity)).length;
+    },
+  });
+
+  if (count === 0) return null;
+
+  return (
+    <Card className="mb-6 border-primary/20 bg-primary/5">
+      <CardContent className="py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <ShoppingCart className="h-5 w-5 text-primary" />
+          <div>
+            <span className="font-medium">Produkty do zamówienia:</span>
+            <Badge variant="secondary" className="ml-2">{count}</Badge>
+          </div>
+        </div>
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/purchase-list">Otwórz listę zakupów</Link>
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
 
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {
   const colorMap: Record<OrderStatus, string> = {
