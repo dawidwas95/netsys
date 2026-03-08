@@ -30,9 +30,24 @@ import {
 export default function ServiceOrdersPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [techFilter, setTechFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const queryClient = useQueryClient();
   const { user } = useAuth();
+
+  const { data: staffUsers = [] } = useQuery({
+    queryKey: ["all-staff-users"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, first_name, last_name, email")
+        .eq("is_active", true);
+      return (data ?? []).map((p: any) => ({
+        id: p.user_id,
+        name: [p.first_name, p.last_name].filter(Boolean).join(" ") || p.email || "Użytkownik",
+      }));
+    },
+  });
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["service-orders", search, statusFilter],
