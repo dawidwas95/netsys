@@ -322,13 +322,7 @@ export default function PurchaseRequestsPage() {
                     </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <ApprovalBadge status={r.client_approval} />
-                  <Select value={r.client_approval} onValueChange={(v) => updateApproval.mutate({ id: r.id, approval: v })}>
-                    <SelectTrigger className="h-6 text-[10px] w-auto min-w-[100px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>{Object.entries(APPROVAL_LABELS).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}</SelectContent>
-                  </Select>
-                </div>
+                
                 {r.product_url && (
                   <a href={r.product_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1">
                     <ExternalLink className="h-3 w-3" />{r.supplier || "Link do produktu"}
