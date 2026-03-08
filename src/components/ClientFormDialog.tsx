@@ -28,6 +28,7 @@ interface ClientFormDialogProps {
 
 const emptyForm = {
   client_type: "PRIVATE" as ClientType,
+  business_role: "CUSTOMER" as BusinessRole,
   first_name: "",
   last_name: "",
   company_name: "",
