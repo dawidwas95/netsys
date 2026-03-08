@@ -130,7 +130,7 @@ export function AppSidebar() {
 
         <SidebarGroup>
           <SidebarGroupLabel>Serwis</SidebarGroupLabel>
-          <SidebarGroupContent>{renderItems(serviceNav)}</SidebarGroupContent>
+          <SidebarGroupContent>{renderItems(filteredServiceNav)}</SidebarGroupContent>
         </SidebarGroup>
 
         {canAccessFinance && (

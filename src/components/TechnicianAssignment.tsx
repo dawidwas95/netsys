@@ -131,11 +131,11 @@ export function TechnicianAssignment({ orderId, orderNumber }: TechnicianAssignm
   const { data: allUsers = [] } = useQuery({
     queryKey: ["assignable-staff-users"],
     queryFn: async () => {
-      // Get users with ADMIN or TECHNICIAN roles
+      // Get users with ADMIN, KIEROWNIK, or SERWISANT roles (all can be assigned)
       const { data: roleData } = await supabase
         .from("user_roles")
         .select("user_id, role")
-        .in("role", ["ADMIN", "TECHNICIAN"]);
+        .in("role", ["ADMIN", "KIEROWNIK", "SERWISANT"]);
       
       const assignableIds = (roleData ?? []).map((r: any) => r.user_id);
       if (!assignableIds.length) return [];

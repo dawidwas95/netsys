@@ -139,7 +139,7 @@ export default function DataManagementPage() {
   if (!isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-[400px] text-muted-foreground">
-        Brak uprawnień. Wymagana rola ADMIN lub MANAGER.
+        Brak uprawnień. Wymagana rola ADMIN.
       </div>
     );
   }

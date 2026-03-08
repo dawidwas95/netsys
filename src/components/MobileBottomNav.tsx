@@ -52,7 +52,10 @@ export function MobileBottomNav() {
   };
 
   const filteredMenu = menuItems.filter((item) => {
-    if (item.url === "/cash" || item.url === "/documents") return canAccessFinance;
+    if (item.url === "/cash") return canAccessFinance;
+    if (item.url === "/documents") return canAccessDocuments;
+    if (item.url === "/offers") return canAccessOffers;
+    if (item.url === "/it-work") return canAccessITWork;
     if (item.url === "/system-logs") return canAccessSystemLogs;
     if (item.url === "/data-management") return canAccessDataManagement;
     if (item.url === "/settings") return canAccessSettings;

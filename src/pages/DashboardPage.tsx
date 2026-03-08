@@ -358,8 +358,8 @@ function TodaysScheduledOrders() {
 
       let result = (data ?? []) as any[];
 
-      // Filter by technician assignment if not admin/manager
-      if (isTechnician && user?.id) {
+      // Filter by technician assignment if serwisant (not admin/kierownik)
+      if (isSerwisant && user?.id) {
         const { data: assignments } = await supabase
           .from("order_technicians")
           .select("order_id")

@@ -468,7 +468,7 @@ function TeamManagement() {
               <div className="space-y-1">
                 <Label>Rola</Label>
                 <Select
-                  value={editForm.role ?? "EMPLOYEE"}
+                  value={editForm.role ?? "SERWISANT"}
                   onValueChange={(v) => setEditForm((p) => ({ ...p, role: v }))}
                 >
                   <SelectTrigger>
