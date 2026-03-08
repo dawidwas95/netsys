@@ -342,7 +342,7 @@ function TodaysScheduledOrders() {
   const today = new Date().toISOString().split("T")[0];
 
   const { data: orders = [] } = useQuery({
-    queryKey: ["dashboard-todays-schedule", user?.id, isAdmin, isManager],
+    queryKey: ["dashboard-todays-schedule", user?.id, isAdmin, isKierownik],
     queryFn: async () => {
       // Fetch orders with planned_execution_date = today or overdue (past dates, not completed)
       let query = supabase
