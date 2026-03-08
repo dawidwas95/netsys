@@ -854,6 +854,12 @@ export default function OrderDetailPage() {
 
         {/* RIGHT COLUMN */}
         <div className="space-y-5">
+          <OrderQRCode
+            orderId={order.id}
+            orderNumber={order.order_number}
+            clientName={order.clients?.display_name}
+            deviceName={order.devices ? `${order.devices.manufacturer || ""} ${order.devices.model || ""}`.trim() || null : null}
+          />
           <FinanceSection formData={currentForm} onChange={handleFieldChange} orderItems={orderItems} />
           <PaymentSection formData={currentForm} onChange={handleFieldChange} />
 
