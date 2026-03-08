@@ -8,9 +8,10 @@ import {
 } from "@/components/ui/table";
 import {
   Wrench, CheckCircle, AlertCircle, Users, TrendingUp, TrendingDown,
-  Clock, DollarSign, Wallet, Percent, AlertTriangle, Package,
+  Clock, DollarSign, Wallet, Percent, AlertTriangle, Package, ShoppingCart,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(v);
