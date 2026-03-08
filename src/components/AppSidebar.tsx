@@ -53,6 +53,7 @@ const financeNav = [
 ];
 
 const systemNav = [
+  { title: "Logi systemowe", url: "/system-logs", icon: ScrollText },
   { title: "Ustawienia", url: "/settings", icon: Settings },
 ];
 
