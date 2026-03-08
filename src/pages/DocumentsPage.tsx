@@ -154,6 +154,7 @@ export default function DocumentsPage() {
         .from("documents")
         .select("*, clients(display_name, company_name, first_name, last_name)")
         .eq("is_archived", false)
+        .is("deleted_at", null)
         .order("issue_date", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Document[];
