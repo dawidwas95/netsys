@@ -215,6 +215,7 @@ function formatCurrency(v: number) {
 
 export default function DocumentsPage() {
   const { user } = useAuth();
+  const { lookupNip, loading: gusLoading } = useGusLookup();
   const qc = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
   const [typePickerOpen, setTypePickerOpen] = useState(false);
