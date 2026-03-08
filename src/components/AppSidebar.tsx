@@ -48,6 +48,7 @@ const mainNav = [
 ];
 
 const serviceNav = [
+  { title: "Plan dnia", url: "/daily-plan", icon: CalendarDays },
   { title: "Tablica zleceń", url: "/orders/kanban", icon: KanbanSquare },
   { title: "Ekran serwisowy", url: "/service-board-display", icon: Tv },
   { title: "Lista zleceń", url: "/orders", icon: ListTodo },

@@ -17,9 +17,9 @@ import {
 
 const bottomTabs = [
   { label: "Start", icon: LayoutDashboard, href: "/" },
+  { label: "Plan dnia", icon: CalendarDays, href: "/daily-plan" },
   { label: "Moje", icon: ClipboardList, href: "/my-orders" },
   { label: "Zlecenia", icon: ListTodo, href: "/orders" },
-  { label: "Magazyn", icon: Package, href: "/inventory" },
   { label: "Więcej", icon: Menu, href: "__menu__" },
 ];
 
