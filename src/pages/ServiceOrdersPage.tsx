@@ -50,8 +50,38 @@ export default function ServiceOrdersPage() {
   });
 
   const { data: orders, isLoading } = useQuery({
-    queryKey: ["service-orders", search, statusFilter],
+    queryKey: ["service-orders", search, statusFilter, techFilter],
     queryFn: async () => {
+      // If filtering by technician, first get matching order IDs
+      let techOrderIds: string[] | null = null;
+      if (techFilter === "unassigned") {
+        // Get all order IDs that HAVE a technician
+        const { data: assignedRows } = await supabase
+          .from("order_technicians")
+          .select("order_id");
+        const assignedOrderIds = new Set((assignedRows ?? []).map((r: any) => r.order_id));
+        techOrderIds = []; // will be used as "exclude these" below
+        // We'll handle this differently: fetch all orders then filter
+        let query = supabase
+          .from("service_orders")
+          .select("*, clients(display_name), devices(manufacturer, model)")
+          .order("received_at", { ascending: false });
+        if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
+        if (search) query = query.or(`order_number.ilike.%${search}%,problem_description.ilike.%${search}%`);
+        const { data, error } = await query;
+        if (error) throw error;
+        return (data ?? []).filter((o: any) => !assignedOrderIds.has(o.id));
+      }
+
+      if (techFilter !== "all") {
+        const { data: techRows } = await supabase
+          .from("order_technicians")
+          .select("order_id")
+          .eq("user_id", techFilter);
+        techOrderIds = (techRows ?? []).map((r: any) => r.order_id);
+        if (!techOrderIds.length) return [];
+      }
+
       let query = supabase
         .from("service_orders")
         .select("*, clients(display_name), devices(manufacturer, model)")
@@ -59,6 +89,7 @@ export default function ServiceOrdersPage() {
 
       if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
       if (search) query = query.or(`order_number.ilike.%${search}%,problem_description.ilike.%${search}%`);
+      if (techOrderIds) query = query.in("id", techOrderIds);
 
       const { data, error } = await query;
       if (error) throw error;
