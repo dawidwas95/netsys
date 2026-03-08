@@ -440,6 +440,25 @@ export default function DocumentsPage() {
     });
   }
 
+  const selectedClient = clients.find((c: any) => c.id === form.client_id);
+
+  function getClientAddress(c: any) {
+    if (!c) return "";
+    const street = [c.address_street, c.address_building, c.address_local ? `/${c.address_local}` : ""].filter(Boolean).join(" ");
+    return [street, [c.address_postal_code, c.address_city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+  }
+
+  function onPaymentStatusChange(status: PaymentStatus) {
+    const grossTotal = hasLineItems ? computedFromItems.gross : ((parseFloat(form.net_amount) || 0) * (1 + (parseFloat(form.vat_rate) || 23) / 100));
+    if (status === "PAID") {
+      setForm({ ...form, payment_status: status, paid_amount: grossTotal.toFixed(2) });
+    } else if (status === "UNPAID") {
+      setForm({ ...form, payment_status: status, paid_amount: "0" });
+    } else {
+      setForm({ ...form, payment_status: status });
+    }
+  }
+
   function onDocTypeChange(docType: DocType) {
     const direction: DocDirection = docType === "PURCHASE_INVOICE" ? "EXPENSE" : "INCOME";
     setForm({ ...form, document_type: docType, direction });
@@ -453,11 +472,11 @@ export default function DocumentsPage() {
 
   // Use filtered client list based on document direction
   const relevantClients = form.direction === "EXPENSE" ? supplierClients : customerClients;
-  const clientOptions = relevantClients.map((c: any) => ({
-    value: c.id,
-    label: c.display_name || c.company_name || [c.first_name, c.last_name].filter(Boolean).join(" ") || "—",
-    sublabel: c.nip ? `NIP: ${c.nip}` : undefined,
-  }));
+  const clientOptions = relevantClients.map((c: any) => {
+    const name = c.display_name || c.company_name || [c.first_name, c.last_name].filter(Boolean).join(" ") || "—";
+    const details = [c.nip ? `NIP: ${c.nip}` : "", c.address_city, c.phone].filter(Boolean).join(" · ");
+    return { value: c.id, label: name, sublabel: details || undefined };
+  });
 
   const filtered = docs.filter((d) => {
     if (filterDirection !== "ALL" && d.direction !== filterDirection) return false;
