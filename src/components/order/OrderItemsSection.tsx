@@ -146,7 +146,7 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
     setDialogTab("inventory");
   }
 
-  // ── Add inventory item ──
+  // ── Add inventory item (reservation-based) ──
   const addInventoryItem = useMutation({
     mutationFn: async () => {
       if (!selectedInvItem) throw new Error("Nie wybrano pozycji");
@@ -154,12 +154,14 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
       const saleNet = parseFloat(invSaleNet) || 0;
       const purchaseNet = selectedInvItem.purchase_net;
 
-      // Check stock
-      if (qty > selectedInvItem.stock_quantity) {
-        throw new Error(`Niewystarczający stan magazynowy. Dostępne: ${selectedInvItem.stock_quantity} ${selectedInvItem.unit}`);
+      // Check available stock (stock minus active reservations)
+      const available = getAvailableStock(selectedInvItem);
+      if (qty > available) {
+        throw new Error(`Brak dostępnych sztuk w magazynie. Dostępne: ${available} ${selectedInvItem.unit}`);
       }
 
-      const { error } = await supabase.from("service_order_items").insert({
+      // Insert order item
+      const { data: insertedItem, error } = await supabase.from("service_order_items").insert({
         order_id: orderId,
         inventory_item_id: selectedInvItem.id,
         item_name_snapshot: selectedInvItem.name,
@@ -169,19 +171,16 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
         total_sale_net: qty * saleNet,
         total_purchase_net: qty * purchaseNet,
         created_by: user?.id,
-      });
+      }).select("id").single();
       if (error) throw error;
 
-      // Create inventory OUT movement immediately (reserve stock)
-      await supabase.from("inventory_movements").insert({
-        item_id: selectedInvItem.id,
-        movement_type: "OUT",
+      // Create reservation (no OUT movement yet)
+      await supabase.from("inventory_reservations" as any).insert({
+        inventory_item_id: selectedInvItem.id,
+        service_order_id: orderId,
+        service_order_item_id: insertedItem.id,
         quantity: qty,
-        source_type: "SERVICE_ORDER",
-        source_id: orderId,
-        sale_net: saleNet,
-        purchase_net: purchaseNet,
-        notes: `Zlecenie: ${orderId.slice(0, 8)}...`,
+        status: "RESERVED",
         created_by: user?.id,
       });
 
@@ -191,7 +190,7 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
         entity_id: orderId,
         action_type: "INVENTORY_OUT",
         user_id: user?.id,
-        description: `Użyto ${qty}× ${selectedInvItem.name} z magazynu`,
+        description: `Zarezerwowano ${qty}× ${selectedInvItem.name} z magazynu`,
         entity_name: selectedInvItem.name,
       } as any);
     },
@@ -200,10 +199,10 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
       queryClient.invalidateQueries({ queryKey: ["inventory_items"] });
       queryClient.invalidateQueries({ queryKey: ["inventory-items-active"] });
-      queryClient.invalidateQueries({ queryKey: ["inventory_movements"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory-reservations-active"] });
       onItemsChanged();
       resetDialog();
-      toast.success("Dodano część z magazynu");
+      toast.success("Zarezerwowano część z magazynu");
     },
     onError: (err: any) => toast.error(err.message || "Błąd dodawania"),
   });
