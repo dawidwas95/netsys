@@ -518,6 +518,20 @@ export default function OrderDetailPage() {
     win?.addEventListener("load", () => win.print());
   }
 
+  async function handleIntakePDF() {
+    if (!order) return;
+    const doc = await generateIntakePDF({ order });
+    doc.save(`Przyjęcie-${order.order_number.replace(/\//g, "-")}.pdf`);
+    toast.success("Protokół przyjęcia pobrany");
+  }
+
+  async function handlePickupPDF() {
+    if (!order) return;
+    const doc = await generatePickupPDF({ order, orderItems, financials });
+    doc.save(`Odbiór-${order.order_number.replace(/\//g, "-")}.pdf`);
+    toast.success("Protokół odbioru pobrany");
+  }
+
   if (isLoading) return <p className="text-muted-foreground p-4">Ładowanie...</p>;
   if (!order) return <p className="text-muted-foreground p-4">Zlecenie nie znalezione</p>;
 
