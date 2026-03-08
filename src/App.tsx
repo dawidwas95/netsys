@@ -14,6 +14,8 @@ import ServiceOrdersPage from "@/pages/ServiceOrdersPage";
 import KanbanPage from "@/pages/KanbanPage";
 import OrderDetailPage from "@/pages/OrderDetailPage";
 import ITWorkPage from "@/pages/ITWorkPage";
+import MyOrdersPage from "@/pages/MyOrdersPage";
+import MobileHomePage from "@/pages/MobileHomePage";
 import InventoryPage from "@/pages/InventoryPage";
 import OffersPage from "@/pages/OffersPage";
 import CashRegisterPage from "@/pages/CashRegisterPage";
