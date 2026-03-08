@@ -13,7 +13,8 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, KanbanSquare, User } from "lucide-react";
+import { Plus, Search, KanbanSquare, User, CalendarDays } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { TechnicianBadges, QuickAssignButton } from "@/components/TechnicianAssignment";
@@ -196,7 +197,10 @@ export default function ServiceOrdersPage() {
             <Link key={order.id} to={`/orders/${order.id}`} className="mobile-data-card block">
               <div className="mobile-card-header">
                 <span className="font-medium font-mono text-primary">{order.order_number}</span>
-                <OrderStatusBadge status={order.status} />
+                <div className="flex items-center gap-1">
+                  <ScheduleBadge date={(order as any).planned_execution_date} time={(order as any).planned_execution_time} />
+                  <OrderStatusBadge status={order.status} />
+                </div>
               </div>
               <div className="mobile-card-row">
                 <span className="mobile-card-label">Klient</span>
@@ -247,9 +251,12 @@ export default function ServiceOrdersPage() {
               orders.map((order: any) => (
                 <TableRow key={order.id} className="hover:bg-muted/50">
                   <TableCell>
-                    <Link to={`/orders/${order.id}`} className="font-medium text-primary hover:underline font-mono">
-                      {order.order_number}
-                    </Link>
+                    <div className="flex items-center gap-1.5">
+                      <Link to={`/orders/${order.id}`} className="font-medium text-primary hover:underline font-mono">
+                        {order.order_number}
+                      </Link>
+                      <ScheduleBadge date={(order as any).planned_execution_date} time={(order as any).planned_execution_time} />
+                    </div>
                   </TableCell>
                   <TableCell className="text-xs">{SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</TableCell>
                   <TableCell>{order.clients?.display_name}</TableCell>
@@ -272,6 +279,33 @@ export default function ServiceOrdersPage() {
         </Table>
       </div>
     </div>
+  );
+}
+
+function ScheduleBadge({ date, time }: { date?: string; time?: string }) {
+  if (!date) return null;
+  const today = new Date().toISOString().split("T")[0];
+  const isToday = date === today;
+  const isOverdue = date < today;
+
+  if (isToday) {
+    return (
+      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
+        📅 {time ? time.slice(0, 5) : "Dziś"}
+      </Badge>
+    );
+  }
+  if (isOverdue) {
+    return (
+      <Badge variant="destructive" className="text-[10px] px-1.5 py-0 shrink-0">
+        ⚠ Zaległe
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 text-muted-foreground">
+      📅 {new Date(date).toLocaleDateString("pl-PL", { day: "numeric", month: "short" })}
+    </Badge>
   );
 }
 

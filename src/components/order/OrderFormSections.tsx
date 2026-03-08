@@ -228,6 +228,20 @@ export function OrderDataSection({ formData, onChange }: { formData: Record<stri
           <Input type="date" value={formData.estimated_completion_date ?? ""} onChange={(e) => onChange("estimated_completion_date", e.target.value || null)} className="h-9" />
         </div>
       </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs">📅 Planowana data realizacji</Label>
+          <Input type="date" value={formData.planned_execution_date ?? ""} onChange={(e) => onChange("planned_execution_date", e.target.value || null)} className="h-9" />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Planowana godzina (opcjonalnie)</Label>
+          <Input type="time" value={formData.planned_execution_time ?? ""} onChange={(e) => onChange("planned_execution_time", e.target.value || null)} className="h-9" />
+        </div>
+      </div>
+      <div className="space-y-1">
+        <Label className="text-xs">Notatka o wizycie klienta</Label>
+        <Input value={formData.appointment_note ?? ""} onChange={(e) => onChange("appointment_note", e.target.value || null)} placeholder="Np. Klient odbiera urządzenie o 15:00" className="h-9" />
+      </div>
     </FormSection>
   );
 }
