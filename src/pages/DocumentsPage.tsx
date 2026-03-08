@@ -24,12 +24,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Plus, Search, FileText, ArrowDownCircle, ArrowUpCircle, Pencil, Trash2, Eye, X,
-  DollarSign,
+  DollarSign, Paperclip,
 } from "lucide-react";
 import { toast } from "sonner";
 import { SearchableSelect } from "@/components/SearchableSelect";
 import { ClientFormDialog } from "@/components/ClientFormDialog";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/types/database";
+import { DocumentAttachments } from "@/components/DocumentAttachments";
 
 type DocType = "PURCHASE_INVOICE" | "SALES_INVOICE" | "RECEIPT" | "PROFORMA" | "CORRECTION" | "OTHER";
 type DocDirection = "INCOME" | "EXPENSE";
@@ -752,6 +753,10 @@ export default function DocumentsPage() {
                 </>
               )}
 
+              {/* Attachments */}
+              <Separator />
+              <DocumentAttachments documentId={previewDoc.id} />
+
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => setPreviewOpen(false)}>Zamknij</Button>
                 <Button onClick={() => { setPreviewOpen(false); openEdit(previewDoc); }}>
@@ -928,6 +933,11 @@ export default function DocumentsPage() {
 
             <div><Label>Opis</Label><Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
             <div><Label>Notatki</Label><Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} /></div>
+
+            {/* Attachments */}
+            <div className="rounded-lg border border-border p-4">
+              <DocumentAttachments documentId={editId} />
+            </div>
 
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={resetForm}>Anuluj</Button>
