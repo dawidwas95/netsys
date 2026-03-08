@@ -212,10 +212,13 @@ export function TechnicianAssignment({ orderId, orderNumber }: TechnicianAssignm
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-technicians", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["order-technician-ids", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["service-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["kanban-orders"] });
       queryClient.invalidateQueries({ queryKey: ["order-logs", orderId] });
       toast.success("Technik usunięty");
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: any) => toast.error(err?.message || "Błąd usuwania technika"),
   });
 
   const setPrimary = useMutation({
