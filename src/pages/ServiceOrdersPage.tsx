@@ -150,9 +150,9 @@ export default function ServiceOrdersPage() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Ładowanie...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Ładowanie...</TableCell></TableRow>
             ) : !orders?.length ? (
-              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Brak zleceń</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Brak zleceń</TableCell></TableRow>
             ) : (
               orders.map((order: any) => (
                 <TableRow key={order.id} className="hover:bg-muted/50">
@@ -165,6 +165,12 @@ export default function ServiceOrdersPage() {
                   <TableCell>{order.clients?.display_name}</TableCell>
                   <TableCell className="text-sm">
                     {order.devices ? `${order.devices.manufacturer} ${order.devices.model}` : "—"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <TechnicianBadges orderId={order.id} compact />
+                      <QuickAssignButton orderId={order.id} orderNumber={order.order_number} />
+                    </div>
                   </TableCell>
                   <TableCell><OrderStatusBadge status={order.status} /></TableCell>
                   <TableCell className="text-sm">{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
