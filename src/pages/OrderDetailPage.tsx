@@ -640,6 +640,7 @@ export default function OrderDetailPage() {
           <Tabs defaultValue="edit">
             <TabsList>
               <TabsTrigger value="edit">Edycja</TabsTrigger>
+              <TabsTrigger value="photos">Zdjęcia</TabsTrigger>
               <TabsTrigger value="comments">Komentarze ({comments?.length ?? 0})</TabsTrigger>
               <TabsTrigger value="history">Historia</TabsTrigger>
               <TabsTrigger value="documents">Dokumenty</TabsTrigger>
