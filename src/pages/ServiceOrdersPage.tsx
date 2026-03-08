@@ -13,9 +13,10 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, KanbanSquare } from "lucide-react";
+import { Plus, Search, KanbanSquare, User } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { TechnicianBadges, QuickAssignButton } from "@/components/TechnicianAssignment";
 import {
   ORDER_STATUS_LABELS, ORDER_PRIORITY_LABELS, SERVICE_TYPE_LABELS,
   type OrderStatus, type OrderPriority, type ServiceType,
