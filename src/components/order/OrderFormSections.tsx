@@ -188,6 +188,80 @@ export function OrderDataSection({ formData, onChange }: { formData: Record<stri
   );
 }
 
+// ═══ ACCESSORY CHECKLIST ═══
+const DEFAULT_ACCESSORIES = [
+  "Ładowarka",
+  "Kabel zasilający",
+  "Torba / pokrowiec",
+  "Etui / case",
+  "Karta SIM",
+  "Karta pamięci",
+];
+
+export function parseAccessories(value: string): string[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed;
+  } catch {
+    // legacy plain text – split by comma
+    return value.split(",").map((s) => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+function AccessoryChecklist({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const selected = parseAccessories(value);
+  const [customInput, setCustomInput] = useState("");
+
+  const customItems = selected.filter((s) => !DEFAULT_ACCESSORIES.includes(s));
+
+  const toggle = (item: string) => {
+    const next = selected.includes(item) ? selected.filter((s) => s !== item) : [...selected, item];
+    onChange(JSON.stringify(next));
+  };
+
+  const addCustom = () => {
+    const trimmed = customInput.trim();
+    if (!trimmed || selected.includes(trimmed)) return;
+    onChange(JSON.stringify([...selected, trimmed]));
+    setCustomInput("");
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs">Akcesoria przekazane z urządzeniem</Label>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {DEFAULT_ACCESSORIES.map((acc) => (
+          <label key={acc} className="flex items-center gap-2 text-sm cursor-pointer rounded-md border border-border px-3 py-2 hover:bg-muted/50 transition-colors">
+            <Checkbox checked={selected.includes(acc)} onCheckedChange={() => toggle(acc)} />
+            {acc}
+          </label>
+        ))}
+        {customItems.map((acc) => (
+          <label key={acc} className="flex items-center gap-2 text-sm cursor-pointer rounded-md border border-primary/30 bg-primary/5 px-3 py-2">
+            <Checkbox checked onCheckedChange={() => toggle(acc)} />
+            <span className="flex-1 truncate">{acc}</span>
+            <button type="button" onClick={() => toggle(acc)} className="text-muted-foreground hover:text-destructive"><X className="h-3 w-3" /></button>
+          </label>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <Input
+          value={customInput}
+          onChange={(e) => setCustomInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustom(); } }}
+          placeholder="Inne akcesorium..."
+          className="h-8 text-sm flex-1"
+        />
+        <Button type="button" variant="outline" size="sm" className="h-8" onClick={addCustom} disabled={!customInput.trim()}>
+          <Plus className="h-3 w-3 mr-1" /> Dodaj
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // ═══ DESCRIPTION SECTION ═══
 export function DescriptionSection({ formData, onChange }: { formData: Record<string, any>; onChange: (field: string, value: any) => void; }) {
   return (

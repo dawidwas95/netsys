@@ -169,7 +169,34 @@ export function generateOrderPDF({ order, orderItems, financials, companyName = 
 
   if (order.accessories_received || order.visual_condition) {
     addSection("Dodatkowe informacje");
-    if (order.accessories_received) addField("Akcesoria:", order.accessories_received);
+    if (order.accessories_received) {
+      let accList: string[] = [];
+      try {
+        const parsed = JSON.parse(order.accessories_received);
+        if (Array.isArray(parsed)) accList = parsed;
+      } catch {
+        accList = order.accessories_received.split(",").map((s: string) => s.trim()).filter(Boolean);
+      }
+      if (accList.length > 0) {
+        checkPage(10);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.setTextColor(...grayText);
+        doc.text("Akcesoria przekazane:", marginLeft + 2, y);
+        y += 4;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8.5);
+        doc.setTextColor(...darkText);
+        accList.forEach((acc: string) => {
+          checkPage(5);
+          doc.text(`• ${acc}`, marginLeft + 4, y);
+          y += 4;
+        });
+        y += 1;
+      } else {
+        addField("Akcesoria:", order.accessories_received);
+      }
+    }
     if (order.visual_condition) addField("Stan wizualny:", order.visual_condition);
   }
 
