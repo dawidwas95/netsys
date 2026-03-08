@@ -107,6 +107,13 @@ export default function CashRegisterPage() {
       queryClient.invalidateQueries({ queryKey: ["cash_transactions"] });
       setAddOpen(false);
       setWithdrawOpen(false);
+      // Audit log
+      supabase.from("activity_logs").insert({
+        entity_type: "cash_transaction", entity_id: "new", action_type: "CREATE",
+        user_id: user?.id,
+        // @ts-ignore
+        description: "Nowa operacja kasowa",
+      }).then();
       toast.success("Zapisano operację kasową");
     },
     onError: () => toast.error("Błąd zapisu operacji"),
