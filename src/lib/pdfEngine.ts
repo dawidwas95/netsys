@@ -1,4 +1,5 @@
 import jsPDF from "jspdf";
+import QRCode from "qrcode";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, DEVICE_CATEGORY_LABELS,
