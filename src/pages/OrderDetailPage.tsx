@@ -72,8 +72,6 @@ export default function OrderDetailPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [comment, setComment] = useState("");
-  const [itemDialogOpen, setItemDialogOpen] = useState(false);
-  const [newItem, setNewItem] = useState({ name: "", quantity: "1", sale_net: "", purchase_net: "" });
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
