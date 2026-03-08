@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { TechnicianBadges, QuickAssignButton } from "@/components/TechnicianAssignment";
+import { ScheduleBadgeWithAction } from "@/components/ScheduleOrderDialog";
 import {
   ORDER_STATUS_LABELS, ORDER_PRIORITY_LABELS, SERVICE_TYPE_LABELS,
   DEPARTMENT_LABELS, DEPARTMENT_ICONS,
