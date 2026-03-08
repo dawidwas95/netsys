@@ -90,13 +90,14 @@ export default function PurchaseRequestsPage() {
     },
   });
 
-  const { data: categories = [] } = useQuery({
+  const { data: categoriesRaw = [] } = useQuery({
     queryKey: ["purchase-categories"],
     queryFn: async () => {
-      const { data } = await supabase.from("purchase_categories").select("label").eq("is_active", true).order("sort_order");
-      return (data ?? []).map((c: any) => c.label);
+      const { data } = await supabase.from("purchase_categories").select("*").eq("is_active", true).order("sort_order");
+      return data ?? [];
     },
   });
+  const categories = categoriesRaw.map((c: any) => c.label as string);
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
