@@ -700,23 +700,16 @@ export default function OrderDetailPage() {
         {/* LEFT COLUMN */}
         <div className="space-y-5">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            {/* Mobile: dropdown section selector */}
-            <div className="md:hidden">
-              <Select value={activeTab} onValueChange={setActiveTab}>
-                <SelectTrigger className="min-h-[44px] w-full">
-                  <SelectValue>
-                    Sekcja: {ORDER_DETAIL_TABS.find(t => t.value === activeTab)?.label ?? activeTab}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {ORDER_DETAIL_TABS.map(t => (
-                    <SelectItem key={t.value} value={t.value} className="min-h-[40px]">
-                      {t.value === "comments" ? `${t.label} (${comments?.length ?? 0})` : t.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Mobile: horizontal scrollable tabs */}
+            <TabsList className="md:hidden h-auto w-full justify-start overflow-x-auto scrollbar-none flex-nowrap p-1 bg-muted/50">
+              <TabsTrigger value="edit" className="min-h-[40px] px-3 text-xs whitespace-nowrap shrink-0">Edycja</TabsTrigger>
+              <TabsTrigger value="photos" className="min-h-[40px] px-3 text-xs whitespace-nowrap shrink-0">Zdjęcia</TabsTrigger>
+              <TabsTrigger value="comments" className="min-h-[40px] px-3 text-xs whitespace-nowrap shrink-0">Komentarze</TabsTrigger>
+              <TabsTrigger value="customer-messages" className="min-h-[40px] px-3 text-xs whitespace-nowrap shrink-0">Wiadomości</TabsTrigger>
+              <TabsTrigger value="history" className="min-h-[40px] px-3 text-xs whitespace-nowrap shrink-0">Historia</TabsTrigger>
+              <TabsTrigger value="documents" className="min-h-[40px] px-3 text-xs whitespace-nowrap shrink-0">Dokumenty</TabsTrigger>
+              <TabsTrigger value="signatures" className="min-h-[40px] px-3 text-xs whitespace-nowrap shrink-0">Podpisy</TabsTrigger>
+            </TabsList>
             {/* Desktop: normal tab bar */}
             <TabsList className="hidden md:inline-flex">
               <TabsTrigger value="edit">Edycja</TabsTrigger>
