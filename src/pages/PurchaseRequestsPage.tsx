@@ -125,10 +125,6 @@ export default function PurchaseRequestsPage() {
   });
 
   const handleStatusChange = (r: any, newStatus: string) => {
-    if (["TO_ORDER", "ORDERED"].includes(newStatus) && r.client_approval !== "APPROVED") {
-      setConfirmDialog({ id: r.id, status: newStatus });
-      return;
-    }
     updateStatus.mutate({ id: r.id, status: newStatus });
   };
 
