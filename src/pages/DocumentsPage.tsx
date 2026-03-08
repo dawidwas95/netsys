@@ -1298,7 +1298,7 @@ export default function DocumentsPage() {
                               onClick={async () => {
                                 const data = await lookupNip(form.buyer_nip);
                                 if (data) setForm(prev => ({
-                                  ...prev, buyer_name: data.company_name || prev.buyer_name,
+                                  ...prev, buyer_name: preferExistingBusinessName(prev.buyer_name, data.company_name, data.is_person_name_only),
                                   buyer_nip: data.nip, buyer_street: data.street, buyer_building: data.building,
                                   buyer_local: data.local, buyer_postal_code: data.postal_code,
                                   buyer_city: data.city, buyer_country: data.country,
