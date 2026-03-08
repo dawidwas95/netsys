@@ -354,6 +354,48 @@ export default function OrderDetailPage() {
       navigate("/orders");
     },
     onError: (err: any) => toast.error(err?.message || "Błąd operacji"),
+  const safeCancelOrder = useMutation({
+    mutationFn: async () => {
+      const serviceOrderCash = (linkedStats?.cashRows ?? []).filter((r: any) => r);
+      for (const t of serviceOrderCash) {
+        const baseAmount = Number(t.gross_amount || t.amount || 0);
+        if (baseAmount <= 0) continue;
+        await supabase.from("cash_transactions").insert({
+          transaction_type: t.transaction_type === "IN" ? "OUT" : "IN",
+          source_type: "CORRECTION",
+          related_order_id: id,
+          amount: baseAmount,
+          gross_amount: baseAmount,
+          vat_amount: 0,
+          payment_method: "CASH",
+          description: `Korekta anulowanego zlecenia ${order?.order_number}`,
+          transaction_date: new Date().toISOString().split("T")[0],
+          user_id: user?.id,
+        });
+      }
+
+      const { error } = await supabase
+        .from("service_orders")
+        .update({
+          status: "CANCELLED",
+          is_archived: true,
+          is_paid: false,
+          paid_at: null,
+          archive_reason: "Anulowane ręcznie",
+          updated_by: user?.id,
+        })
+        .eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["order", id] });
+      queryClient.invalidateQueries({ queryKey: ["cash_transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["service-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["kanban-orders"] });
+      toast.success("Zlecenie anulowane z korektą finansową");
+      setCancelDialogOpen(false);
+    },
+    onError: (err: any) => toast.error(err?.message || "Nie udało się anulować zlecenia"),
   });
 
   function handleSave() { if (!editForm) return; updateOrder.mutate(editForm); }
