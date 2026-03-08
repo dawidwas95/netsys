@@ -859,11 +859,11 @@ export default function DocumentsPage() {
                   <p className="font-medium">{previewDoc.contractor_name || getClientName(previewDoc.clients)}</p>
                   {previewDoc.contractor_nip && <p className="text-xs text-muted-foreground">NIP: {previewDoc.contractor_nip}</p>}
                 </div>
-                {((previewDoc as any).buyer_name || (previewDoc as any).buyer_nip) && (
+                {(previewDoc.buyer_name || previewDoc.buyer_nip) && (
                   <div>
                     <p className="text-muted-foreground">Nabywca</p>
-                    <p className="font-medium">{(previewDoc as any).buyer_name || "—"}</p>
-                    {(previewDoc as any).buyer_nip && <p className="text-xs text-muted-foreground">NIP: {(previewDoc as any).buyer_nip}</p>}
+                    <p className="font-medium">{previewDoc.buyer_name || "—"}</p>
+                    {previewDoc.buyer_nip && <p className="text-xs text-muted-foreground">NIP: {previewDoc.buyer_nip}</p>}
                   </div>
                 )}
                 <div>
