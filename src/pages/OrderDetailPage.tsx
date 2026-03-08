@@ -354,6 +354,8 @@ export default function OrderDetailPage() {
       navigate("/orders");
     },
     onError: (err: any) => toast.error(err?.message || "Błąd operacji"),
+  });
+
   const safeCancelOrder = useMutation({
     mutationFn: async () => {
       const serviceOrderCash = (linkedStats?.cashRows ?? []).filter((r: any) => r);
