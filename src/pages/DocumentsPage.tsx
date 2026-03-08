@@ -194,6 +194,8 @@ export default function DocumentsPage() {
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
   const [pzPromptData, setPzPromptData] = useState<{ docId: string; docNumber: string; clientId: string | null; items: any[] } | null>(null);
   const attachmentsRef = useRef<DocumentAttachmentsHandle>(null);
+  const [ocrOpen, setOcrOpen] = useState(false);
+  const [ocrSourceFile, setOcrSourceFile] = useState<File | null>(null);
 
   const { data: docs = [], isLoading } = useQuery({
     queryKey: ["documents"],
