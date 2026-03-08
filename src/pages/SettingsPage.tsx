@@ -31,7 +31,7 @@ import { toast } from "sonner";
 import {
   Bell, Mail, MessageSquare, Save, Info, FileText, Building2,
   ChevronUp, ChevronDown, Eye, GripVertical, Users, MoreHorizontal,
-  Pencil, UserX, Trash2, Shield, Plus,
+  Pencil, UserX, Trash2, Shield, Plus, KeyRound,
 } from "lucide-react";
 import type { PdfSection, PdfSettings, PdfTemplateConfig } from "@/lib/pdfEngine";
 import { DEFAULT_SETTINGS, SERVICE_ORDER_SECTIONS } from "@/lib/pdfEngine";
