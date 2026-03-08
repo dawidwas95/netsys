@@ -113,6 +113,8 @@ interface Document {
   client_id: string | null;
   contractor_name: string | null;
   contractor_nip: string | null;
+  buyer_name: string | null;
+  buyer_nip: string | null;
   issue_date: string;
   sale_date: string | null;
   due_date: string | null;
