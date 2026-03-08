@@ -501,9 +501,9 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
               <TableRow>
                 <TableHead>Nazwa</TableHead>
                 <TableHead className="text-center w-14">Ilość</TableHead>
-                <TableHead className="text-right">Zakup</TableHead>
-                <TableHead className="text-right">Sprzedaż</TableHead>
-                <TableHead className="text-right">Zysk</TableHead>
+                      <TableHead className="text-right">Zakup brutto</TableHead>
+                      <TableHead className="text-right">Sprzedaż brutto</TableHead>
+                      <TableHead className="text-right">Zysk brutto</TableHead>
                 <TableHead className="text-center w-16">Źródło</TableHead>
                 {!isCompleted && <TableHead className="w-10"></TableHead>}
               </TableRow>
