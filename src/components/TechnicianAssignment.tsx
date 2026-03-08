@@ -357,7 +357,7 @@ export function QuickAssignButton({ orderId, orderNumber }: { orderId: string; o
   });
 
   const { data: assigned = [] } = useQuery({
-    queryKey: ["order-technicians", orderId],
+    queryKey: ["order-technician-ids", orderId],
     queryFn: async () => {
       const { data } = await supabase
         .from("order_technicians")
