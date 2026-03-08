@@ -153,6 +153,48 @@ export function DeviceSection({ clientId, deviceId, onChange }: { clientId?: str
   );
 }
 
+// ═══ TECHNICIAN SELECT SECTION ═══
+export function TechnicianSelectSection({ technicianId, onChange }: { technicianId?: string; onChange: (id: string | undefined) => void }) {
+  const { data: techUsers = [] } = useQuery({
+    queryKey: ["assignable-staff-users"],
+    queryFn: async () => {
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .in("role", ["ADMIN", "TECHNICIAN"]);
+
+      const assignableIds = (roleData ?? []).map((r: any) => r.user_id);
+      if (!assignableIds.length) return [];
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, first_name, last_name, email")
+        .eq("is_active", true)
+        .in("user_id", assignableIds);
+
+      return (data ?? []).map((p: any) => ({
+        value: p.user_id,
+        label: [p.first_name, p.last_name].filter(Boolean).join(" ") || p.email || "Użytkownik",
+        sublabel: p.email || "",
+      }));
+    },
+  });
+
+  return (
+    <FormSection icon={UserPlus} title="Przypisany technik">
+      <div>
+        <Label className="text-xs text-muted-foreground mb-1 block">Technik odpowiedzialny</Label>
+        <SearchableSelect
+          options={techUsers}
+          value={technicianId ?? ""}
+          onChange={(v) => onChange(v || undefined)}
+          placeholder="Wybierz technika (opcjonalnie)..."
+        />
+      </div>
+    </FormSection>
+  );
+}
+
 // ═══ ORDER DATA SECTION ═══
 export function OrderDataSection({ formData, onChange }: { formData: Record<string, any>; onChange: (field: string, value: any) => void; }) {
   return (
