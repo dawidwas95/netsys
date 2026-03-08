@@ -337,7 +337,7 @@ export function QuickAssignButton({ orderId, orderNumber }: { orderId: string; o
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-6 w-6" title="Przypisz technika" onClick={(e) => e.preventDefault()}>
+        <Button variant="ghost" size="icon" className="h-6 w-6" title="Przypisz technika" onClick={(e) => e.stopPropagation()}>
           <UserPlus className="h-3 w-3" />
         </Button>
       </PopoverTrigger>
