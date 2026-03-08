@@ -450,7 +450,9 @@ export default function DocumentsPage() {
     setLineItems(updated);
   }
 
-  const clientOptions = clients.map(c => ({
+  // Use filtered client list based on document direction
+  const relevantClients = form.direction === "EXPENSE" ? supplierClients : customerClients;
+  const clientOptions = relevantClients.map((c: any) => ({
     value: c.id,
     label: c.display_name || c.company_name || [c.first_name, c.last_name].filter(Boolean).join(" ") || "—",
     sublabel: c.nip ? `NIP: ${c.nip}` : undefined,
