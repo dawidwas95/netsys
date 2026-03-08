@@ -1168,7 +1168,7 @@ export default function DocumentsPage() {
                                 )}
                               </div>
                             </div>
-                            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setForm({ ...form, client_id: "", contractor_name: "", contractor_nip: "" })}>
+                            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setForm({ ...form, client_id: "", contractor_name: "", contractor_nip: "", contractor_street: "", contractor_building: "", contractor_local: "", contractor_postal_code: "", contractor_city: "", contractor_country: "Polska", contractor_email: "", contractor_phone: "" })}>
                               Zmień
                             </Button>
                           </div>
