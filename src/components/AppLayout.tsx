@@ -9,10 +9,10 @@ export default function AppLayout() {
   return (
     <SidebarProvider>
       <RedirectMobile />
-      <div className="min-h-screen flex w-full pb-[56px] md:pb-0">
+        <div className="min-h-screen flex w-full pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-0">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center border-b bg-card px-4 gap-4 shrink-0">
+          <header className="h-14 flex items-center border-b bg-card px-4 gap-4 shrink-0 pt-[env(safe-area-inset-top)] md:pt-0 md:h-14" style={{ height: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}>
             <SidebarTrigger />
             <GlobalSearch />
           </header>
