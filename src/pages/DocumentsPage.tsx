@@ -753,6 +753,10 @@ export default function DocumentsPage() {
                 </>
               )}
 
+              {/* Attachments */}
+              <Separator />
+              <DocumentAttachments documentId={previewDoc.id} />
+
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => setPreviewOpen(false)}>Zamknij</Button>
                 <Button onClick={() => { setPreviewOpen(false); openEdit(previewDoc); }}>
