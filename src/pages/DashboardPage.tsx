@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table";
 import {
   Wrench, CheckCircle, AlertCircle, Users, TrendingUp, TrendingDown,
-  Clock, DollarSign, Wallet, Percent,
+  Clock, DollarSign, Wallet, Percent, AlertTriangle, Package,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
