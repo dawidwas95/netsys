@@ -607,6 +607,12 @@ export default function DocumentsPage() {
     return nip.replace(/^PL/i, "").replace(/[\s\-]/g, "");
   }
 
+  function preferExistingBusinessName(existing: string, incoming: string | null, incomingIsPersonalOnly?: boolean) {
+    if (!incoming) return existing;
+    if (existing.trim() && incomingIsPersonalOnly) return existing;
+    return incoming;
+  }
+
   function handleOcrData(data: OcrExtractedData) {
     const docType = (data.document_type as DocType) || "PURCHASE_INVOICE";
     const cfg = TYPE_CONFIG[docType] || TYPE_CONFIG.OTHER;
