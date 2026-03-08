@@ -1,4 +1,5 @@
 import jsPDF from "jspdf";
+import QRCode from "qrcode";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, DEVICE_CATEGORY_LABELS,
@@ -340,6 +341,13 @@ export async function generateOrderPDF({ order, orderItems, financials }: OrderP
   const b = new PdfBuilder(doc, fontFamily, s);
   const enabledSections = new Set(config.sections.filter(sec => sec.enabled).map(sec => sec.id));
 
+  // Generate QR code
+  let qrDataUrl: string | null = null;
+  try {
+    const orderUrl = `${window.location.origin}/orders/${order.id}`;
+    qrDataUrl = await QRCode.toDataURL(orderUrl, { width: 200, margin: 1, errorCorrectionLevel: "M" });
+  } catch {}
+
   for (const section of config.sections) {
     if (!section.enabled) continue;
 
@@ -366,6 +374,11 @@ export async function generateOrderPDF({ order, orderItems, financials }: OrderP
         if (contactLine) { doc.text(contactLine, b.ml, b.y); b.y += 3.5; }
         if (company.nip) { doc.text(`NIP: ${company.nip}`, b.ml, b.y); b.y += 3.5; }
         if (company.website) { doc.text(company.website, b.ml, b.y); b.y += 3.5; }
+
+        // QR code top-right
+        if (qrDataUrl) {
+          try { doc.addImage(qrDataUrl, "PNG", b.mr - 24, 5, 22, 22); } catch {}
+        }
 
         // Separator under header
         b.y += 2;
