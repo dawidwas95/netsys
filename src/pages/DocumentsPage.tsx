@@ -249,7 +249,7 @@ export default function DocumentsPage() {
       setLineItems(data.map((di: any) => ({
         id: di.id, name: di.name, quantity: di.quantity.toString(), unit: di.unit,
         unit_net: di.unit_net.toString(), vat_rate: di.vat_rate.toString(),
-        item_type: (di.description === "PRODUCT" ? "PRODUCT" : "SERVICE") as DocItemType,
+        item_type: (di.item_type || di.description || "SERVICE") as DocItemType,
         inventory_item_id: di.inventory_item_id,
       })));
     } else {
