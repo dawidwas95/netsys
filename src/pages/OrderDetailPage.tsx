@@ -598,11 +598,8 @@ export default function OrderDetailPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Nie</AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              updateOrder.mutate({ status: "CANCELLED" });
-              setCancelDialogOpen(false);
-            }}>
-              Anuluj zlecenie
+            <AlertDialogAction onClick={() => safeCancelOrder.mutate()}>
+              {safeCancelOrder.isPending ? "Anulowanie..." : "Anuluj zlecenie"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
