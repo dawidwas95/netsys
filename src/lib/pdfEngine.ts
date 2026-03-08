@@ -45,7 +45,7 @@ export interface CompanyInfo {
 }
 
 export const DEFAULT_SETTINGS: PdfSettings = {
-  margins: { top: 15, right: 15, bottom: 20, left: 15 },
+  margins: { top: 12, right: 12, bottom: 12, left: 12 },
   fontScale: 1.0,
   showLogo: true,
   showCompanyData: true,
@@ -53,7 +53,7 @@ export const DEFAULT_SETTINGS: PdfSettings = {
   clientDeviceLayout: "side-by-side",
   showTableBorders: true,
   showSectionSeparators: true,
-  compactSpacing: false,
+  compactSpacing: true,
   footerText: "Dziękujemy za skorzystanie z usług naszego serwisu. Dokument wygenerowany elektronicznie.",
 };
 
@@ -203,22 +203,22 @@ class PdfBuilder {
 
   // ── Section header with icon-like bar ──
   drawSectionHeader(title: string) {
-    this.checkPage(16);
-    this.y += this.spacing + 2;
+    this.checkPage(10);
+    this.y += this.spacing;
 
     // Accent bar on left
     this.doc.setFillColor(...PdfBuilder.PRIMARY);
-    this.doc.rect(this.ml, this.y - 4, 3, 7, "F");
+    this.doc.rect(this.ml, this.y - 3.5, 2.5, 6, "F");
 
     // Background bar
     if (this.showSeparators) {
       this.doc.setFillColor(...PdfBuilder.BG_SECTION);
-      this.doc.rect(this.ml + 3, this.y - 4, this.cw - 3, 7, "F");
+      this.doc.rect(this.ml + 2.5, this.y - 3.5, this.cw - 2.5, 6, "F");
     }
 
-    this.setFont("bold", 8.5, PdfBuilder.PRIMARY);
-    this.doc.text(title.toUpperCase(), this.ml + 7, this.y + 0.5);
-    this.y += 10;
+    this.setFont("bold", 7.5, PdfBuilder.PRIMARY);
+    this.doc.text(title.toUpperCase(), this.ml + 6, this.y + 0.5);
+    this.y += 7;
   }
 
   // ── Key-value field ──
@@ -257,54 +257,54 @@ class PdfBuilder {
   // ── Multi-line text block ──
   drawTextBlock(label: string, text: string | null | undefined) {
     if (!text) return;
-    this.checkPage(14);
+    this.checkPage(10);
     if (label) {
-      this.setFont("bold", 7.5, PdfBuilder.GRAY);
+      this.setFont("bold", 7, PdfBuilder.GRAY);
       this.doc.text(label, this.ml + 2, this.y);
-      this.y += 4;
+      this.y += 3.5;
     }
-    this.setFont("normal", 8.5, PdfBuilder.DARK);
+    this.setFont("normal", 8, PdfBuilder.DARK);
     const lines: string[] = this.doc.splitTextToSize(text, this.cw - 6);
     for (const line of lines) {
-      this.checkPage(4.5);
+      this.checkPage(3.8);
       this.doc.text(line, this.ml + 2, this.y);
-      this.y += 4;
+      this.y += 3.5;
     }
     this.y += 1;
   }
 
   // ── Bordered info card ──
   drawInfoCard(x: number, width: number, fields: Array<{ label: string; value: string | null | undefined }>, title?: string) {
-    const lineH = 4.5;
+    const lineH = 3.8;
     const visibleFields = fields.filter(f => f.value);
-    const cardH = (title ? lineH + 2 : 0) + visibleFields.length * lineH + 4;
+    const cardH = (title ? lineH + 1 : 0) + visibleFields.length * lineH + 3;
     this.checkPage(cardH + 2);
 
     // Card border
     this.doc.setDrawColor(...PdfBuilder.BORDER);
-    this.doc.setLineWidth(0.3);
-    this.doc.roundedRect(x, this.y - 2, width, cardH, 1.5, 1.5, "S");
+    this.doc.setLineWidth(0.2);
+    this.doc.roundedRect(x, this.y - 2, width, cardH, 1, 1, "S");
 
     const startY = this.y;
 
     if (title) {
-      this.setFont("bold", 8, PdfBuilder.PRIMARY);
-      this.doc.text(title, x + 4, this.y + 1);
-      this.y += lineH + 2;
+      this.setFont("bold", 7.5, PdfBuilder.PRIMARY);
+      this.doc.text(title, x + 3, this.y + 0.5);
+      this.y += lineH + 1;
     }
 
     for (const f of visibleFields) {
-      this.setFont("normal", 7, PdfBuilder.GRAY);
-      this.doc.text(f.label, x + 4, this.y);
-      this.setFont("normal", 8, PdfBuilder.DARK);
+      this.setFont("normal", 6.5, PdfBuilder.GRAY);
+      this.doc.text(f.label, x + 3, this.y);
+      this.setFont("normal", 7.5, PdfBuilder.DARK);
       const val = f.value || "—";
-      const maxW = width - 38;
+      const maxW = width - 34;
       const truncated = this.doc.splitTextToSize(val, maxW)[0] || val;
-      this.doc.text(truncated, x + 30, this.y);
+      this.doc.text(truncated, x + 28, this.y);
       this.y += lineH;
     }
 
-    this.y = startY + cardH + 2;
+    this.y = startY + cardH + 1;
     return cardH;
   }
 
@@ -362,61 +362,54 @@ export async function generateOrderPDF({ order, orderItems, financials }: OrderP
         doc.rect(0, 0, b.pageW, 2, "F");
 
         // Company info - left side
-        b.y = s.margins.top + 2;
-        b.setFont("bold", 14, PdfBuilder.PRIMARY);
+        b.y = s.margins.top;
+        b.setFont("bold", 12, PdfBuilder.PRIMARY);
         doc.text(company.company_name, b.ml, b.y);
-        b.y += 5.5;
+        b.y += 4.5;
 
-        b.setFont("normal", 7.5, PdfBuilder.GRAY);
+        b.setFont("normal", 7, PdfBuilder.GRAY);
         const addressParts = [company.address_street, company.address_postal_code, company.address_city].filter(Boolean);
-        if (addressParts.length) { doc.text(addressParts.join(", "), b.ml, b.y); b.y += 3.5; }
+        if (addressParts.length) { doc.text(addressParts.join(", "), b.ml, b.y); b.y += 3; }
         const contactLine = [company.phone ? `tel. ${company.phone}` : null, company.email].filter(Boolean).join("  |  ");
-        if (contactLine) { doc.text(contactLine, b.ml, b.y); b.y += 3.5; }
-        if (company.nip) { doc.text(`NIP: ${company.nip}`, b.ml, b.y); b.y += 3.5; }
-        if (company.website) { doc.text(company.website, b.ml, b.y); b.y += 3.5; }
+        if (contactLine) { doc.text(contactLine, b.ml, b.y); b.y += 3; }
+        if (company.nip) { doc.text(`NIP: ${company.nip}`, b.ml, b.y); b.y += 3; }
 
         // QR code top-right
         if (qrDataUrl) {
-          try { doc.addImage(qrDataUrl, "PNG", b.mr - 24, 5, 22, 22); } catch {}
+          try { doc.addImage(qrDataUrl, "PNG", b.mr - 20, 4, 18, 18); } catch {}
         }
 
         // Separator under header
-        b.y += 2;
+        b.y += 1;
         doc.setDrawColor(...PdfBuilder.PRIMARY);
-        doc.setLineWidth(0.5);
+        doc.setLineWidth(0.4);
         doc.line(b.ml, b.y, b.mr, b.y);
-        b.y += 6;
+        b.y += 4;
 
         break;
       }
 
       /* ═══════════════ DOCUMENT TITLE ═══════════════ */
       case "document_title": {
-        b.checkPage(20);
-
-        // Title block on right
         const statusLabel = ORDER_STATUS_LABELS[order.status as OrderStatus] ?? order.status;
         const isCompleted = order.status === "COMPLETED" || order.status === "READY_FOR_RETURN";
         const docTitle = isCompleted ? "PROTOKÓŁ SERWISOWY" : "POTWIERDZENIE PRZYJĘCIA DO SERWISU";
 
-        b.setFont("bold", 15, PdfBuilder.DARK);
+        b.setFont("bold", 12, PdfBuilder.DARK);
         doc.text(docTitle, b.ml, b.y);
-        b.y += 6;
 
-        // Info row under title
-        b.setFont("bold", 10, PdfBuilder.PRIMARY);
-        doc.text(`Nr: ${order.order_number}`, b.ml, b.y);
-
-        b.setFont("normal", 8, PdfBuilder.GRAY);
-        doc.text(`Status: ${statusLabel}`, b.ml + 70, b.y);
-        doc.text(`Data: ${fmtDate(order.received_at)}`, b.mr - 2, b.y, { align: "right" });
+        // Info on same line right-aligned
+        b.setFont("bold", 9, PdfBuilder.PRIMARY);
+        doc.text(order.order_number, b.mr - 2, b.y, { align: "right" });
         b.y += 4;
 
-        // Thin line
+        b.setFont("normal", 7.5, PdfBuilder.GRAY);
+        doc.text(`Status: ${statusLabel}  |  Data: ${fmtDate(order.received_at)}`, b.ml, b.y);
+        b.y += 3;
         doc.setDrawColor(...PdfBuilder.BORDER);
         doc.setLineWidth(0.15);
         doc.line(b.ml, b.y, b.mr, b.y);
-        b.y += 5;
+        b.y += 3;
 
         break;
       }
@@ -655,68 +648,60 @@ export async function generateOrderPDF({ order, orderItems, financials }: OrderP
         }
 
         // ── Summary box ──
-        b.checkPage(42);
-        const boxH = 36;
+        b.checkPage(30);
+        const boxH = 28;
         const boxY = b.y;
 
         // Left column - breakdown
         doc.setFillColor(248, 249, 250);
         doc.setDrawColor(...PdfBuilder.BORDER);
         doc.setLineWidth(0.3);
-        doc.roundedRect(b.ml, boxY, b.cw / 2 - 2, boxH, 2, 2, "FD");
+        doc.roundedRect(b.ml, boxY, b.cw / 2 - 2, boxH, 1.5, 1.5, "FD");
 
-        let iy = boxY + 6;
-        b.setFont("normal", 7.5, PdfBuilder.GRAY); doc.text("Usługa (netto):", b.ml + 4, iy);
-        b.setFont("normal", 8.5, PdfBuilder.DARK); doc.text(formatCurrency(financials.laborNet), b.ml + 45, iy);
+        let iy = boxY + 5;
+        b.setFont("normal", 7, PdfBuilder.GRAY); doc.text("Usługa (netto):", b.ml + 3, iy);
+        b.setFont("normal", 8, PdfBuilder.DARK); doc.text(formatCurrency(financials.laborNet), b.ml + 40, iy);
+        iy += 4.5;
+        b.setFont("normal", 7, PdfBuilder.GRAY); doc.text("Części (netto):", b.ml + 3, iy);
+        b.setFont("normal", 8, PdfBuilder.DARK); doc.text(formatCurrency(financials.partsCost), b.ml + 40, iy);
+        iy += 4.5;
+        b.setFont("normal", 7, PdfBuilder.GRAY); doc.text("Koszty dodatkowe:", b.ml + 3, iy);
+        b.setFont("normal", 8, PdfBuilder.DARK); doc.text(formatCurrency(financials.extraCost), b.ml + 40, iy);
         iy += 5.5;
-        b.setFont("normal", 7.5, PdfBuilder.GRAY); doc.text("Części (netto):", b.ml + 4, iy);
-        b.setFont("normal", 8.5, PdfBuilder.DARK); doc.text(formatCurrency(financials.partsCost), b.ml + 45, iy);
-        iy += 5.5;
-        b.setFont("normal", 7.5, PdfBuilder.GRAY); doc.text("Koszty dodatkowe:", b.ml + 4, iy);
-        b.setFont("normal", 8.5, PdfBuilder.DARK); doc.text(formatCurrency(financials.extraCost), b.ml + 45, iy);
-        iy += 7;
         doc.setDrawColor(...PdfBuilder.BORDER);
-        doc.line(b.ml + 4, iy - 2.5, b.ml + b.cw / 2 - 6, iy - 2.5);
-        b.setFont("bold", 8.5, PdfBuilder.DARK); doc.text("Razem netto:", b.ml + 4, iy);
-        b.setFont("bold", 9, PdfBuilder.DARK); doc.text(formatCurrency(financials.revenue), b.ml + 45, iy);
+        doc.line(b.ml + 3, iy - 2, b.ml + b.cw / 2 - 6, iy - 2);
+        b.setFont("bold", 8, PdfBuilder.DARK); doc.text("Razem netto:", b.ml + 3, iy);
+        b.setFont("bold", 8.5, PdfBuilder.DARK); doc.text(formatCurrency(financials.revenue), b.ml + 40, iy);
 
         // Right column - total to pay
         const rightX = b.ml + b.cw / 2 + 2;
         const rightW = b.cw / 2 - 2;
         doc.setFillColor(...PdfBuilder.PRIMARY);
-        doc.roundedRect(rightX, boxY, rightW, boxH, 2, 2, "F");
+        doc.roundedRect(rightX, boxY, rightW, boxH, 1.5, 1.5, "F");
 
-        b.setFont("normal", 8, PdfBuilder.WHITE);
-        doc.text("DO ZAPŁATY (brutto):", rightX + 6, boxY + 9);
-        b.setFont("bold", 18, PdfBuilder.WHITE);
-        doc.text(formatCurrency(financials.revenue * 1.23), rightX + 6, boxY + 20);
+        b.setFont("normal", 7.5, PdfBuilder.WHITE);
+        doc.text("DO ZAPŁATY (brutto):", rightX + 5, boxY + 7);
+        b.setFont("bold", 15, PdfBuilder.WHITE);
+        doc.text(formatCurrency(financials.revenue * 1.23), rightX + 5, boxY + 16);
 
-        let payY = boxY + 27;
-        b.setFont("normal", 7.5, [200, 210, 230] as [number, number, number]);
+        let payY = boxY + 22;
+        b.setFont("normal", 7, [200, 210, 230] as [number, number, number]);
         if (order.payment_method) {
-          doc.text(`Płatność: ${PAYMENT_METHOD_LABELS[order.payment_method as PaymentMethod] ?? order.payment_method}`, rightX + 6, payY);
-          payY += 4;
+          doc.text(`Płatność: ${PAYMENT_METHOD_LABELS[order.payment_method as PaymentMethod] ?? order.payment_method}`, rightX + 5, payY);
+          payY += 3.5;
         }
-        doc.text(`Status: ${order.is_paid ? "✓ Opłacone" : "Nieopłacone"}`, rightX + 6, payY);
+        doc.text(`Status: ${order.is_paid ? "✓ Opłacone" : "Nieopłacone"}`, rightX + 5, payY);
 
-        b.y = boxY + boxH + 5;
+        b.y = boxY + boxH + 3;
         break;
       }
 
       /* ═══════════════ SIGNATURES ═══════════════ */
       case "signatures": {
-        const minSigY = b.y + 10;
-        const preferredSigY = b.pageH - b.marginBottom - 30;
-        const sigY = Math.max(minSigY, Math.min(preferredSigY, 240));
-
-        if (sigY > b.pageH - b.marginBottom - 25) {
-          doc.addPage();
-          b.y = b.marginTop + 10;
-        } else {
-          b.y = sigY;
-        }
-
-        b.checkPage(28);
+        const sigBoxH = 18;
+        const sigNeeded = sigBoxH + 6;
+        b.checkPage(sigNeeded);
+        b.y += 3;
 
         const boxW = 72;
         const boxLeft = b.ml;
@@ -724,53 +709,50 @@ export async function generateOrderPDF({ order, orderItems, financials }: OrderP
 
         // Left box - client
         doc.setDrawColor(...PdfBuilder.BORDER);
-        doc.setLineWidth(0.3);
-        doc.roundedRect(boxLeft, b.y, boxW, 22, 1.5, 1.5, "S");
-        b.setFont("bold", 7.5, PdfBuilder.GRAY);
-        doc.text("PODPIS KLIENTA", boxLeft + boxW / 2, b.y - 2, { align: "center" });
+        doc.setLineWidth(0.2);
+        doc.roundedRect(boxLeft, b.y, boxW, sigBoxH, 1, 1, "S");
+        b.setFont("bold", 7, PdfBuilder.GRAY);
+        doc.text("PODPIS KLIENTA", boxLeft + boxW / 2, b.y - 1.5, { align: "center" });
         if (order.client_signature_url) {
-          try { doc.addImage(order.client_signature_url, "PNG", boxLeft + 2, b.y + 1, boxW - 4, 18); } catch {}
+          try { doc.addImage(order.client_signature_url, "PNG", boxLeft + 2, b.y + 1, boxW - 4, sigBoxH - 4); } catch {}
           if (order.client_signed_at) {
-            b.setFont("normal", 6, PdfBuilder.LIGHT_GRAY);
-            doc.text(new Date(order.client_signed_at).toLocaleString("pl-PL"), boxLeft + boxW / 2, b.y + 21, { align: "center" });
+            b.setFont("normal", 5.5, PdfBuilder.LIGHT_GRAY);
+            doc.text(new Date(order.client_signed_at).toLocaleString("pl-PL"), boxLeft + boxW / 2, b.y + sigBoxH - 1, { align: "center" });
           }
         } else {
-          b.setFont("normal", 7, PdfBuilder.LIGHT_GRAY);
-          doc.text("Data i podpis", boxLeft + boxW / 2, b.y + 18, { align: "center" });
+          b.setFont("normal", 6.5, PdfBuilder.LIGHT_GRAY);
+          doc.text("Data i podpis", boxLeft + boxW / 2, b.y + sigBoxH - 3, { align: "center" });
         }
 
         // Right box - technician
-        doc.roundedRect(boxRight, b.y, boxW, 22, 1.5, 1.5, "S");
-        b.setFont("bold", 7.5, PdfBuilder.GRAY);
-        doc.text("PODPIS SERWISANTA", boxRight + boxW / 2, b.y - 2, { align: "center" });
+        doc.roundedRect(boxRight, b.y, boxW, sigBoxH, 1, 1, "S");
+        b.setFont("bold", 7, PdfBuilder.GRAY);
+        doc.text("PODPIS SERWISANTA", boxRight + boxW / 2, b.y - 1.5, { align: "center" });
         if (order.technician_signature_url) {
-          try { doc.addImage(order.technician_signature_url, "PNG", boxRight + 2, b.y + 1, boxW - 4, 18); } catch {}
+          try { doc.addImage(order.technician_signature_url, "PNG", boxRight + 2, b.y + 1, boxW - 4, sigBoxH - 4); } catch {}
           if (order.technician_signed_at) {
-            b.setFont("normal", 6, PdfBuilder.LIGHT_GRAY);
-            doc.text(new Date(order.technician_signed_at).toLocaleString("pl-PL"), boxRight + boxW / 2, b.y + 21, { align: "center" });
+            b.setFont("normal", 5.5, PdfBuilder.LIGHT_GRAY);
+            doc.text(new Date(order.technician_signed_at).toLocaleString("pl-PL"), boxRight + boxW / 2, b.y + sigBoxH - 1, { align: "center" });
           }
         } else {
-          b.setFont("normal", 7, PdfBuilder.LIGHT_GRAY);
-          doc.text("Data i podpis", boxRight + boxW / 2, b.y + 18, { align: "center" });
+          b.setFont("normal", 6.5, PdfBuilder.LIGHT_GRAY);
+          doc.text("Data i podpis", boxRight + boxW / 2, b.y + sigBoxH - 3, { align: "center" });
         }
 
-        b.y += 26;
+        b.y += sigBoxH + 2;
         break;
       }
 
       /* ═══════════════ FOOTER ═══════════════ */
       case "footer": {
-        const footerY = b.pageH - 10;
+        const footerY = b.pageH - 7;
         doc.setDrawColor(...PdfBuilder.BORDER);
-        doc.setLineWidth(0.15);
-        doc.line(b.ml, footerY - 3, b.mr, footerY - 3);
+        doc.setLineWidth(0.1);
+        doc.line(b.ml, footerY - 2, b.mr, footerY - 2);
 
         const footerText = s.footerText || `Dokument wygenerowany elektronicznie — ${company.company_name}`;
-        b.setFont("normal", 6.5, PdfBuilder.LIGHT_GRAY);
-        doc.text(footerText, b.pageW / 2, footerY, { align: "center" });
-
         b.setFont("normal", 6, PdfBuilder.LIGHT_GRAY);
-        doc.text(`Strona 1`, b.mr, footerY, { align: "right" });
+        doc.text(footerText, b.pageW / 2, footerY, { align: "center" });
         break;
       }
     }
