@@ -58,7 +58,7 @@ export default function PurchaseRequestsPage() {
   const [urgencyFilter, setUrgencyFilter] = useState("ALL");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   
-  const [confirmDialog, setConfirmDialog] = useState<{ id: string; status: string } | null>(null);
+  
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingRequest, setEditingRequest] = useState<any | null>(null);
