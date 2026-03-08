@@ -807,13 +807,42 @@ export type Database = {
           },
         ]
       }
+      inventory_categories: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       inventory_items: {
         Row: {
           category: string | null
+          compatible_models: string[] | null
           created_at: string
           deleted_at: string | null
           deleted_by: string | null
           id: string
+          inventory_number: string | null
           is_active: boolean
           is_archived: boolean
           manufacturer: string | null
@@ -831,10 +860,12 @@ export type Database = {
         }
         Insert: {
           category?: string | null
+          compatible_models?: string[] | null
           created_at?: string
           deleted_at?: string | null
           deleted_by?: string | null
           id?: string
+          inventory_number?: string | null
           is_active?: boolean
           is_archived?: boolean
           manufacturer?: string | null
@@ -852,10 +883,12 @@ export type Database = {
         }
         Update: {
           category?: string | null
+          compatible_models?: string[] | null
           created_at?: string
           deleted_at?: string | null
           deleted_by?: string | null
           id?: string
+          inventory_number?: string | null
           is_active?: boolean
           is_archived?: boolean
           manufacturer?: string | null
