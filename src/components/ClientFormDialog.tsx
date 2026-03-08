@@ -25,6 +25,8 @@ interface ClientFormDialogProps {
   onOpenChange?: (open: boolean) => void;
   /** Pass existing client for edit mode */
   editClient?: Client | null;
+  /** Prefill data for new client (e.g. from OCR) */
+  initialData?: Partial<typeof emptyForm> | null;
 }
 
 const emptyForm = {
