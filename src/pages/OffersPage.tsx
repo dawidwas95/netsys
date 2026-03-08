@@ -396,9 +396,12 @@ function OfferForm({ clients, userId, onSuccess }: {
                 <Input value={item.unit} onChange={(e) => updateItem(idx, "unit", e.target.value)} />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Cena netto</Label>
-                <Input type="number" step="0.01" value={item.unit_net}
-                  onChange={(e) => updateItem(idx, "unit_net", parseFloat(e.target.value) || 0)} />
+                <Label className="text-xs">Cena brutto</Label>
+                <Input type="number" step="0.01"
+                  value={(() => { const net = item.unit_net; const vat = item.vat_rate; return net > 0 ? (net * (1 + vat / 100)).toFixed(2) : ""; })()}
+                  onChange={(e) => { const gross = parseFloat(e.target.value) || 0; const vat = item.vat_rate || 23; updateItem(idx, "unit_net", gross / (1 + vat / 100)); }}
+                />
+                <p className="text-[10px] text-muted-foreground tabular-nums">netto: {item.unit_net.toFixed(2)} zł</p>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">VAT %</Label>
@@ -406,9 +409,9 @@ function OfferForm({ clients, userId, onSuccess }: {
                   onChange={(e) => updateItem(idx, "vat_rate", parseFloat(e.target.value) || 0)} />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Wartość netto</Label>
+                <Label className="text-xs">Wartość brutto</Label>
                 <div className="h-9 flex items-center text-sm font-medium tabular-nums">
-                  {(item.quantity * item.unit_net).toFixed(2)} zł
+                  {(item.quantity * item.unit_net * (1 + item.vat_rate / 100)).toFixed(2)} zł
                 </div>
               </div>
             </div>
