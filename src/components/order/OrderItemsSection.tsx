@@ -18,7 +18,7 @@ import {
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/ui/tabs";
-import { Plus, Trash2, Package, PenLine, AlertTriangle, Search } from "lucide-react";
+import { Plus, Trash2, Package, PenLine, AlertTriangle, Search, Receipt } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
