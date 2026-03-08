@@ -90,6 +90,7 @@ export default function ServiceOrdersPage() {
           .select("*, clients(display_name), devices(manufacturer, model)")
           .order("received_at", { ascending: false });
         if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
+        if (deptFilter !== "all") query = query.eq("service_type", deptFilter as any);
         if (search) query = query.or(`order_number.ilike.%${search}%,problem_description.ilike.%${search}%`);
         const { data, error } = await query;
         if (error) throw error;
