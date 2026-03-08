@@ -231,7 +231,9 @@ export default function DocumentsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
   const [clientInitialData, setClientInitialData] = useState<Record<string, string> | null>(null);
-  const [_pzPromptLegacy, _setPzPromptLegacy] = useState<null>(null); // removed — PZ is now auto-created
+  const [pzConfirmOpen, setPzConfirmOpen] = useState(false);
+  const [pzPendingData, setPzPendingData] = useState<{ docId: string; values: typeof emptyForm; productItems: any[] } | null>(null);
+  const [pzCreating, setPzCreating] = useState(false);
   const attachmentsRef = useRef<DocumentAttachmentsHandle>(null);
   const [ocrOpen, setOcrOpen] = useState(false);
   const [ocrSourceFile, setOcrSourceFile] = useState<File | null>(null);
