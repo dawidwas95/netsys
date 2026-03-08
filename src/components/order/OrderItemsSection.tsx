@@ -277,7 +277,7 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                          placeholder="Szukaj po nazwie, SKU, producencie..."
+                          placeholder="Szukaj: ID, nazwa, producent, model kompatybilny..."
                           value={inventorySearch}
                           onChange={(e) => setInventorySearch(e.target.value)}
                           className="pl-9"
