@@ -95,7 +95,7 @@ interface DocumentLineItem {
 const emptyLineItem: DocumentLineItem = { name: "", quantity: "1", unit: "szt.", unit_net: "0", vat_rate: "23" };
 
 const emptyForm = {
-  document_number: "TEMP",
+  document_number: "",
   document_type: "SALES_INVOICE" as DocType,
   direction: "INCOME" as DocDirection,
   client_id: "",
@@ -181,7 +181,7 @@ export default function DocumentsPage() {
       const grossAmount = hasLineItems ? computedFromItems.gross : netAmount + vatAmount;
 
       const payload: Record<string, unknown> = {
-        document_number: values.document_number,
+        document_number: values.document_number.trim() || 'TEMP',
         document_type: values.document_type,
         direction: values.direction,
         client_id: values.client_id || null,
@@ -350,7 +350,7 @@ export default function DocumentsPage() {
               <DialogTitle>{editId ? "Edytuj dokument" : "Nowy dokument"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label>Typ dokumentu *</Label>
                   <Select value={form.document_type} onValueChange={(v) => onDocTypeChange(v as DocType)}>
@@ -371,6 +371,15 @@ export default function DocumentsPage() {
                       <SelectItem value="EXPENSE">Wydatek</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div>
+                  <Label>Numer dokumentu</Label>
+                  <Input
+                    value={form.document_number}
+                    onChange={(e) => setForm({ ...form, document_number: e.target.value })}
+                    placeholder="np. FV/12/03/2026 (opcjonalnie)"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Pozostaw puste dla autonumeracji</p>
                 </div>
               </div>
 
