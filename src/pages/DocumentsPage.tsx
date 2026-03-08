@@ -555,7 +555,7 @@ export default function DocumentsPage() {
               <div key={doc.id} className="mobile-data-card" onClick={() => openPreview(doc)}>
                 <div className="mobile-card-header">
                   <div className="flex items-center gap-2">
-                    <Badge className={DOC_TYPE_COLORS[doc.document_type]} variant="secondary" className2="text-xs">
+                    <Badge className={DOC_TYPE_COLORS[doc.document_type]} variant="secondary">
                       {DOC_TYPE_SHORT[doc.document_type]}
                     </Badge>
                     <span className="font-medium font-mono text-sm">{doc.document_number}</span>
