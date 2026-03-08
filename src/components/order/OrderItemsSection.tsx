@@ -418,21 +418,21 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                       {/* Preview */}
                       <div className="rounded-lg bg-muted/30 p-3 text-sm space-y-1">
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Koszt zakupu:</span>
-                          <span className="font-mono">{formatCurrency((parseFloat(invQuantity) || 0) * selectedInvItem.purchase_net)}</span>
+                          <span className="text-muted-foreground">Koszt zakupu brutto:</span>
+                          <span className="font-mono">{formatCurrency((parseFloat(invQuantity) || 0) * selectedInvItem.purchase_net * 1.23)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Przychód sprzedaży:</span>
-                          <span className="font-mono">{formatCurrency((parseFloat(invQuantity) || 0) * (parseFloat(invSaleNet) || selectedInvItem.sale_net))}</span>
+                          <span className="text-muted-foreground">Przychód sprzedaży brutto:</span>
+                          <span className="font-mono">{formatCurrency((parseFloat(invQuantity) || 0) * (parseFloat(invSaleNet) || selectedInvItem.sale_net) * 1.23)}</span>
                         </div>
                         <div className="flex justify-between border-t pt-1">
-                          <span className="font-medium">Zysk:</span>
+                          <span className="font-medium">Zysk brutto:</span>
                           <span className={cn(
                             "font-mono font-medium",
                             ((parseFloat(invQuantity) || 0) * ((parseFloat(invSaleNet) || selectedInvItem.sale_net) - selectedInvItem.purchase_net)) >= 0
                               ? "text-primary" : "text-destructive"
                           )}>
-                            {formatCurrency((parseFloat(invQuantity) || 0) * ((parseFloat(invSaleNet) || selectedInvItem.sale_net) - selectedInvItem.purchase_net))}
+                            {formatCurrency((parseFloat(invQuantity) || 0) * ((parseFloat(invSaleNet) || selectedInvItem.sale_net) - selectedInvItem.purchase_net) * 1.23)}
                           </span>
                         </div>
                       </div>
