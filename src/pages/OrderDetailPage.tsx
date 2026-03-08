@@ -282,7 +282,7 @@ export default function OrderDetailPage() {
         }
       }
     },
-    onSuccess: () => {
+    onSuccess: (_, updates) => {
       queryClient.invalidateQueries({ queryKey: ["order", id] });
       queryClient.invalidateQueries({ queryKey: ["order-logs", id] });
       queryClient.invalidateQueries({ queryKey: ["kanban-orders"] });
@@ -290,6 +290,33 @@ export default function OrderDetailPage() {
       setEditForm(null);
       setEditDirty(false);
       toast.success("Zlecenie zaktualizowane");
+
+      // Send notification if status changed to READY_FOR_RETURN or COMPLETED
+      const newStatus = updates.status;
+      if (
+        newStatus &&
+        (newStatus === "READY_FOR_RETURN" || newStatus === "COMPLETED") &&
+        order?.status !== newStatus
+      ) {
+        const deviceName = order?.devices
+          ? `${order.devices.manufacturer ?? ""} ${order.devices.model ?? ""}`.trim()
+          : undefined;
+        sendOrderNotification({
+          orderId: id!,
+          orderNumber: order?.order_number ?? "",
+          clientId: order?.client_id ?? "",
+          clientEmail: (order?.clients as any)?.email,
+          clientName: (order?.clients as any)?.display_name,
+          deviceName,
+          eventType: newStatus as "READY_FOR_RETURN" | "COMPLETED",
+        }).then((result) => {
+          if (result?.success) {
+            toast.success("Powiadomienie wysłane do klienta");
+          }
+        }).catch(() => {
+          // Notification failure is non-blocking
+        });
+      }
     },
     onError: (err: any) => toast.error(err.message),
   });
