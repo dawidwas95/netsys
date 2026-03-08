@@ -411,42 +411,43 @@ export default function DocumentsPage() {
                   </Button>
                 </div>
                 {lineItems.map((item, idx) => (
-                  <div key={idx} className="grid grid-cols-12 gap-2 items-end">
-                    <div className="col-span-4">
+                  <div key={idx} className="grid grid-cols-[1fr_80px_120px_80px_120px_40px] gap-2 items-end">
+                    <div>
                       {idx === 0 && <Label className="text-xs">Nazwa</Label>}
                       <Input value={item.name} onChange={(e) => {
                         const updated = [...lineItems]; updated[idx] = { ...item, name: e.target.value }; setLineItems(updated);
-                      }} placeholder="Nazwa pozycji" className="h-8 text-sm" />
+                      }} placeholder="Nazwa pozycji" className="h-9 text-sm" />
                     </div>
-                    <div className="col-span-1">
+                    <div>
                       {idx === 0 && <Label className="text-xs">Ilość</Label>}
-                      <Input type="number" value={item.quantity} onChange={(e) => {
+                      <Input type="number" min="0" step="1" value={item.quantity} placeholder="1" onChange={(e) => {
                         const updated = [...lineItems]; updated[idx] = { ...item, quantity: e.target.value }; setLineItems(updated);
-                      }} className="h-8 text-sm" />
+                      }} className="h-9 text-sm tabular-nums" />
                     </div>
-                    <div className="col-span-2">
+                    <div>
                       {idx === 0 && <Label className="text-xs">Cena netto</Label>}
-                      <Input type="number" step="0.01" value={item.unit_net} onChange={(e) => {
+                      <Input type="number" step="0.01" value={item.unit_net} placeholder="0.00" onChange={(e) => {
                         const updated = [...lineItems]; updated[idx] = { ...item, unit_net: e.target.value }; setLineItems(updated);
-                      }} className="h-8 text-sm" />
+                      }} className="h-9 text-sm tabular-nums" />
                     </div>
-                    <div className="col-span-1">
-                      {idx === 0 && <Label className="text-xs">VAT%</Label>}
-                      <Input type="number" value={item.vat_rate} onChange={(e) => {
+                    <div>
+                      {idx === 0 && <Label className="text-xs">VAT %</Label>}
+                      <Input type="number" min="0" max="100" value={item.vat_rate} placeholder="23" onChange={(e) => {
                         const updated = [...lineItems]; updated[idx] = { ...item, vat_rate: e.target.value }; setLineItems(updated);
-                      }} className="h-8 text-sm" />
+                      }} className="h-9 text-sm tabular-nums" />
                     </div>
-                    <div className="col-span-2">
+                    <div>
                       {idx === 0 && <Label className="text-xs">Brutto</Label>}
                       <Input value={formatCurrency(
                         (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_net) || 0) * (1 + (parseFloat(item.vat_rate) || 23) / 100)
-                      )} disabled className="h-8 text-sm bg-muted" />
+                      )} disabled className="h-9 text-sm bg-muted tabular-nums" />
                     </div>
-                    <div className="col-span-2 flex gap-1">
+                    <div>
+                      {idx === 0 && <Label className="text-xs">&nbsp;</Label>}
                       {lineItems.length > 1 && (
-                        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => {
+                        <Button type="button" variant="ghost" size="icon" className="h-9 w-9" onClick={() => {
                           setLineItems(lineItems.filter((_, i) => i !== idx));
-                        }}><Trash2 className="h-3 w-3" /></Button>
+                        }}><Trash2 className="h-3.5 w-3.5" /></Button>
                       )}
                     </div>
                   </div>
@@ -505,7 +506,7 @@ export default function DocumentsPage() {
 
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={resetForm}>Anuluj</Button>
-                <Button onClick={() => saveMutation.mutate(form)} disabled={!form.issue_date || !form.net_amount || saveMutation.isPending}>
+                <Button onClick={() => saveMutation.mutate(form)} disabled={!form.issue_date || (!hasLineItems && !form.net_amount) || saveMutation.isPending}>
                   {saveMutation.isPending ? "Zapisywanie..." : editId ? "Zapisz zmiany" : "Dodaj"}
                 </Button>
               </div>
