@@ -6,13 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, ShoppingCart, Package, ExternalLink, CheckCircle2, Clock, XCircle, Pencil, Trash2 } from "lucide-react";
+import { Plus, ShoppingCart, Package, ExternalLink, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { PurchaseRequestFormDialog } from "./PurchaseRequestFormDialog";
 
@@ -27,23 +24,20 @@ const STATUS_COLORS: Record<string, string> = {
   DELIVERED: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
   CANCELLED: "bg-muted text-muted-foreground",
 };
-const APPROVAL_LABELS: Record<string, string> = {
-  PENDING: "Oczekuje na akceptację", APPROVED: "Zaakceptowane", REJECTED: "Odrzucone",
-};
-const APPROVAL_BADGE: Record<string, { icon: typeof Clock; className: string }> = {
-  PENDING: { icon: Clock, className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300" },
-  APPROVED: { icon: CheckCircle2, className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" },
-  REJECTED: { icon: XCircle, className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" },
-};
 
-interface OrderPurchaseRequestsProps { orderId: string; }
+interface OrderPurchaseRequestsProps {
+  orderId: string;
+  repairApprovalStatus?: string;
+}
 
-export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
+export function OrderPurchaseRequests({ orderId, repairApprovalStatus }: OrderPurchaseRequestsProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRequest, setEditingRequest] = useState<any | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  const showApprovalWarning = repairApprovalStatus && repairApprovalStatus !== "NONE" && repairApprovalStatus !== "APPROVED_BY_CUSTOMER";
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["purchase-requests", orderId],
@@ -54,23 +48,6 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
       if (error) throw error;
       return data;
     },
-  });
-
-  const updateApproval = useMutation({
-    mutationFn: async ({ id, approval }: { id: string; approval: string }) => {
-      const { error } = await supabase.from("purchase_requests").update({
-        client_approval: approval as any,
-        client_approval_changed_by: user?.id,
-        client_approval_changed_at: new Date().toISOString(),
-      }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["purchase-requests", orderId] });
-      queryClient.invalidateQueries({ queryKey: ["purchase-requests-global"] });
-      toast.success("Status akceptacji zmieniony");
-    },
-    onError: () => toast.error("Błąd zmiany statusu akceptacji"),
   });
 
   const deleteMutation = useMutation({
@@ -99,16 +76,6 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
     setDialogOpen(true);
   };
 
-  const ApprovalBadge = ({ status }: { status: string }) => {
-    const cfg = APPROVAL_BADGE[status] || APPROVAL_BADGE.PENDING;
-    const Icon = cfg.icon;
-    return (
-      <Badge className={`text-[10px] px-1.5 gap-1 ${cfg.className}`} variant="outline">
-        <Icon className="h-3 w-3" />{APPROVAL_LABELS[status] || status}
-      </Badge>
-    );
-  };
-
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -121,6 +88,16 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
+        {showApprovalWarning && (
+          <div className="flex items-center gap-2 p-2.5 mb-3 rounded-md bg-amber-50 border border-amber-200 text-amber-800 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300 text-xs">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span>
+              {repairApprovalStatus === "WAITING_FOR_CUSTOMER"
+                ? "Klient nie zaakceptował jeszcze kosztu naprawy. Zamówienie części może być przedwczesne."
+                : "Klient odrzucił koszt naprawy. Rozważ anulowanie zamówień części."}
+            </span>
+          </div>
+        )}
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Ładowanie...</p>
         ) : requests.length === 0 ? (
@@ -163,18 +140,6 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
                   </a>
                 )}
                 {!r.product_url && r.supplier && <div className="text-xs text-muted-foreground ml-5.5">{r.supplier}</div>}
-                <div className="flex items-center justify-between ml-5.5 pt-1 border-t border-border/50">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Akceptacja klienta:</span>
-                    <ApprovalBadge status={r.client_approval} />
-                  </div>
-                  <Select value={r.client_approval} onValueChange={(v) => updateApproval.mutate({ id: r.id, approval: v })}>
-                    <SelectTrigger className="h-6 text-[10px] w-auto min-w-[120px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(APPROVAL_LABELS).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
             ))}
           </div>

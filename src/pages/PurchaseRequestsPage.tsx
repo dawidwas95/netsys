@@ -16,7 +16,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ShoppingCart, Search, Package, ExternalLink, CheckCircle2, Clock, XCircle, Pencil, Trash2 } from "lucide-react";
+import { ShoppingCart, Search, Package, ExternalLink, Pencil, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { PurchaseRequestFormDialog } from "@/components/order/PurchaseRequestFormDialog";
@@ -32,29 +32,14 @@ const STATUS_COLORS: Record<string, string> = {
   DELIVERED: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
   CANCELLED: "bg-muted text-muted-foreground",
 };
-const APPROVAL_LABELS: Record<string, string> = {
-  PENDING: "Oczekuje", APPROVED: "Zaakceptowane", REJECTED: "Odrzucone",
-};
-const APPROVAL_BADGE_CFG: Record<string, { icon: typeof Clock; className: string }> = {
-  PENDING: { icon: Clock, className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300" },
-  APPROVED: { icon: CheckCircle2, className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" },
-  REJECTED: { icon: XCircle, className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" },
-};
 const URGENCY_LABELS: Record<string, string> = { LOW: "Niski", NORMAL: "Normalny", HIGH: "Wysoki", URGENT: "Pilny" };
 const URGENCY_COLORS: Record<string, string> = { URGENT: "text-destructive font-semibold", HIGH: "text-orange-600 font-medium", NORMAL: "", LOW: "text-muted-foreground" };
 const ALL_STATUSES = ["NEW", "TO_ORDER", "ORDERED", "DELIVERED", "CANCELLED"];
 
 const formatCurrency = (v: number | null | undefined) => v && v > 0 ? `${Number(v).toFixed(2)} zł` : null;
 
-const ApprovalBadge = ({ status }: { status: string }) => {
-  const cfg = APPROVAL_BADGE_CFG[status] || APPROVAL_BADGE_CFG.PENDING;
-  const Icon = cfg.icon;
-  return (
-    <Badge className={`text-[10px] px-1.5 gap-1 ${cfg.className}`} variant="outline">
-      <Icon className="h-3 w-3" />{APPROVAL_LABELS[status] || status}
-    </Badge>
-  );
-};
+
+
 
 const ProductLink = ({ url, supplier }: { url?: string | null; supplier?: string | null }) => {
   if (!url) return supplier ? <span className="text-xs text-muted-foreground">{supplier}</span> : <span className="text-muted-foreground">—</span>;
@@ -72,8 +57,8 @@ export default function PurchaseRequestsPage() {
   const [statusFilter, setStatusFilter] = useState("ACTIVE");
   const [urgencyFilter, setUrgencyFilter] = useState("ALL");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
-  const [approvalFilter, setApprovalFilter] = useState("ALL");
-  const [confirmDialog, setConfirmDialog] = useState<{ id: string; status: string } | null>(null);
+  
+  
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingRequest, setEditingRequest] = useState<any | null>(null);
@@ -116,22 +101,7 @@ export default function PurchaseRequestsPage() {
     onError: () => toast.error("Błąd aktualizacji statusu"),
   });
 
-  const updateApproval = useMutation({
-    mutationFn: async ({ id, approval }: { id: string; approval: string }) => {
-      const { error } = await supabase.from("purchase_requests").update({
-        client_approval: approval as any,
-        client_approval_changed_by: user?.id,
-        client_approval_changed_at: new Date().toISOString(),
-      }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["purchase-requests-global"] });
-      queryClient.invalidateQueries({ queryKey: ["purchase-requests"] });
-      toast.success("Status akceptacji zmieniony");
-    },
-    onError: () => toast.error("Błąd zmiany statusu akceptacji"),
-  });
+  
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -148,10 +118,6 @@ export default function PurchaseRequestsPage() {
   });
 
   const handleStatusChange = (r: any, newStatus: string) => {
-    if (["TO_ORDER", "ORDERED"].includes(newStatus) && r.client_approval !== "APPROVED") {
-      setConfirmDialog({ id: r.id, status: newStatus });
-      return;
-    }
     updateStatus.mutate({ id: r.id, status: newStatus });
   };
 
@@ -165,7 +131,7 @@ export default function PurchaseRequestsPage() {
     if (statusFilter !== "ACTIVE" && statusFilter !== "ALL" && r.status !== statusFilter) return false;
     if (urgencyFilter !== "ALL" && r.urgency !== urgencyFilter) return false;
     if (categoryFilter !== "ALL" && r.category !== categoryFilter) return false;
-    if (approvalFilter !== "ALL" && r.client_approval !== approvalFilter) return false;
+    
     if (search) {
       const q = search.toLowerCase();
       const orderNum = r.service_orders?.order_number?.toLowerCase() || "";
@@ -212,13 +178,7 @@ export default function PurchaseRequestsPage() {
                 {ALL_STATUSES.map((s) => (<SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>))}
               </SelectContent>
             </Select>
-            <Select value={approvalFilter} onValueChange={setApprovalFilter}>
-              <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="Akceptacja" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Wszystkie</SelectItem>
-                {Object.entries(APPROVAL_LABELS).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}
-              </SelectContent>
-            </Select>
+            
             <Select value={urgencyFilter} onValueChange={setUrgencyFilter}>
               <SelectTrigger className="w-full sm:w-32"><SelectValue placeholder="Pilność" /></SelectTrigger>
               <SelectContent>
@@ -245,7 +205,7 @@ export default function PurchaseRequestsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Akceptacja</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Nazwa części</TableHead>
                 <TableHead className="text-center">Ilość</TableHead>
@@ -270,13 +230,11 @@ export default function PurchaseRequestsPage() {
                 filtered.map((r: any) => (
                   <TableRow key={r.id}>
                     <TableCell>
-                      <Select value={r.client_approval} onValueChange={(v) => updateApproval.mutate({ id: r.id, approval: v })}>
-                        <SelectTrigger className="h-7 text-[10px] w-auto min-w-[110px] border-none p-0 gap-1">
-                          <ApprovalBadge status={r.client_approval} />
+                      <Select value={r.status} onValueChange={(v) => handleStatusChange(r, v)}>
+                        <SelectTrigger className="h-7 text-[10px] w-auto min-w-[100px] border-none p-0 gap-1">
+                          <Badge className={`text-[10px] ${STATUS_COLORS[r.status] || ""}`} variant="outline">{STATUS_LABELS[r.status]}</Badge>
                         </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(APPROVAL_LABELS).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}
-                        </SelectContent>
+                        <SelectContent>{ALL_STATUSES.map((s) => (<SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>))}</SelectContent>
                       </Select>
                     </TableCell>
                     <TableCell>
@@ -357,13 +315,7 @@ export default function PurchaseRequestsPage() {
                     </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <ApprovalBadge status={r.client_approval} />
-                  <Select value={r.client_approval} onValueChange={(v) => updateApproval.mutate({ id: r.id, approval: v })}>
-                    <SelectTrigger className="h-6 text-[10px] w-auto min-w-[100px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>{Object.entries(APPROVAL_LABELS).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}</SelectContent>
-                  </Select>
-                </div>
+                
                 {r.product_url && (
                   <a href={r.product_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1">
                     <ExternalLink className="h-3 w-3" />{r.supplier || "Link do produktu"}
@@ -401,26 +353,7 @@ export default function PurchaseRequestsPage() {
         />
       )}
 
-      {/* Approval warning dialog */}
-      <AlertDialog open={!!confirmDialog} onOpenChange={(open) => !open && setConfirmDialog(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Klient nie zaakceptował kosztu</AlertDialogTitle>
-            <AlertDialogDescription>
-              Klient nie zaakceptował jeszcze kosztu tej części. Czy na pewno chcesz zmienić status zamówienia? Zalecamy najpierw uzyskać akceptację klienta.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Anuluj</AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              if (confirmDialog) updateStatus.mutate({ id: confirmDialog.id, status: confirmDialog.status });
-              setConfirmDialog(null);
-            }}>
-              Kontynuuj mimo to
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>

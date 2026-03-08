@@ -18,9 +18,6 @@ import { toast } from "sonner";
 const URGENCY_LABELS: Record<string, string> = {
   LOW: "Niski", NORMAL: "Normalny", HIGH: "Wysoki", URGENT: "Pilny",
 };
-const APPROVAL_LABELS: Record<string, string> = {
-  PENDING: "Oczekuje na akceptację", APPROVED: "Zaakceptowane", REJECTED: "Odrzucone",
-};
 const STATUS_LABELS: Record<string, string> = {
   NEW: "Nowe", TO_ORDER: "Do zamówienia", ORDERED: "Zamówione",
   DELIVERED: "Dostarczone", CANCELLED: "Anulowane",
@@ -37,14 +34,13 @@ interface PurchaseRequestFormData {
   estimated_gross: string;
   description: string;
   urgency: string;
-  client_approval: string;
   status: string;
 }
 
 const emptyForm: PurchaseRequestFormData = {
   item_name: "", quantity: "1", category: "", manufacturer: "", model: "",
   product_url: "", supplier: "", estimated_gross: "", description: "",
-  urgency: "NORMAL", client_approval: "PENDING", status: "NEW",
+  urgency: "NORMAL", status: "NEW",
 };
 
 interface Props {
@@ -75,7 +71,6 @@ export function PurchaseRequestFormDialog({ open, onOpenChange, orderId, editing
         estimated_gross: editingRequest.estimated_gross ? String(editingRequest.estimated_gross) : "",
         description: editingRequest.description || "",
         urgency: editingRequest.urgency || "NORMAL",
-        client_approval: editingRequest.client_approval || "PENDING",
         status: editingRequest.status || "NEW",
       });
     } else if (open && !editingRequest) {
@@ -125,7 +120,7 @@ export function PurchaseRequestFormDialog({ open, onOpenChange, orderId, editing
         estimated_vat: vat,
         description: form.description || null,
         urgency: form.urgency as any,
-        client_approval: form.client_approval as any,
+        
         status: form.status as any,
       };
 
@@ -211,21 +206,12 @@ export function PurchaseRequestFormDialog({ open, onOpenChange, orderId, editing
               <div><Label>Model / kompatybilność</Label><Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} /></div>
             </div>
             {isEditing && (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Akceptacja klienta</Label>
-                  <Select value={form.client_approval} onValueChange={(v) => setForm({ ...form, client_approval: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{Object.entries(APPROVAL_LABELS).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}</SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Status zamówienia</Label>
-                  <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{Object.entries(STATUS_LABELS).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}</SelectContent>
-                  </Select>
-                </div>
+              <div>
+                <Label>Status zamówienia</Label>
+                <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{Object.entries(STATUS_LABELS).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}</SelectContent>
+                </Select>
               </div>
             )}
             <div><Label>Uwagi</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} placeholder="np. najlepiej oryginał lub dobry OEM" /></div>
