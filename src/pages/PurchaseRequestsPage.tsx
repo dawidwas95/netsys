@@ -251,6 +251,7 @@ export default function PurchaseRequestsPage() {
                 <TableHead className="text-center">Ilość</TableHead>
                 <TableHead>Kategoria</TableHead>
                 <TableHead>Zlecenie</TableHead>
+                <TableHead>Dział</TableHead>
                 <TableHead>Klient</TableHead>
                 <TableHead>Technik</TableHead>
                 <TableHead>Pilność</TableHead>
