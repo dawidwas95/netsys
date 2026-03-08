@@ -71,7 +71,7 @@ export function PurchaseRequestFormDialog({ open, onOpenChange, orderId, editing
         estimated_gross: editingRequest.estimated_gross ? String(editingRequest.estimated_gross) : "",
         description: editingRequest.description || "",
         urgency: editingRequest.urgency || "NORMAL",
-        client_approval: editingRequest.client_approval || "PENDING",
+        status: editingRequest.status || "NEW",
         status: editingRequest.status || "NEW",
       });
     } else if (open && !editingRequest) {
