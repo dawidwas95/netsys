@@ -50,10 +50,12 @@ export default function SettingsPage() {
       <Tabs defaultValue="company">
         <TabsList>
           <TabsTrigger value="company"><Building2 className="mr-1 h-4 w-4" /> Firma</TabsTrigger>
+          <TabsTrigger value="team"><Users className="mr-1 h-4 w-4" /> Zespół</TabsTrigger>
           <TabsTrigger value="pdf"><FileText className="mr-1 h-4 w-4" /> Szablony PDF</TabsTrigger>
           <TabsTrigger value="notifications"><Bell className="mr-1 h-4 w-4" /> Powiadomienia</TabsTrigger>
         </TabsList>
         <TabsContent value="company"><CompanySettings /></TabsContent>
+        <TabsContent value="team"><TeamManagement /></TabsContent>
         <TabsContent value="pdf"><PdfTemplateSettings /></TabsContent>
         <TabsContent value="notifications"><NotificationSettings /></TabsContent>
       </Tabs>
