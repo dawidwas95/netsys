@@ -177,6 +177,8 @@ export default function DashboardPage() {
         ))}
       </div>
 
+      <LowStockAlerts />
+
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
         <Card>
           <CardHeader><CardTitle className="text-lg">Ostatnie zlecenia</CardTitle></CardHeader>
