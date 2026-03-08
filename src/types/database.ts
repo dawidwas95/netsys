@@ -96,6 +96,14 @@ export const CLIENT_TYPE_LABELS: Record<ClientType, string> = {
   COMPANY: "Firma",
 };
 
+export type BusinessRole = "CUSTOMER" | "SUPPLIER" | "CUSTOMER_AND_SUPPLIER";
+
+export const BUSINESS_ROLE_LABELS: Record<BusinessRole, string> = {
+  CUSTOMER: "Klient",
+  SUPPLIER: "Dostawca",
+  CUSTOMER_AND_SUPPLIER: "Klient i dostawca",
+};
+
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   CASH: "Gotówka",
   CARD: "Karta",

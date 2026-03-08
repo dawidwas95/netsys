@@ -66,6 +66,7 @@ function clientToForm(client: Client) {
 function buildPayload(form: typeof emptyForm) {
   return {
     client_type: form.client_type,
+    business_role: form.business_role,
     first_name: form.first_name || null,
     last_name: form.last_name || null,
     company_name: form.company_name || null,
