@@ -159,6 +159,24 @@ export default function OrderDetailPage() {
     return map;
   }, [profiles]);
 
+  // Build mention-friendly profile map
+  const mentionProfileMap = useMemo(() => {
+    const map: Record<string, { userId: string; name: string }> = {};
+    profiles.forEach((p: any) => {
+      const name = [p.first_name, p.last_name].filter(Boolean).join(" ");
+      map[p.user_id] = { userId: p.user_id, name: name || p.email || "Użytkownik" };
+    });
+    return map;
+  }, [profiles]);
+
+  // Mark order as read when opened
+  useEffect(() => {
+    if (id && user?.id) {
+      markAsRead.mutate(id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, user?.id]);
+
   const currentForm = useMemo(() => {
     if (editForm) return editForm;
     if (!order) return {};
