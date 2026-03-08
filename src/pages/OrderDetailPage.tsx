@@ -185,6 +185,10 @@ export default function OrderDetailPage() {
       is_paid: order.is_paid,
       sales_document_type: order.sales_document_type ?? "NONE",
       sales_document_number: order.sales_document_number ?? "",
+      estimated_repair_cost_gross: (order as any).estimated_repair_cost_gross ?? null,
+      repair_approval_status: (order as any).repair_approval_status ?? "NONE",
+      repair_approval_at: (order as any).repair_approval_at ?? null,
+      repair_approval_note: (order as any).repair_approval_note ?? null,
     };
   }, [order, editForm]);
 
