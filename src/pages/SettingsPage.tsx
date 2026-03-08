@@ -220,13 +220,43 @@ function TeamManagement() {
     }
   };
 
+  const [resetPasswordUserId, setResetPasswordUserId] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [resettingPassword, setResettingPassword] = useState(false);
+
   const startEdit = (u: any) => {
     setEditUser(u);
     setEditForm({
       first_name: u.first_name ?? "",
       last_name: u.last_name ?? "",
       phone: u.phone ?? "",
+      email: u.email ?? "",
+      role: u.role ?? "EMPLOYEE",
+      is_active: u.is_active ? "true" : "false",
     });
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetPasswordUserId || !newPassword) return;
+    if (newPassword.length < 6) {
+      toast.error("Hasło musi mieć minimum 6 znaków");
+      return;
+    }
+    setResettingPassword(true);
+    try {
+      await manageUser.mutateAsync({
+        action: "reset_password",
+        target_user_id: resetPasswordUserId,
+        updates: { password: newPassword },
+      });
+      toast.success("Hasło zostało zresetowane");
+      setResetPasswordUserId(null);
+      setNewPassword("");
+    } catch (e: any) {
+      toast.error(e.message || "Błąd resetowania hasła");
+    } finally {
+      setResettingPassword(false);
+    }
   };
 
   if (isLoading) return <p className="text-muted-foreground">Ładowanie...</p>;

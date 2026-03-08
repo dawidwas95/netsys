@@ -153,8 +153,58 @@ Deno.serve(async (req) => {
 
     // ── UPDATE PROFILE ──
     if (action === "update_profile") {
-      const { error } = await supabaseAdmin.from("profiles").update(updates).eq("user_id", target_user_id);
-      if (error) return json({ error: error.message }, 500);
+      const profileUpdates: Record<string, any> = {};
+      if (updates.first_name !== undefined) profileUpdates.first_name = updates.first_name;
+      if (updates.last_name !== undefined) profileUpdates.last_name = updates.last_name;
+      if (updates.phone !== undefined) profileUpdates.phone = updates.phone;
+      if (updates.is_active !== undefined) profileUpdates.is_active = updates.is_active;
+
+      // Update email in auth + profile
+      if (updates.email) {
+        // Check for duplicate email
+        const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+        const duplicate = existingUsers?.users?.find(
+          (u) => u.email?.toLowerCase() === updates.email.toLowerCase() && u.id !== target_user_id
+        );
+        if (duplicate) return json({ error: "Ten adres e-mail jest już zajęty" }, 400);
+
+        const { error: authEmailErr } = await supabaseAdmin.auth.admin.updateUserById(target_user_id, {
+          email: updates.email,
+          email_confirm: true,
+        });
+        if (authEmailErr) return json({ error: authEmailErr.message }, 400);
+        profileUpdates.email = updates.email;
+      }
+
+      if (Object.keys(profileUpdates).length > 0) {
+        const { error } = await supabaseAdmin.from("profiles").update(profileUpdates).eq("user_id", target_user_id);
+        if (error) return json({ error: error.message }, 500);
+      }
+
+      // Update role if provided
+      if (updates.role) {
+        await supabaseAdmin.from("user_roles").delete().eq("user_id", target_user_id);
+        await supabaseAdmin.from("user_roles").insert({ user_id: target_user_id, role: updates.role });
+      }
+
+      return json({ success: true });
+    }
+
+    // ── RESET PASSWORD ──
+    if (action === "reset_password") {
+      const { password } = updates ?? {};
+      if (!password || password.length < 6) return json({ error: "Hasło musi mieć minimum 6 znaków" }, 400);
+      const { error: pwErr } = await supabaseAdmin.auth.admin.updateUserById(target_user_id, { password });
+      if (pwErr) return json({ error: pwErr.message }, 500);
+
+      await supabaseAdmin.from("activity_logs").insert({
+        entity_id: target_user_id,
+        entity_type: "USER",
+        action_type: "PASSWORD_RESET",
+        user_id: caller.id,
+        description: "Zresetowano hasło użytkownika",
+      });
+
       return json({ success: true });
     }
 
