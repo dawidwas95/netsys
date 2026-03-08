@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -63,6 +63,7 @@ interface OrderItem {
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [comment, setComment] = useState("");
@@ -70,6 +71,8 @@ export default function OrderDetailPage() {
   const [newItem, setNewItem] = useState({ name: "", quantity: "1", sale_net: "", purchase_net: "" });
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDirty, setEditDirty] = useState(false);
   const [editForm, setEditForm] = useState<Record<string, any> | null>(null);
 
@@ -375,6 +378,9 @@ export default function OrderDetailPage() {
           </Button>
           {!isCompleted && (
             <>
+              <Button variant="outline" size="sm" onClick={() => setCancelDialogOpen(true)}>
+                <XCircle className="mr-1 h-4 w-4" /> Anuluj
+              </Button>
               <Button variant="outline" size="sm" onClick={() => setArchiveDialogOpen(true)}>
                 <Archive className="mr-1 h-4 w-4" /> Archiwizuj
               </Button>
@@ -412,6 +418,9 @@ export default function OrderDetailPage() {
               </Dialog>
             </>
           )}
+          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setDeleteDialogOpen(true)}>
+            <Trash2 className="mr-1 h-4 w-4" /> Usuń
+          </Button>
         </div>
       </div>
 
@@ -431,6 +440,50 @@ export default function OrderDetailPage() {
               setArchiveDialogOpen(false);
             }}>
               Archiwizuj
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Cancel confirmation */}
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Anulować zlecenie?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Zlecenie {order.order_number} zostanie oznaczone jako anulowane.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Nie</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              updateOrder.mutate({ status: "CANCELLED" });
+              setCancelDialogOpen(false);
+            }}>
+              Anuluj zlecenie
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Usunąć zlecenie?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Zlecenie {order.order_number} zostanie trwale usunięte (soft delete). Tej operacji nie można cofnąć z poziomu aplikacji.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={async () => {
+              const { error } = await supabase.from("service_orders").update({ deleted_at: new Date().toISOString(), updated_by: user?.id }).eq("id", id!);
+              if (error) { toast.error(error.message); return; }
+              toast.success("Zlecenie usunięte");
+              navigate("/orders");
+            }}>
+              Usuń trwale
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
