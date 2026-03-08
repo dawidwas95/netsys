@@ -475,26 +475,12 @@ export default function DocumentsPage() {
       } as any).then();
       toast.success(editId ? "Zaktualizowano dokument" : "Dodano dokument");
 
-      // Check if purchase invoice with product items → prompt PZ
-      if (values.document_type === "PURCHASE_INVOICE" && !editId) {
-        const productItems = lineItems.filter(i => i.item_type === "PRODUCT" && i.inventory_item_id);
+      // Check if purchase invoice with product items → show PZ created toast
+      if (values.document_type === "PURCHASE_INVOICE") {
+        const productItems = lineItems.filter(i => i.item_type === "PRODUCT" && i.name.trim());
         if (productItems.length > 0) {
-          // We need the saved doc id — fetch latest
-          supabase.from("documents").select("id, document_number").eq("created_by", user?.id).order("created_at", { ascending: false }).limit(1).single().then(({ data: latestDoc }) => {
-            if (latestDoc) {
-              setPzPromptData({
-                docId: latestDoc.id,
-                docNumber: latestDoc.document_number,
-                clientId: values.client_id || null,
-                items: productItems.map(i => ({
-                  inventory_item_id: i.inventory_item_id!,
-                  quantity: parseFloat(i.quantity) || 1,
-                  price_net: parseFloat(i.unit_net) || 0,
-                  notes: i.name,
-                })),
-              });
-            }
-          });
+          qc.invalidateQueries({ queryKey: ["warehouse-documents"] });
+          toast.success(`Automatycznie utworzono PZ dla ${productItems.length} pozycji magazynowych`);
         }
       }
 
