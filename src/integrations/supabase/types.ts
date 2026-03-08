@@ -1585,11 +1585,41 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_categories: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       purchase_requests: {
         Row: {
           category: string | null
           created_at: string
           description: string | null
+          estimated_gross: number | null
+          estimated_net: number | null
+          estimated_vat: number | null
           id: string
           inventory_item_id: string | null
           item_name: string
@@ -1611,6 +1641,9 @@ export type Database = {
           category?: string | null
           created_at?: string
           description?: string | null
+          estimated_gross?: number | null
+          estimated_net?: number | null
+          estimated_vat?: number | null
           id?: string
           inventory_item_id?: string | null
           item_name: string
@@ -1632,6 +1665,9 @@ export type Database = {
           category?: string | null
           created_at?: string
           description?: string | null
+          estimated_gross?: number | null
+          estimated_net?: number | null
+          estimated_vat?: number | null
           id?: string
           inventory_item_id?: string | null
           item_name?: string
