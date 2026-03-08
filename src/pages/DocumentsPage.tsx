@@ -643,9 +643,9 @@ export default function DocumentsPage() {
         setForm(prev => ({
           ...prev,
           client_id: match.id,
-          contractor_name: match.display_name || match.company_name || [match.first_name, match.last_name].filter(Boolean).join(" ") || prev.contractor_name,
+          contractor_name: match.company_name || match.display_name || [match.first_name, match.last_name].filter(Boolean).join(" ") || prev.contractor_name,
         }));
-        toast.success(`Znaleziono kontrahenta na podstawie NIP: ${match.display_name || match.company_name}`, { duration: 5000 });
+        toast.success(`Znaleziono kontrahenta na podstawie NIP: ${match.company_name || match.display_name || ""}`, { duration: 5000 });
       } else {
         // NIP not found — offer to create new contractor
         const ocrName = isPurchase ? data.seller_name : data.buyer_name;
