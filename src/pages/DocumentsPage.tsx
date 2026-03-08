@@ -114,8 +114,24 @@ interface Document {
   client_id: string | null;
   contractor_name: string | null;
   contractor_nip: string | null;
+  contractor_street: string | null;
+  contractor_building: string | null;
+  contractor_local: string | null;
+  contractor_postal_code: string | null;
+  contractor_city: string | null;
+  contractor_country: string | null;
+  contractor_email: string | null;
+  contractor_phone: string | null;
   buyer_name: string | null;
   buyer_nip: string | null;
+  buyer_street: string | null;
+  buyer_building: string | null;
+  buyer_local: string | null;
+  buyer_postal_code: string | null;
+  buyer_city: string | null;
+  buyer_country: string | null;
+  buyer_email: string | null;
+  buyer_phone: string | null;
   issue_date: string;
   sale_date: string | null;
   due_date: string | null;
@@ -155,8 +171,24 @@ const emptyForm = {
   client_id: "",
   contractor_name: "",
   contractor_nip: "",
+  contractor_street: "",
+  contractor_building: "",
+  contractor_local: "",
+  contractor_postal_code: "",
+  contractor_city: "",
+  contractor_country: "Polska",
+  contractor_email: "",
+  contractor_phone: "",
   buyer_name: "",
   buyer_nip: "",
+  buyer_street: "",
+  buyer_building: "",
+  buyer_local: "",
+  buyer_postal_code: "",
+  buyer_city: "",
+  buyer_country: "Polska",
+  buyer_email: "",
+  buyer_phone: "",
   issue_date: new Date().toISOString().split("T")[0],
   sale_date: "",
   due_date: "",
