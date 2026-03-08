@@ -390,15 +390,15 @@ function TeamManagement() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
               <p className="font-medium mb-1">Administrator</p>
-              <p className="text-muted-foreground text-xs">Pełny dostęp do systemu, zarządzanie użytkownikami, ustawienia, finanse</p>
+              <p className="text-muted-foreground text-xs">Pełny dostęp do systemu: użytkownicy, role, ustawienia, finanse, backup, logi</p>
             </div>
             <div>
-              <p className="font-medium mb-1">Technik</p>
-              <p className="text-muted-foreground text-xs">Zlecenia serwisowe, diagnostyka, komentarze, magazyn. Bez dostępu do finansów i ustawień</p>
+              <p className="font-medium mb-1">Kierownik</p>
+              <p className="text-muted-foreground text-xs">Zlecenia, klienci, magazyn, zamówienia, faktury, oferty, prace IT, statystyki finansowe. Bez zarządzania użytkownikami i narzędzi systemowych</p>
             </div>
             <div>
-              <p className="font-medium mb-1">Biuro</p>
-              <p className="text-muted-foreground text-xs">Klienci, zlecenia, faktury, oferty, komunikacja z klientami</p>
+              <p className="font-medium mb-1">Serwisant</p>
+              <p className="text-muted-foreground text-xs">Zlecenia serwisowe, diagnostyka, komentarze, magazyn, zapotrzebowanie. Bez faktur, ustawień i narzędzi administracyjnych</p>
             </div>
           </div>
         </CardContent>
