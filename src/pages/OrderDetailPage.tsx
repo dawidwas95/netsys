@@ -32,6 +32,7 @@ import {
 import { generateOrderPDF } from "@/lib/generateOrderPDF";
 import { generateIntakePDF, generatePickupPDF } from "@/lib/pdfProtocols";
 import { sendOrderNotification } from "@/lib/notifications";
+import { createWarehouseDocument } from "@/lib/warehouseDocuments";
 import { toast } from "sonner";
 import SignatureCanvas from "@/components/SignatureCanvas";
 import OrderQRCode from "@/components/OrderQRCode";
