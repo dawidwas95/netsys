@@ -168,7 +168,7 @@ export default function PurchaseRequestsPage() {
   });
 
   const handleStatusChange = (r: any, newStatus: string) => {
-    updateStatus.mutate({ id: r.id, status: newStatus });
+    updateStatus.mutate({ id: r.id, status: newStatus, orderId: r.order_id, itemName: r.item_name });
   };
 
   const handleEdit = (r: any) => {
