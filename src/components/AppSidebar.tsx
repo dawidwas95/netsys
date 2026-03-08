@@ -1,5 +1,5 @@
+import logoW3s from "@/assets/logo-w3s.png";
 import {
-  Wrench as LogoIcon,
   LayoutDashboard,
   Users,
   Monitor,
@@ -15,8 +15,8 @@ import {
   BookOpen,
   Receipt,
   ScrollText,
-  Database,
-} from "lucide-react";
+  Database } from
+"lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -29,36 +29,36 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarFooter,
-  useSidebar,
-} from "@/components/ui/sidebar";
+  useSidebar } from
+"@/components/ui/sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 
 const mainNav = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Klienci", url: "/clients", icon: Users },
-  { title: "Urządzenia", url: "/devices", icon: Monitor },
-  { title: "Magazyn", url: "/inventory", icon: Package },
-];
+{ title: "Dashboard", url: "/", icon: LayoutDashboard },
+{ title: "Klienci", url: "/clients", icon: Users },
+{ title: "Urządzenia", url: "/devices", icon: Monitor },
+{ title: "Magazyn", url: "/inventory", icon: Package }];
+
 
 const serviceNav = [
-  { title: "Tablica zleceń", url: "/orders/kanban", icon: KanbanSquare },
-  { title: "Lista zleceń", url: "/orders", icon: ListTodo },
-  { title: "Prace IT", url: "/it-work", icon: Wrench },
-  { title: "Oferty", url: "/offers", icon: FileText },
-  { title: "Dokumentacja IT", url: "/it-docs", icon: BookOpen },
-];
+{ title: "Tablica zleceń", url: "/orders/kanban", icon: KanbanSquare },
+{ title: "Lista zleceń", url: "/orders", icon: ListTodo },
+{ title: "Prace IT", url: "/it-work", icon: Wrench },
+{ title: "Oferty", url: "/offers", icon: FileText },
+{ title: "Dokumentacja IT", url: "/it-docs", icon: BookOpen }];
+
 
 const financeNav = [
-  { title: "Kasa gotówkowa", url: "/cash", icon: Wallet },
-  { title: "Rejestr dokumentów", url: "/documents", icon: Receipt },
-];
+{ title: "Kasa gotówkowa", url: "/cash", icon: Wallet },
+{ title: "Rejestr dokumentów", url: "/documents", icon: Receipt }];
+
 
 const systemNav = [
-  { title: "Logi systemowe", url: "/system-logs", icon: ScrollText },
-  { title: "Zarządzanie danymi", url: "/data-management", icon: Database },
-  { title: "Ustawienia", url: "/settings", icon: Settings },
-];
+{ title: "Logi systemowe", url: "/system-logs", icon: ScrollText },
+{ title: "Zarządzanie danymi", url: "/data-management", icon: Database },
+{ title: "Ustawienia", url: "/settings", icon: Settings }];
+
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -68,36 +68,36 @@ export function AppSidebar() {
 
   const isActive = (path: string) => location.pathname === path;
 
-  const renderItems = (items: typeof mainNav) => (
-    <SidebarMenu>
-      {items.map((item) => (
-        <SidebarMenuItem key={item.title}>
+  const renderItems = (items: typeof mainNav) =>
+  <SidebarMenu>
+      {items.map((item) =>
+    <SidebarMenuItem key={item.title}>
           <SidebarMenuButton asChild>
             <NavLink
-              to={item.url}
-              end={item.url === "/"}
-              className="hover:bg-sidebar-accent/50"
-              activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-            >
+          to={item.url}
+          end={item.url === "/"}
+          className="hover:bg-sidebar-accent/50"
+          activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium">
+          
               <item.icon className="mr-2 h-4 w-4 shrink-0" />
               {!collapsed && <span>{item.title}</span>}
             </NavLink>
           </SidebarMenuButton>
         </SidebarMenuItem>
-      ))}
-    </SidebarMenu>
-  );
+    )}
+    </SidebarMenu>;
+
 
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
         <div className="px-4 py-4 flex items-center gap-2">
-          <LogoIcon className="h-8 w-8 text-primary shrink-0" />
-          {!collapsed && (
-            <h1 className="text-lg font-bold text-sidebar-accent-foreground tracking-tight">
-              W3-Support
+          <img src={logoW3s} alt="W3-Support" className="h-8 w-auto" />
+          {!collapsed &&
+          <h1 className="text-lg font-bold text-sidebar-accent-foreground tracking-tight">
+              Serwis
             </h1>
-          )}
+          }
         </div>
 
         <SidebarGroup>
@@ -122,18 +122,18 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-2">
-        {!collapsed && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent"
-            onClick={() => signOut()}
-          >
+        {!collapsed &&
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent"
+          onClick={() => signOut()}>
+          
             <LogOut className="mr-2 h-4 w-4" />
             Wyloguj się
           </Button>
-        )}
+        }
       </SidebarFooter>
-    </Sidebar>
-  );
+    </Sidebar>);
+
 }
