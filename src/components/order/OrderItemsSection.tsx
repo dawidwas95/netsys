@@ -79,7 +79,7 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogTab, setDialogTab] = useState<"inventory" | "custom">("inventory");
+  const [dialogTab, setDialogTab] = useState<"inventory" | "custom" | "cost">("inventory");
   const [inventorySearch, setInventorySearch] = useState("");
   const [selectedInvItem, setSelectedInvItem] = useState<InventoryItem | null>(null);
   const [invQuantity, setInvQuantity] = useState("1");
