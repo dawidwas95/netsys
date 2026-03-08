@@ -1821,6 +1821,34 @@ export default function DocumentsPage() {
 
       {/* OCR Import Dialog */}
       <OcrImportDialog open={ocrOpen} onOpenChange={setOcrOpen} onDataExtracted={handleOcrData} />
+
+      {/* PZ Confirmation Dialog */}
+      <AlertDialog open={pzConfirmOpen} onOpenChange={v => { if (!v) { setPzConfirmOpen(false); setPzPendingData(null); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Czy utworzyć dokument PZ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Faktura zawiera {pzPendingData?.productItems.length || 0} pozycji magazynowych. 
+              Czy chcesz utworzyć dokument przyjęcia zewnętrznego (PZ) i zaktualizować stany magazynowe?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pzCreating}>Nie</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={pzCreating}
+              onClick={(e) => {
+                e.preventDefault();
+                if (pzPendingData) {
+                  createPzFromInvoice(pzPendingData.docId, pzPendingData.values, pzPendingData.productItems);
+                }
+              }}
+            >
+              {pzCreating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Tak, utwórz PZ
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
