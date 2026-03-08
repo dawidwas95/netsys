@@ -350,7 +350,7 @@ export default function DocumentsPage() {
               <DialogTitle>{editId ? "Edytuj dokument" : "Nowy dokument"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label>Typ dokumentu *</Label>
                   <Select value={form.document_type} onValueChange={(v) => onDocTypeChange(v as DocType)}>
@@ -371,6 +371,15 @@ export default function DocumentsPage() {
                       <SelectItem value="EXPENSE">Wydatek</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div>
+                  <Label>Numer dokumentu</Label>
+                  <Input
+                    value={form.document_number}
+                    onChange={(e) => setForm({ ...form, document_number: e.target.value })}
+                    placeholder="np. FV/12/03/2026 (opcjonalnie)"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Pozostaw puste dla autonumeracji</p>
                 </div>
               </div>
 
