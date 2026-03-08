@@ -726,8 +726,22 @@ function ItemForm({ onSubmit, loading, initialData, isEdit, categories }: {
         <div className="space-y-1"><Label>VAT %</Label><Input type="number" value={form.vat_rate} onChange={u("vat_rate")} /></div>
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1"><Label>Cena zakupu netto</Label><Input type="number" step="0.01" value={form.purchase_net} onChange={u("purchase_net")} /></div>
-        <div className="space-y-1"><Label>Cena sprzedaży netto</Label><Input type="number" step="0.01" value={form.sale_net} onChange={u("sale_net")} /></div>
+        <div className="space-y-1">
+          <Label>Cena zakupu brutto</Label>
+          <Input type="number" step="0.01"
+            value={(() => { const net = parseFloat(form.purchase_net) || 0; const vat = parseFloat(form.vat_rate) || 23; return net > 0 ? (net * (1 + vat / 100)).toFixed(2) : ""; })()}
+            onChange={(e) => { const gross = parseFloat(e.target.value) || 0; const vat = parseFloat(form.vat_rate) || 23; setForm({ ...form, purchase_net: (gross / (1 + vat / 100)).toFixed(2) }); }}
+          />
+          <p className="text-[10px] text-muted-foreground tabular-nums">netto: {(parseFloat(form.purchase_net) || 0).toFixed(2)} zł</p>
+        </div>
+        <div className="space-y-1">
+          <Label>Cena sprzedaży brutto</Label>
+          <Input type="number" step="0.01"
+            value={(() => { const net = parseFloat(form.sale_net) || 0; const vat = parseFloat(form.vat_rate) || 23; return net > 0 ? (net * (1 + vat / 100)).toFixed(2) : ""; })()}
+            onChange={(e) => { const gross = parseFloat(e.target.value) || 0; const vat = parseFloat(form.vat_rate) || 23; setForm({ ...form, sale_net: (gross / (1 + vat / 100)).toFixed(2) }); }}
+          />
+          <p className="text-[10px] text-muted-foreground tabular-nums">netto: {(parseFloat(form.sale_net) || 0).toFixed(2)} zł</p>
+        </div>
       </div>
       <div className="space-y-1"><Label>Notatki</Label><Input value={form.notes} onChange={u("notes")} /></div>
       <Button type="submit" className="w-full" disabled={loading}>

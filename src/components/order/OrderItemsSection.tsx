@@ -464,14 +464,22 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                       <Label className="text-xs">Ilość</Label>
                       <Input type="number" min="1" value={customItem.quantity} onChange={(e) => setCustomItem({ ...customItem, quantity: e.target.value })} />
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Cena sprzedaży netto</Label>
-                      <Input type="number" step="0.01" value={customItem.sale_net} onChange={(e) => setCustomItem({ ...customItem, sale_net: e.target.value })} placeholder="0.00" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Cena zakupu netto</Label>
-                      <Input type="number" step="0.01" value={customItem.purchase_net} onChange={(e) => setCustomItem({ ...customItem, purchase_net: e.target.value })} placeholder="0.00" />
-                    </div>
+                     <div className="space-y-1">
+                       <Label className="text-xs">Cena sprzedaży brutto</Label>
+                       <Input type="number" step="0.01"
+                         value={(() => { const net = parseFloat(customItem.sale_net) || 0; return net > 0 ? (net * 1.23).toFixed(2) : ""; })()}
+                         onChange={(e) => { const gross = parseFloat(e.target.value) || 0; setCustomItem({ ...customItem, sale_net: (gross / 1.23).toFixed(2) }); }}
+                         placeholder="0.00" />
+                       <p className="text-[10px] text-muted-foreground tabular-nums">netto: {(parseFloat(customItem.sale_net) || 0).toFixed(2)} zł</p>
+                     </div>
+                     <div className="space-y-1">
+                       <Label className="text-xs">Cena zakupu brutto</Label>
+                       <Input type="number" step="0.01"
+                         value={(() => { const net = parseFloat(customItem.purchase_net) || 0; return net > 0 ? (net * 1.23).toFixed(2) : ""; })()}
+                         onChange={(e) => { const gross = parseFloat(e.target.value) || 0; setCustomItem({ ...customItem, purchase_net: (gross / 1.23).toFixed(2) }); }}
+                         placeholder="0.00" />
+                       <p className="text-[10px] text-muted-foreground tabular-nums">netto: {(parseFloat(customItem.purchase_net) || 0).toFixed(2)} zł</p>
+                     </div>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Notatka</Label>
