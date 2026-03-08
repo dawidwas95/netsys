@@ -609,20 +609,19 @@ export default function OrderDetailPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Usunąć zlecenie?</AlertDialogTitle>
+            <AlertDialogTitle>{(linkedStats?.cashCount ?? 0) > 0 || (linkedStats?.docCount ?? 0) > 0 ? "Usunąć / anulować zlecenie?" : "Usunąć zlecenie?"}</AlertDialogTitle>
             <AlertDialogDescription>
-              Zlecenie {order.order_number} zostanie trwale usunięte (soft delete). Tej operacji nie można cofnąć z poziomu aplikacji.
+              {(linkedStats?.cashCount ?? 0) > 0 || (linkedStats?.docCount ?? 0) > 0
+                ? `Wykryto powiązania finansowe (kasa: ${linkedStats?.cashCount ?? 0}, dokumenty: ${linkedStats?.docCount ?? 0}). System wykona bezpieczne anulowanie, archiwizację i korekty finansowe.`
+                : isAdmin
+                  ? "Brak powiązań finansowych — zlecenie może zostać usunięte."
+                  : "Brak uprawnień do trwałego usunięcia. Zlecenie zostanie anulowane i zarchiwizowane."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Anuluj</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={async () => {
-              const { error } = await supabase.from("service_orders").update({ deleted_at: new Date().toISOString(), updated_by: user?.id }).eq("id", id!);
-              if (error) { toast.error(error.message); return; }
-              toast.success("Zlecenie usunięte");
-              navigate("/orders");
-            }}>
-              Usuń trwale
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => safeDeleteOrder.mutate()}>
+              {safeDeleteOrder.isPending ? "Przetwarzanie..." : ((linkedStats?.cashCount ?? 0) > 0 || (linkedStats?.docCount ?? 0) > 0 || !isAdmin) ? "Anuluj bezpiecznie" : "Usuń trwale"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
