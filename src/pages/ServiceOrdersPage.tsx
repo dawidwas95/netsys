@@ -67,9 +67,29 @@ export default function ServiceOrdersPage() {
   });
 
   const createOrder = useMutation({
-    mutationFn: async (data: ServiceOrderInsert) => {
-      const { error } = await supabase.from("service_orders").insert(data as any);
+    mutationFn: async (data: ServiceOrderInsert & { _technicianId?: string }) => {
+      const { _technicianId, ...orderData } = data;
+      const { data: inserted, error } = await supabase.from("service_orders").insert(orderData as any).select("id, order_number").single();
       if (error) throw error;
+
+      // Auto-assign technician if selected
+      if (_technicianId && inserted) {
+        await supabase.from("order_technicians").upsert({
+          order_id: inserted.id,
+          user_id: _technicianId,
+          is_primary: true,
+          assigned_by: user?.id,
+        } as any, { onConflict: "order_id,user_id", ignoreDuplicates: true });
+
+        await supabase.from("activity_logs").insert({
+          entity_type: "service_order",
+          entity_id: inserted.id,
+          action_type: "TECHNICIAN_ASSIGNED",
+          entity_name: inserted.order_number ?? "",
+          description: "Technik przypisany przy tworzeniu zlecenia",
+          user_id: user?.id,
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["service-orders"] });
