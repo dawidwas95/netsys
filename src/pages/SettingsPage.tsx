@@ -92,7 +92,7 @@ function TeamManagement() {
     last_name: "",
     email: "",
     password: "",
-    role: "TECHNICIAN",
+    role: "SERWISANT",
     is_active: true,
   });
   const [creating, setCreating] = useState(false);

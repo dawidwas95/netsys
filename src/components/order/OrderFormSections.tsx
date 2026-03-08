@@ -161,7 +161,7 @@ export function TechnicianSelectSection({ technicianId, onChange }: { technician
       const { data: roleData } = await supabase
         .from("user_roles")
         .select("user_id, role")
-        .in("role", ["ADMIN", "TECHNICIAN"]);
+        .in("role", ["ADMIN", "KIEROWNIK", "SERWISANT"]);
 
       const assignableIds = (roleData ?? []).map((r: any) => r.user_id);
       if (!assignableIds.length) return [];
