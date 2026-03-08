@@ -28,6 +28,7 @@ const menuItems = [
   { title: "Klienci", url: "/clients", icon: Users },
   { title: "Urządzenia", url: "/devices", icon: Monitor },
   { title: "Tablica zleceń", url: "/orders/kanban", icon: KanbanSquare },
+  { title: "Ekran serwisowy", url: "/service-board-display", icon: Tv },
   { title: "Prace IT", url: "/it-work", icon: Wrench },
   { title: "Oferty", url: "/offers", icon: FileText },
   { title: "Dokumentacja IT", url: "/it-docs", icon: BookOpen },
