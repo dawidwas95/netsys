@@ -14,7 +14,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, ShoppingCart, Package } from "lucide-react";
+import { Plus, ShoppingCart, Package, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -54,6 +54,8 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
     category: "",
     manufacturer: "",
     model: "",
+    product_url: "",
+    supplier: "",
     description: "",
     urgency: "NORMAL",
   });
@@ -85,6 +87,11 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
     enabled: !!user,
   });
 
+  const resetForm = () => setForm({
+    item_name: "", quantity: "1", category: "", manufacturer: "", model: "",
+    product_url: "", supplier: "", description: "", urgency: "NORMAL",
+  });
+
   const addRequest = useMutation({
     mutationFn: async () => {
       const name = profile
@@ -97,6 +104,8 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
         category: form.category || null,
         manufacturer: form.manufacturer || null,
         model: form.model || null,
+        product_url: form.product_url || null,
+        supplier: form.supplier || null,
         description: form.description || null,
         urgency: form.urgency as any,
         requested_by: user?.id,
@@ -109,7 +118,7 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
       queryClient.invalidateQueries({ queryKey: ["purchase-requests-global"] });
       toast.success("Zapotrzebowanie dodane");
       setDialogOpen(false);
-      setForm({ item_name: "", quantity: "1", category: "", manufacturer: "", model: "", description: "", urgency: "NORMAL" });
+      resetForm();
     },
     onError: () => toast.error("Nie udało się dodać zapotrzebowania"),
   });
@@ -128,14 +137,14 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
                 <Plus className="mr-1 h-3 w-3" /> Dodaj
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Nowe zapotrzebowanie</DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
                 <div>
                   <Label>Nazwa części / produktu *</Label>
-                  <Input value={form.item_name} onChange={(e) => setForm({ ...form, item_name: e.target.value })} placeholder="np. Zasilacz 600W" />
+                  <Input value={form.item_name} onChange={(e) => setForm({ ...form, item_name: e.target.value })} placeholder="np. Bateria iPhone 12" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -156,7 +165,15 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
                 </div>
                 <div>
                   <Label>Kategoria</Label>
-                  <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="np. Zasilacze" />
+                  <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="np. Baterie, Zasilacze" />
+                </div>
+                <div>
+                  <Label>Link do produktu</Label>
+                  <Input value={form.product_url} onChange={(e) => setForm({ ...form, product_url: e.target.value })} placeholder="https://sklep.pl/produkt" type="url" />
+                </div>
+                <div>
+                  <Label>Sklep / Dostawca</Label>
+                  <Input value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} placeholder="np. Allegro, Hurtownia XYZ" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -170,7 +187,7 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
                 </div>
                 <div>
                   <Label>Uwagi</Label>
-                  <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} />
+                  <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} placeholder="np. najlepiej oryginał lub dobry OEM" />
                 </div>
                 <Button className="w-full" onClick={() => addRequest.mutate()} disabled={!form.item_name.trim() || addRequest.isPending}>
                   {addRequest.isPending ? "Dodawanie..." : "Dodaj zapotrzebowanie"}
@@ -201,6 +218,15 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
                     <div className="text-xs text-muted-foreground ml-5.5">
                       {[r.manufacturer, r.model].filter(Boolean).join(" · ")}
                     </div>
+                  )}
+                  {r.product_url && (
+                    <a href={r.product_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline ml-5.5 flex items-center gap-1 mt-0.5">
+                      <ExternalLink className="h-3 w-3" />
+                      {r.supplier || "Link do produktu"}
+                    </a>
+                  )}
+                  {!r.product_url && r.supplier && (
+                    <div className="text-xs text-muted-foreground ml-5.5">{r.supplier}</div>
                   )}
                 </div>
                 <Badge className={`shrink-0 text-[10px] ${STATUS_COLORS[r.status] || ""}`} variant="outline">

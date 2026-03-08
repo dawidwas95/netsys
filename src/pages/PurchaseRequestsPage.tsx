@@ -2,10 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useUserRole } from "@/hooks/useUserRole";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -51,7 +49,6 @@ const ALL_STATUSES = ["NEW", "TO_ORDER", "ORDERED", "DELIVERED", "CANCELLED"];
 
 export default function PurchaseRequestsPage() {
   const { user } = useAuth();
-  const { isAdmin, isManager } = useUserRole();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ACTIVE");
@@ -101,13 +98,24 @@ export default function PurchaseRequestsPage() {
         !r.item_name.toLowerCase().includes(q) &&
         !orderNum.includes(q) &&
         !clientName.includes(q) &&
-        !(r.requested_by_name || "").toLowerCase().includes(q)
+        !(r.requested_by_name || "").toLowerCase().includes(q) &&
+        !(r.supplier || "").toLowerCase().includes(q)
       ) return false;
     }
     return true;
   });
 
   const activeCount = requests.filter((r: any) => !["DELIVERED", "CANCELLED"].includes(r.status)).length;
+
+  const ProductLink = ({ url, supplier }: { url?: string | null; supplier?: string | null }) => {
+    if (!url) return supplier ? <span className="text-xs text-muted-foreground">{supplier}</span> : <span className="text-muted-foreground">—</span>;
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1 max-w-[160px] truncate">
+        <ExternalLink className="h-3 w-3 shrink-0" />
+        {supplier || "Link"}
+      </a>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -123,14 +131,13 @@ export default function PurchaseRequestsPage() {
         </div>
       </div>
 
-      {/* Filters */}
       <Card>
         <CardContent className="py-3">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Szukaj po nazwie, zleceniu, kliencie, techniku..."
+                placeholder="Szukaj po nazwie, zleceniu, kliencie, techniku, dostawcy..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
@@ -176,15 +183,16 @@ export default function PurchaseRequestsPage() {
                 <TableHead>Klient</TableHead>
                 <TableHead>Technik</TableHead>
                 <TableHead>Pilność</TableHead>
+                <TableHead>Link / Dostawca</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead className="text-right">Akcje</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Ładowanie...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">Ładowanie...</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Brak zapotrzebowań</TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">Brak zapotrzebowań</TableCell></TableRow>
               ) : (
                 filtered.map((r: any) => (
                   <TableRow key={r.id}>
@@ -213,6 +221,9 @@ export default function PurchaseRequestsPage() {
                       <span className={`text-xs ${URGENCY_COLORS[r.urgency] || ""}`}>
                         {URGENCY_LABELS[r.urgency] || r.urgency}
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      <ProductLink url={r.product_url} supplier={r.supplier} />
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {new Date(r.created_at).toLocaleDateString("pl-PL")}
@@ -264,6 +275,15 @@ export default function PurchaseRequestsPage() {
                     {STATUS_LABELS[r.status]}
                   </Badge>
                 </div>
+                {r.product_url && (
+                  <a href={r.product_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1">
+                    <ExternalLink className="h-3 w-3" />
+                    {r.supplier || "Link do produktu"}
+                  </a>
+                )}
+                {!r.product_url && r.supplier && (
+                  <div className="text-xs text-muted-foreground">Dostawca: {r.supplier}</div>
+                )}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <Link to={`/orders/${r.order_id}`} className="text-primary hover:underline font-mono">
                     {r.service_orders?.order_number}
