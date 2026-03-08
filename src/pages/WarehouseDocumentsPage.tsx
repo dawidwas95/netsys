@@ -397,6 +397,7 @@ export default function WarehouseDocumentsPage() {
                 <TableHead>Numer</TableHead>
                 <TableHead>Typ</TableHead>
                 <TableHead>Data</TableHead>
+                <TableHead>Powiązanie</TableHead>
                 <TableHead>Pozycje</TableHead>
                 <TableHead>Notatki</TableHead>
                 <TableHead>Utworzył</TableHead>
@@ -405,9 +406,9 @@ export default function WarehouseDocumentsPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Ładowanie...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Ładowanie...</TableCell></TableRow>
               ) : !filtered.length ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Brak dokumentów</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Brak dokumentów</TableCell></TableRow>
               ) : filtered.map((d: any) => {
                 const tc = DOC_TYPE_CONFIG[d.document_type as WarehouseDocType];
                 return (
@@ -419,6 +420,11 @@ export default function WarehouseDocumentsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>{d.document_date}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {d.related_order_id ? orders.find((o: any) => o.id === d.related_order_id)?.order_number || "Zlecenie" : ""}
+                      {d.notes?.startsWith("Auto z faktury") ? <Badge variant="outline" className="ml-1 text-[10px]">Auto</Badge> : ""}
+                      {d.notes?.startsWith("Auto z zlecenia") ? <Badge variant="outline" className="ml-1 text-[10px]">Auto</Badge> : ""}
+                    </TableCell>
                     <TableCell>{(d.warehouse_document_items || []).length}</TableCell>
                     <TableCell className="max-w-[200px] truncate">{d.notes || "—"}</TableCell>
                     <TableCell>{profileName(d.created_by)}</TableCell>

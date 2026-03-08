@@ -32,6 +32,7 @@ import {
 import { generateOrderPDF } from "@/lib/generateOrderPDF";
 import { generateIntakePDF, generatePickupPDF } from "@/lib/pdfProtocols";
 import { sendOrderNotification } from "@/lib/notifications";
+import { createWarehouseDocument } from "@/lib/warehouseDocuments";
 import { toast } from "sonner";
 import SignatureCanvas from "@/components/SignatureCanvas";
 import OrderQRCode from "@/components/OrderQRCode";
@@ -356,6 +357,23 @@ export default function OrderDetailPage() {
               .from("inventory_reservations" as any)
               .update({ status: "CONSUMED", consumed_at: new Date().toISOString() })
               .eq("id", res.id);
+          }
+
+          // Auto-create WZ warehouse document
+          const wzItems = (reservations as any[]).map((res: any) => ({
+            inventory_item_id: res.inventory_item_id,
+            quantity: res.quantity,
+            price_net: 0,
+          }));
+          if (wzItems.length > 0) {
+            await createWarehouseDocument({
+              document_type: "WZ",
+              related_order_id: id!,
+              client_id: order?.client_id || null,
+              notes: `Auto z zlecenia ${order?.order_number}`,
+              created_by: user?.id || null,
+              items: wzItems,
+            });
           }
         }
       }

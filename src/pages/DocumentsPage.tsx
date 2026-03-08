@@ -32,6 +32,7 @@ import { SearchableSelect } from "@/components/SearchableSelect";
 import { ClientFormDialog } from "@/components/ClientFormDialog";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/types/database";
 import { DocumentAttachments } from "@/components/DocumentAttachments";
+import { createWarehouseDocument } from "@/lib/warehouseDocuments";
 
 type DocType = "PURCHASE_INVOICE" | "SALES_INVOICE" | "RECEIPT" | "PROFORMA" | "CORRECTION" | "OTHER";
 type DocDirection = "INCOME" | "EXPENSE";
@@ -189,6 +190,7 @@ export default function DocumentsPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
+  const [pzPromptData, setPzPromptData] = useState<{ docId: string; docNumber: string; clientId: string | null; items: any[] } | null>(null);
 
   const { data: docs = [], isLoading } = useQuery({
     queryKey: ["documents"],
@@ -347,7 +349,7 @@ export default function DocumentsPage() {
         }
       }
     },
-    onSuccess: () => {
+    onSuccess: (_data, values) => {
       qc.invalidateQueries({ queryKey: ["documents"] });
       qc.invalidateQueries({ queryKey: ["inventory-items"] });
       const docNum = form.document_number || "auto";
@@ -357,6 +359,30 @@ export default function DocumentsPage() {
         description: editId ? `Edycja dokumentu ${docNum}` : `Utworzono dokument ${docNum}`,
       } as any).then();
       toast.success(editId ? "Zaktualizowano dokument" : "Dodano dokument");
+
+      // Check if purchase invoice with product items → prompt PZ
+      if (values.document_type === "PURCHASE_INVOICE" && !editId) {
+        const productItems = lineItems.filter(i => i.item_type === "PRODUCT" && i.inventory_item_id);
+        if (productItems.length > 0) {
+          // We need the saved doc id — fetch latest
+          supabase.from("documents").select("id, document_number").eq("created_by", user?.id).order("created_at", { ascending: false }).limit(1).single().then(({ data: latestDoc }) => {
+            if (latestDoc) {
+              setPzPromptData({
+                docId: latestDoc.id,
+                docNumber: latestDoc.document_number,
+                clientId: values.client_id || null,
+                items: productItems.map(i => ({
+                  inventory_item_id: i.inventory_item_id!,
+                  quantity: parseFloat(i.quantity) || 1,
+                  price_net: parseFloat(i.unit_net) || 0,
+                  notes: i.name,
+                })),
+              });
+            }
+          });
+        }
+      }
+
       resetForm();
     },
     onError: (err: any) => toast.error(err?.message || "Błąd zapisu"),
@@ -1059,6 +1085,42 @@ export default function DocumentsPage() {
             <AlertDialogCancel>Anuluj</AlertDialogCancel>
             <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteConfirm && deleteMutation.mutate(deleteConfirm)}>
               Usuń
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* PZ auto-create prompt */}
+      <AlertDialog open={!!pzPromptData} onOpenChange={v => { if (!v) setPzPromptData(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Utworzyć dokument PZ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Faktura zakupowa {pzPromptData?.docNumber} zawiera {pzPromptData?.items?.length} pozycji magazynowych.
+              Czy chcesz automatycznie utworzyć dokument PZ (Przyjęcie Zewnętrzne) dla tych pozycji?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPzPromptData(null)}>Nie, pomiń</AlertDialogCancel>
+            <AlertDialogAction onClick={async () => {
+              if (!pzPromptData) return;
+              try {
+                await createWarehouseDocument({
+                  document_type: "PZ",
+                  client_id: pzPromptData.clientId,
+                  linked_invoice_id: pzPromptData.docId,
+                  notes: `Auto z faktury ${pzPromptData.docNumber}`,
+                  created_by: user?.id || null,
+                  items: pzPromptData.items,
+                });
+                qc.invalidateQueries({ queryKey: ["warehouse-documents"] });
+                toast.success("Utworzono dokument PZ");
+              } catch (e) {
+                toast.error("Nie udało się utworzyć PZ");
+              }
+              setPzPromptData(null);
+            }}>
+              Tak, utwórz PZ
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
