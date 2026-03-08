@@ -45,6 +45,7 @@ export default function KanbanPage() {
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState<string>("all");
   const [activeOrder, setActiveOrder] = useState<ServiceOrderWithRelations | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
