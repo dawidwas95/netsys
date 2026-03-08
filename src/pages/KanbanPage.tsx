@@ -27,19 +27,25 @@ import { OrderStatusBadge } from "@/pages/DashboardPage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Calendar, User, Monitor, AlertTriangle, CheckCircle, UserPlus, Building2 } from "lucide-react";
+import { Search, Calendar, User, Monitor, AlertTriangle, CheckCircle, UserPlus, Building2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { TechnicianBadges, QuickAssignButton } from "@/components/TechnicianAssignment";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
+import { NewOrderForm } from "@/pages/ServiceOrdersPage";
+import { type ServiceOrderInsert } from "@/types/database";
 
 export default function KanbanPage() {
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState<string>("all");
   const [activeOrder, setActiveOrder] = useState<ServiceOrderWithRelations | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
@@ -86,6 +92,30 @@ export default function KanbanPage() {
       if (error) throw error;
       return (data ?? []) as unknown as ServiceOrderWithRelations[];
     },
+  });
+
+  const createOrder = useMutation({
+    mutationFn: async (data: ServiceOrderInsert & { _technicianId?: string }) => {
+      const { _technicianId, ...orderData } = data;
+      const { data: inserted, error } = await supabase.from("service_orders").insert(orderData as any).select("id, order_number").single();
+      if (error) throw error;
+      if (_technicianId && inserted) {
+        await supabase.from("order_technicians").upsert({
+          order_id: inserted.id, user_id: _technicianId, is_primary: true, assigned_by: user?.id,
+        } as any, { onConflict: "order_id,user_id", ignoreDuplicates: true });
+        await supabase.from("activity_logs").insert({
+          entity_type: "service_order", entity_id: inserted.id, action_type: "TECHNICIAN_ASSIGNED",
+          entity_name: inserted.order_number ?? "", description: "Technik przypisany przy tworzeniu zlecenia", user_id: user?.id,
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["kanban-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["service-orders"] });
+      setDialogOpen(false);
+      toast.success("Zlecenie utworzone");
+    },
+    onError: (err: any) => toast.error(err.message),
   });
 
   const updateStatus = useMutation({
@@ -162,6 +192,18 @@ export default function KanbanPage() {
               className="pl-9 w-64"
             />
           </div>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="min-h-[44px]"><Plus className="h-4 w-4 mr-1" /> Dodaj zlecenie</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto p-0">
+              <DialogHeader className="p-6 pb-0"><DialogTitle>Nowe zlecenie serwisowe</DialogTitle></DialogHeader>
+              <NewOrderForm
+                onSubmit={(data) => createOrder.mutate({ ...data, created_by: user?.id })}
+                loading={createOrder.isPending}
+              />
+            </DialogContent>
+          </Dialog>
           <Link to="/orders" className="text-sm text-muted-foreground hover:text-primary">
             Widok listy →
           </Link>
@@ -188,6 +230,15 @@ export default function KanbanPage() {
                 {colOrders.map((order) => (
                   <KanbanCard key={order.id} order={order} />
                 ))}
+                {col.status === "NEW" && (
+                  <button
+                    type="button"
+                    onClick={() => setDialogOpen(true)}
+                    className="w-full py-2 text-xs text-muted-foreground hover:text-primary border border-dashed border-border rounded-md hover:border-primary/50 transition-colors"
+                  >
+                    <Plus className="h-3 w-3 inline mr-1" />Dodaj zlecenie
+                  </button>
+                )}
               </KanbanColumn>
             );
           })}

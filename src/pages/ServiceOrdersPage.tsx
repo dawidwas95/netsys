@@ -340,7 +340,7 @@ export default function ServiceOrdersPage() {
 
 
 // ── New Order Form (uses shared sections) ──
-function NewOrderForm({ onSubmit, loading }: {
+export function NewOrderForm({ onSubmit, loading }: {
   onSubmit: (data: any) => void;
   loading: boolean;
 }) {
