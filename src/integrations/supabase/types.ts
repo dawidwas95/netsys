@@ -353,6 +353,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          deleted_by: string | null
           display_name: string | null
           email: string | null
           first_name: string | null
@@ -380,6 +381,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          deleted_by?: string | null
           display_name?: string | null
           email?: string | null
           first_name?: string | null
@@ -407,6 +409,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          deleted_by?: string | null
           display_name?: string | null
           email?: string | null
           first_name?: string | null
@@ -432,6 +435,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          deleted_by: string | null
           description: string | null
           device_category: Database["public"]["Enums"]["device_category"]
           gpu: string | null
@@ -470,6 +474,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           device_category?: Database["public"]["Enums"]["device_category"]
           gpu?: string | null
@@ -508,6 +513,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           device_category?: Database["public"]["Enums"]["device_category"]
           gpu?: string | null
@@ -642,6 +648,8 @@ export type Database = {
           contractor_nip: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           description: string | null
           direction: Database["public"]["Enums"]["document_direction"]
           document_number: string
@@ -672,6 +680,8 @@ export type Database = {
           contractor_nip?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           direction?: Database["public"]["Enums"]["document_direction"]
           document_number: string
@@ -702,6 +712,8 @@ export type Database = {
           contractor_nip?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           direction?: Database["public"]["Enums"]["document_direction"]
           document_number?: string
@@ -755,6 +767,7 @@ export type Database = {
           category: string | null
           created_at: string
           deleted_at: string | null
+          deleted_by: string | null
           id: string
           is_active: boolean
           is_archived: boolean
@@ -775,6 +788,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           is_active?: boolean
           is_archived?: boolean
@@ -795,6 +809,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           is_active?: boolean
           is_archived?: boolean
@@ -907,6 +922,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          deleted_by: string | null
           description: string
           device_id: string | null
           entry_number: string
@@ -932,6 +948,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          deleted_by?: string | null
           description: string
           device_id?: string | null
           entry_number: string
@@ -957,6 +974,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          deleted_by?: string | null
           description?: string
           device_id?: string | null
           entry_number?: string
@@ -1114,6 +1132,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          deleted_by: string | null
           description: string | null
           follow_up_date: string | null
           id: string
@@ -1135,6 +1154,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           follow_up_date?: string | null
           id?: string
@@ -1156,6 +1176,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           follow_up_date?: string | null
           id?: string
@@ -1257,6 +1278,8 @@ export type Database = {
         Row: {
           comment: string
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           id: string
           is_internal: boolean
           order_id: string
@@ -1265,6 +1288,8 @@ export type Database = {
         Insert: {
           comment: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           is_internal?: boolean
           order_id: string
@@ -1273,6 +1298,8 @@ export type Database = {
         Update: {
           comment?: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           is_internal?: boolean
           order_id?: string
@@ -1357,6 +1384,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          deleted_by: string | null
           device_id: string | null
           diagnosis: string | null
           estimated_completion_date: string | null
@@ -1400,6 +1428,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          deleted_by?: string | null
           device_id?: string | null
           diagnosis?: string | null
           estimated_completion_date?: string | null
@@ -1443,6 +1472,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          deleted_by?: string | null
           device_id?: string | null
           diagnosis?: string | null
           estimated_completion_date?: string | null
@@ -1491,6 +1521,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_events: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_name: string | null
+          entity_type: string
+          event_type: string
+          id: string
+          payload: Json | null
+          processed: boolean
+          processed_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_name?: string | null
+          entity_type: string
+          event_type: string
+          id?: string
+          payload?: Json | null
+          processed?: boolean
+          processed_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_name?: string | null
+          entity_type?: string
+          event_type?: string
+          id?: string
+          payload?: Json | null
+          processed?: boolean
+          processed_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

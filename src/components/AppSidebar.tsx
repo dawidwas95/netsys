@@ -15,6 +15,7 @@ import {
   BookOpen,
   Receipt,
   ScrollText,
+  Database,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -55,6 +56,7 @@ const financeNav = [
 
 const systemNav = [
   { title: "Logi systemowe", url: "/system-logs", icon: ScrollText },
+  { title: "Zarządzanie danymi", url: "/data-management", icon: Database },
   { title: "Ustawienia", url: "/settings", icon: Settings },
 ];
 

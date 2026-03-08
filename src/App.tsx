@@ -20,6 +20,7 @@ import CashRegisterPage from "@/pages/CashRegisterPage";
 import ITDocsPage from "@/pages/ITDocsPage";
 import DocumentsPage from "@/pages/DocumentsPage";
 import SystemLogsPage from "@/pages/SystemLogsPage";
+import DataManagementPage from "@/pages/DataManagementPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -65,6 +66,7 @@ const App = () => (
             <Route path="/it-docs" element={<ITDocsPage />} />
             <Route path="/documents" element={<DocumentsPage />} />
             <Route path="/system-logs" element={<SystemLogsPage />} />
+            <Route path="/data-management" element={<DataManagementPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

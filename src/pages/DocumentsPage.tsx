@@ -154,6 +154,7 @@ export default function DocumentsPage() {
         .from("documents")
         .select("*, clients(display_name, company_name, first_name, last_name)")
         .eq("is_archived", false)
+        .is("deleted_at", null)
         .order("issue_date", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Document[];
@@ -353,8 +354,10 @@ export default function DocumentsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      await supabase.from("document_items").delete().eq("document_id", id);
-      const { error } = await supabase.from("documents").delete().eq("id", id);
+      // Soft delete instead of hard delete
+      const { error } = await supabase.from("documents")
+        .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id } as any)
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_data, deletedId) => {
