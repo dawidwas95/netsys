@@ -174,13 +174,14 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
         order_id: orderId,
         inventory_item_id: selectedInvItem.id,
         item_name_snapshot: selectedInvItem.name,
+        item_type: "PRODUCT",
         quantity: qty,
         sale_net: saleNet,
         purchase_net: purchaseNet,
         total_sale_net: qty * saleNet,
         total_purchase_net: qty * purchaseNet,
         created_by: user?.id,
-      }).select("id").single();
+      } as any).select("id").single();
       if (error) throw error;
 
       // Create reservation (no OUT movement yet)
