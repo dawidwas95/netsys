@@ -20,6 +20,7 @@ import CashRegisterPage from "@/pages/CashRegisterPage";
 import ITDocsPage from "@/pages/ITDocsPage";
 import DocumentsPage from "@/pages/DocumentsPage";
 import SystemLogsPage from "@/pages/SystemLogsPage";
+import DataManagementPage from "@/pages/DataManagementPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
