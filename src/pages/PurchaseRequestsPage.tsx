@@ -47,12 +47,26 @@ const URGENCY_COLORS: Record<string, string> = {
 
 const ALL_STATUSES = ["NEW", "TO_ORDER", "ORDERED", "DELIVERED", "CANCELLED"];
 
+const formatCurrency = (v: number | null | undefined) =>
+  v && v > 0 ? `${Number(v).toFixed(2)} zł` : null;
+
+const ProductLink = ({ url, supplier }: { url?: string | null; supplier?: string | null }) => {
+  if (!url) return supplier ? <span className="text-xs text-muted-foreground">{supplier}</span> : <span className="text-muted-foreground">—</span>;
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1 max-w-[160px] truncate">
+      <ExternalLink className="h-3 w-3 shrink-0" />
+      {supplier || "Link"}
+    </a>
+  );
+};
+
 export default function PurchaseRequestsPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ACTIVE");
   const [urgencyFilter, setUrgencyFilter] = useState("ALL");
+  const [categoryFilter, setCategoryFilter] = useState("ALL");
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["purchase-requests-global"],
@@ -63,6 +77,18 @@ export default function PurchaseRequestsPage() {
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
+    },
+  });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["purchase-categories"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("purchase_categories")
+        .select("label")
+        .eq("is_active", true)
+        .order("sort_order");
+      return (data ?? []).map((c: any) => c.label);
     },
   });
 
@@ -90,6 +116,7 @@ export default function PurchaseRequestsPage() {
     if (statusFilter === "ACTIVE" && ["DELIVERED", "CANCELLED"].includes(r.status)) return false;
     if (statusFilter !== "ACTIVE" && statusFilter !== "ALL" && r.status !== statusFilter) return false;
     if (urgencyFilter !== "ALL" && r.urgency !== urgencyFilter) return false;
+    if (categoryFilter !== "ALL" && r.category !== categoryFilter) return false;
     if (search) {
       const q = search.toLowerCase();
       const orderNum = r.service_orders?.order_number?.toLowerCase() || "";
@@ -99,23 +126,15 @@ export default function PurchaseRequestsPage() {
         !orderNum.includes(q) &&
         !clientName.includes(q) &&
         !(r.requested_by_name || "").toLowerCase().includes(q) &&
-        !(r.supplier || "").toLowerCase().includes(q)
+        !(r.supplier || "").toLowerCase().includes(q) &&
+        !(r.category || "").toLowerCase().includes(q)
       ) return false;
     }
     return true;
   });
 
   const activeCount = requests.filter((r: any) => !["DELIVERED", "CANCELLED"].includes(r.status)).length;
-
-  const ProductLink = ({ url, supplier }: { url?: string | null; supplier?: string | null }) => {
-    if (!url) return supplier ? <span className="text-xs text-muted-foreground">{supplier}</span> : <span className="text-muted-foreground">—</span>;
-    return (
-      <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1 max-w-[160px] truncate">
-        <ExternalLink className="h-3 w-3 shrink-0" />
-        {supplier || "Link"}
-      </a>
-    );
-  };
+  const totalGross = filtered.reduce((sum: number, r: any) => sum + (Number(r.estimated_gross) || 0), 0);
 
   return (
     <div className="space-y-4">
@@ -127,6 +146,7 @@ export default function PurchaseRequestsPage() {
           <p className="text-sm text-muted-foreground">
             Kolejka zamówień części ze zleceń serwisowych
             {activeCount > 0 && <Badge variant="secondary" className="ml-2">{activeCount} aktywnych</Badge>}
+            {totalGross > 0 && <span className="ml-2 font-medium text-foreground">{totalGross.toFixed(2)} zł</span>}
           </p>
         </div>
       </div>
@@ -144,7 +164,7 @@ export default function PurchaseRequestsPage() {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-44">
+              <SelectTrigger className="w-full sm:w-40">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -166,6 +186,19 @@ export default function PurchaseRequestsPage() {
                 ))}
               </SelectContent>
             </Select>
+            {categories.length > 0 && (
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full sm:w-40">
+                  <SelectValue placeholder="Kategoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Wszystkie</SelectItem>
+                  {categories.map((c: string) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -179,20 +212,22 @@ export default function PurchaseRequestsPage() {
                 <TableHead>Status</TableHead>
                 <TableHead>Nazwa części</TableHead>
                 <TableHead className="text-center">Ilość</TableHead>
+                <TableHead>Kategoria</TableHead>
                 <TableHead>Zlecenie</TableHead>
                 <TableHead>Klient</TableHead>
                 <TableHead>Technik</TableHead>
                 <TableHead>Pilność</TableHead>
-                <TableHead>Link / Dostawca</TableHead>
+                <TableHead>Sklep / Link</TableHead>
+                <TableHead className="text-right">Koszt brutto</TableHead>
                 <TableHead>Data</TableHead>
-                <TableHead className="text-right">Akcje</TableHead>
+                <TableHead className="text-right">Zmień status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">Ładowanie...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-8">Ładowanie...</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">Brak zapotrzebowań</TableCell></TableRow>
+                <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-8">Brak zapotrzebowań</TableCell></TableRow>
               ) : (
                 filtered.map((r: any) => (
                   <TableRow key={r.id}>
@@ -210,6 +245,9 @@ export default function PurchaseRequestsPage() {
                     </TableCell>
                     <TableCell className="text-center">{r.quantity}</TableCell>
                     <TableCell>
+                      {r.category ? <span className="text-xs bg-muted px-1.5 py-0.5 rounded">{r.category}</span> : "—"}
+                    </TableCell>
+                    <TableCell>
                       <Link to={`/orders/${r.order_id}`} className="text-primary hover:underline text-xs font-mono flex items-center gap-1">
                         {r.service_orders?.order_number}
                         <ExternalLink className="h-3 w-3" />
@@ -224,6 +262,9 @@ export default function PurchaseRequestsPage() {
                     </TableCell>
                     <TableCell>
                       <ProductLink url={r.product_url} supplier={r.supplier} />
+                    </TableCell>
+                    <TableCell className="text-right text-sm font-medium">
+                      {formatCurrency(r.estimated_gross) || "—"}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {new Date(r.created_at).toLocaleDateString("pl-PL")}
@@ -267,9 +308,13 @@ export default function PurchaseRequestsPage() {
                       <Package className="h-3.5 w-3.5 text-muted-foreground" />
                       {r.item_name} ×{r.quantity}
                     </div>
-                    {(r.manufacturer || r.model) && (
-                      <div className="text-xs text-muted-foreground ml-5.5">{[r.manufacturer, r.model].filter(Boolean).join(" · ")}</div>
-                    )}
+                    <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground ml-5.5 mt-0.5">
+                      {r.category && <span className="bg-muted px-1.5 py-0.5 rounded">{r.category}</span>}
+                      {r.manufacturer && <span>{r.manufacturer}</span>}
+                      {formatCurrency(r.estimated_gross) && (
+                        <span className="font-medium text-foreground">{formatCurrency(r.estimated_gross)}</span>
+                      )}
+                    </div>
                   </div>
                   <Badge className={`text-[10px] shrink-0 ${STATUS_COLORS[r.status] || ""}`} variant="outline">
                     {STATUS_LABELS[r.status]}

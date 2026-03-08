@@ -48,6 +48,8 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [newCatDialogOpen, setNewCatDialogOpen] = useState(false);
+  const [newCatLabel, setNewCatLabel] = useState("");
   const [form, setForm] = useState({
     item_name: "",
     quantity: "1",
@@ -56,6 +58,7 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
     model: "",
     product_url: "",
     supplier: "",
+    estimated_gross: "",
     description: "",
     urgency: "NORMAL",
   });
@@ -68,6 +71,19 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
         .select("*")
         .eq("order_id", orderId)
         .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["purchase-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("purchase_categories")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true });
       if (error) throw error;
       return data;
     },
@@ -89,7 +105,7 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
 
   const resetForm = () => setForm({
     item_name: "", quantity: "1", category: "", manufacturer: "", model: "",
-    product_url: "", supplier: "", description: "", urgency: "NORMAL",
+    product_url: "", supplier: "", estimated_gross: "", description: "", urgency: "NORMAL",
   });
 
   const addRequest = useMutation({
@@ -97,6 +113,9 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
       const name = profile
         ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || profile.full_name || "Użytkownik"
         : "Użytkownik";
+      const gross = parseFloat(form.estimated_gross) || 0;
+      const net = gross > 0 ? Math.round((gross / 1.23) * 100) / 100 : 0;
+      const vat = gross > 0 ? Math.round((gross - net) * 100) / 100 : 0;
       const { error } = await supabase.from("purchase_requests").insert({
         order_id: orderId,
         item_name: form.item_name,
@@ -106,6 +125,9 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
         model: form.model || null,
         product_url: form.product_url || null,
         supplier: form.supplier || null,
+        estimated_gross: gross,
+        estimated_net: net,
+        estimated_vat: vat,
         description: form.description || null,
         urgency: form.urgency as any,
         requested_by: user?.id,
@@ -122,6 +144,28 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
     },
     onError: () => toast.error("Nie udało się dodać zapotrzebowania"),
   });
+
+  const addCategory = useMutation({
+    mutationFn: async () => {
+      const name = newCatLabel.toUpperCase().replace(/\s+/g, "_").replace(/[^A-Z0-9_]/g, "");
+      const { error } = await supabase.from("purchase_categories").insert({
+        name,
+        label: newCatLabel.trim(),
+        sort_order: 50,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["purchase-categories"] });
+      toast.success("Kategoria dodana");
+      setForm({ ...form, category: newCatLabel.trim() });
+      setNewCatLabel("");
+      setNewCatDialogOpen(false);
+    },
+    onError: () => toast.error("Nie udało się dodać kategorii"),
+  });
+
+  const formatCurrency = (v: number) => v > 0 ? `${v.toFixed(2)} zł` : null;
 
   return (
     <Card>
@@ -165,15 +209,33 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
                 </div>
                 <div>
                   <Label>Kategoria</Label>
-                  <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="np. Baterie, Zasilacze" />
+                  <div className="flex gap-2">
+                    <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+                      <SelectTrigger className="flex-1"><SelectValue placeholder="Wybierz kategorię..." /></SelectTrigger>
+                      <SelectContent>
+                        {categories.map((c: any) => (
+                          <SelectItem key={c.id} value={c.label}>{c.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button type="button" size="icon" variant="outline" className="shrink-0" onClick={() => setNewCatDialogOpen(true)}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
                 <div>
                   <Label>Link do produktu</Label>
                   <Input value={form.product_url} onChange={(e) => setForm({ ...form, product_url: e.target.value })} placeholder="https://sklep.pl/produkt" type="url" />
                 </div>
-                <div>
-                  <Label>Sklep / Dostawca</Label>
-                  <Input value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} placeholder="np. Allegro, Hurtownia XYZ" />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Sklep / Dostawca</Label>
+                    <Input value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} placeholder="np. Allegro, x-kom" />
+                  </div>
+                  <div>
+                    <Label>Koszt brutto (zł)</Label>
+                    <Input type="number" min="0" step="0.01" value={form.estimated_gross} onChange={(e) => setForm({ ...form, estimated_gross: e.target.value })} placeholder="0.00" />
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -195,6 +257,21 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
               </div>
             </DialogContent>
           </Dialog>
+          {/* Add category dialog */}
+          <Dialog open={newCatDialogOpen} onOpenChange={setNewCatDialogOpen}>
+            <DialogContent className="max-w-xs">
+              <DialogHeader><DialogTitle>Nowa kategoria</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div>
+                  <Label>Nazwa kategorii</Label>
+                  <Input value={newCatLabel} onChange={(e) => setNewCatLabel(e.target.value)} placeholder="np. Matryca" />
+                </div>
+                <Button className="w-full" onClick={() => addCategory.mutate()} disabled={!newCatLabel.trim() || addCategory.isPending}>
+                  {addCategory.isPending ? "Dodawanie..." : "Dodaj kategorię"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -206,7 +283,7 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
           <div className="space-y-2">
             {requests.map((r: any) => (
               <div key={r.id} className="flex items-center justify-between border rounded-md p-2.5 text-sm">
-                <div className="min-w-0">
+                <div className="min-w-0 space-y-0.5">
                   <div className="flex items-center gap-2 flex-wrap">
                     <Package className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <span className="font-medium">{r.item_name}</span>
@@ -214,13 +291,14 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
                     {r.urgency === "URGENT" && <Badge variant="destructive" className="text-[10px] px-1.5">Pilne</Badge>}
                     {r.urgency === "HIGH" && <Badge variant="secondary" className="text-[10px] px-1.5 bg-orange-100 text-orange-800">Wysoki</Badge>}
                   </div>
-                  {(r.manufacturer || r.model) && (
-                    <div className="text-xs text-muted-foreground ml-5.5">
-                      {[r.manufacturer, r.model].filter(Boolean).join(" · ")}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground ml-5.5">
+                    {r.category && <span className="bg-muted px-1.5 py-0.5 rounded">{r.category}</span>}
+                    {r.manufacturer && <span>{r.manufacturer}</span>}
+                    {r.model && <span>· {r.model}</span>}
+                    {r.estimated_gross > 0 && <span className="font-medium text-foreground">{formatCurrency(r.estimated_gross)}</span>}
+                  </div>
                   {r.product_url && (
-                    <a href={r.product_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline ml-5.5 flex items-center gap-1 mt-0.5">
+                    <a href={r.product_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline ml-5.5 flex items-center gap-1">
                       <ExternalLink className="h-3 w-3" />
                       {r.supplier || "Link do produktu"}
                     </a>
