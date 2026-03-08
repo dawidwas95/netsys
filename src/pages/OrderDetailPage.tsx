@@ -96,6 +96,8 @@ export default function OrderDetailPage() {
   const [editDirty, setEditDirty] = useState(false);
   const [editForm, setEditForm] = useState<Record<string, any> | null>(null);
 
+  const markAsRead = useMarkOrderAsRead();
+
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", id],
     queryFn: async () => {
