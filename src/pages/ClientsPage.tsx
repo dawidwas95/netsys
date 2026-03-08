@@ -4,9 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
@@ -14,6 +11,7 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Phone, Mail, Archive, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { CLIENT_TYPE_LABELS, BUSINESS_ROLE_LABELS, type Client, type ClientType, type BusinessRole } from "@/types/database";
@@ -88,25 +86,24 @@ export default function ClientsPage() {
         <ClientFormDialog />
       </div>
 
-      <div className="mb-4 flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Szukaj po nazwie, telefonie, NIP..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 min-h-[44px]"
-          />
+      <Tabs value={roleFilter} onValueChange={setRoleFilter} className="mb-4">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <TabsList>
+            <TabsTrigger value="customers">Klienci</TabsTrigger>
+            <TabsTrigger value="suppliers">Dostawcy</TabsTrigger>
+            <TabsTrigger value="all">Wszyscy</TabsTrigger>
+          </TabsList>
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Szukaj po nazwie, telefonie, NIP..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 min-h-[44px]"
+            />
+          </div>
         </div>
-        <Select value={roleFilter} onValueChange={setRoleFilter}>
-          <SelectTrigger className="w-full sm:w-48 min-h-[44px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="customers">Klienci</SelectItem>
-            <SelectItem value="suppliers">Dostawcy</SelectItem>
-            <SelectItem value="all">Wszyscy</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      </Tabs>
 
       {/* Mobile card view */}
       <div className="space-y-3 md:hidden">
