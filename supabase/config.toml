@@ -1,1 +1,4 @@
 project_id = "btssgehetxllawrokaom"
+
+[functions.ocr-invoice]
+verify_jwt = false

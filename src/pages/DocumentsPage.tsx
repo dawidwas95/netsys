@@ -26,7 +26,7 @@ import {
 import {
   Plus, Search, FileText, ArrowDownCircle, ArrowUpCircle, Pencil, Trash2, Eye,
   DollarSign, ShoppingCart, Receipt, FileCheck, FileMinus2, CalendarDays,
-  Building2, MapPin, Mail, Phone as PhoneIcon, Hash, Paperclip,
+  Building2, MapPin, Mail, Phone as PhoneIcon, Hash, Paperclip, ScanLine,
 } from "lucide-react";
 import { toast } from "sonner";
 import { SearchableSelect } from "@/components/SearchableSelect";
@@ -34,6 +34,7 @@ import { ClientFormDialog } from "@/components/ClientFormDialog";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/types/database";
 import { DocumentAttachments, useDocumentAttachmentCounts, uploadPendingFiles, type DocumentAttachmentsHandle } from "@/components/DocumentAttachments";
 import { createWarehouseDocument } from "@/lib/warehouseDocuments";
+import { OcrImportDialog, type OcrExtractedData } from "@/components/OcrImportDialog";
 
 type DocType = "PURCHASE_INVOICE" | "SALES_INVOICE" | "RECEIPT" | "PROFORMA" | "CORRECTION" | "OTHER";
 type DocDirection = "INCOME" | "EXPENSE";
@@ -193,6 +194,8 @@ export default function DocumentsPage() {
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
   const [pzPromptData, setPzPromptData] = useState<{ docId: string; docNumber: string; clientId: string | null; items: any[] } | null>(null);
   const attachmentsRef = useRef<DocumentAttachmentsHandle>(null);
+  const [ocrOpen, setOcrOpen] = useState(false);
+  const [ocrSourceFile, setOcrSourceFile] = useState<File | null>(null);
 
   const { data: docs = [], isLoading } = useQuery({
     queryKey: ["documents"],
@@ -403,6 +406,15 @@ export default function DocumentsPage() {
         }
       }
 
+      // Auto-attach OCR source file
+      if (docId && ocrSourceFile) {
+        uploadPendingFiles(docId, [ocrSourceFile], user?.id).then(() => {
+          qc.invalidateQueries({ queryKey: ["document-attachments", docId] });
+          qc.invalidateQueries({ queryKey: ["document-attachment-counts"] });
+        }).catch(() => {});
+        setOcrSourceFile(null);
+      }
+
       resetForm();
     },
     onError: (err: any) => toast.error(err?.message || "Błąd zapisu"),
@@ -504,6 +516,62 @@ export default function DocumentsPage() {
 
   const relatedDoc = form.related_document_id ? docs.find(d => d.id === form.related_document_id) : null;
 
+  function handleOcrData(data: OcrExtractedData) {
+    const docType = (data.document_type as DocType) || "PURCHASE_INVOICE";
+    const cfg = TYPE_CONFIG[docType] || TYPE_CONFIG.OTHER;
+    setForm({
+      ...emptyForm,
+      document_type: docType,
+      direction: cfg.direction,
+      document_number: data.document_number || "",
+      issue_date: data.issue_date || new Date().toISOString().split("T")[0],
+      sale_date: data.sale_date || "",
+      due_date: data.due_date || "",
+      contractor_name: data.contractor_name || "",
+      contractor_nip: data.contractor_nip || "",
+      net_amount: data.net_amount != null ? data.net_amount.toString() : "",
+      vat_rate: data.net_amount && data.vat_amount
+        ? ((data.vat_amount / data.net_amount) * 100).toFixed(0)
+        : "23",
+      payment_method: data.payment_method || "",
+      payment_status: "UNPAID",
+      paid_amount: "",
+    });
+
+    // Match contractor by NIP
+    if (data.contractor_nip) {
+      const match = clients.find((c: any) => c.nip === data.contractor_nip);
+      if (match) {
+        setForm(prev => ({
+          ...prev,
+          client_id: match.id,
+          contractor_name: match.display_name || match.company_name || [match.first_name, match.last_name].filter(Boolean).join(" ") || prev.contractor_name,
+        }));
+        toast.info(`Dopasowano kontrahenta: ${match.display_name || match.company_name}`);
+      }
+    }
+
+    // Set line items if available
+    if (data.line_items?.length > 0) {
+      setLineItems(data.line_items.map(item => ({
+        name: item.name || "",
+        quantity: (item.quantity || 1).toString(),
+        unit: item.unit || "szt.",
+        unit_net: (item.unit_net || 0).toString(),
+        vat_rate: (item.vat_rate || 23).toString(),
+        item_type: "SERVICE" as DocItemType,
+      })));
+    } else {
+      setLineItems([{ ...emptyLineItem }]);
+    }
+
+    // Store source file for auto-attachment
+    setOcrSourceFile(data.sourceFile);
+
+    setEditId(null);
+    setFormOpen(true);
+  }
+
   // Filtering
   const filtered = docs.filter((d) => {
     if (filterTab === "PURCHASE" && d.document_type !== "PURCHASE_INVOICE") return false;
@@ -535,9 +603,14 @@ export default function DocumentsPage() {
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Rejestr dokumentów</h1>
           <p className="text-muted-foreground text-sm">Faktury zakupowe, sprzedażowe, proformy i korekty</p>
         </div>
-        <Button onClick={() => setTypePickerOpen(true)} className="w-full sm:w-auto min-h-[44px]">
-          <Plus className="mr-2 h-4 w-4" />Dodaj dokument
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button variant="outline" onClick={() => setOcrOpen(true)} className="w-full sm:w-auto min-h-[44px]">
+            <ScanLine className="mr-2 h-4 w-4" />OCR import
+          </Button>
+          <Button onClick={() => setTypePickerOpen(true)} className="w-full sm:w-auto min-h-[44px]">
+            <Plus className="mr-2 h-4 w-4" />Dodaj dokument
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -1374,6 +1447,9 @@ export default function DocumentsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* OCR Import Dialog */}
+      <OcrImportDialog open={ocrOpen} onOpenChange={setOcrOpen} onDataExtracted={handleOcrData} />
     </div>
   );
 }
