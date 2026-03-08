@@ -29,6 +29,7 @@ import {
   CheckCircle, AlertTriangle, Save, Archive, XCircle,
 } from "lucide-react";
 import { generateOrderPDF } from "@/lib/generateOrderPDF";
+import { generateIntakePDF, generatePickupPDF } from "@/lib/pdfProtocols";
 import { sendOrderNotification } from "@/lib/notifications";
 import { toast } from "sonner";
 import { useState, useMemo, useCallback } from "react";
