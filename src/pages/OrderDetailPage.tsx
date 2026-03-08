@@ -445,6 +445,50 @@ export default function OrderDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Cancel confirmation */}
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Anulować zlecenie?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Zlecenie {order.order_number} zostanie oznaczone jako anulowane.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Nie</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              updateOrder.mutate({ status: "CANCELLED" });
+              setCancelDialogOpen(false);
+            }}>
+              Anuluj zlecenie
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Usunąć zlecenie?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Zlecenie {order.order_number} zostanie trwale usunięte (soft delete). Tej operacji nie można cofnąć z poziomu aplikacji.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={async () => {
+              const { error } = await supabase.from("service_orders").update({ deleted_at: new Date().toISOString(), updated_by: user?.id }).eq("id", id!);
+              if (error) { toast.error(error.message); return; }
+              toast.success("Zlecenie usunięte");
+              navigate("/orders");
+            }}>
+              Usuń trwale
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* TWO-COLUMN LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-5">
         {/* LEFT COLUMN */}
