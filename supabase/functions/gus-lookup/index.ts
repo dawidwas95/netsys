@@ -10,7 +10,6 @@ function parseAddress(raw: string | null): { street: string; building: string; l
   const result = { street: "", building: "", local: "", postal_code: "", city: "" };
   if (!raw) return result;
 
-  // Format: "STREET NUMBER[/LOCAL], POSTAL CITY"
   const commaIdx = raw.lastIndexOf(",");
   if (commaIdx === -1) {
     result.street = raw.trim();
@@ -20,7 +19,6 @@ function parseAddress(raw: string | null): { street: string; building: string; l
   const streetPart = raw.substring(0, commaIdx).trim();
   const cityPart = raw.substring(commaIdx + 1).trim();
 
-  // Parse city part: "00-843 WARSZAWA"
   const postalMatch = cityPart.match(/^(\d{2}-\d{3})\s+(.+)$/);
   if (postalMatch) {
     result.postal_code = postalMatch[1];
@@ -29,8 +27,6 @@ function parseAddress(raw: string | null): { street: string; building: string; l
     result.city = cityPart;
   }
 
-  // Parse street part: "UL. EXAMPLE 25/3" or "RONDO DASZYŃSKIEGO 2C"
-  // Try to extract building number (and optional local) from the end
   const streetMatch = streetPart.match(/^(.+?)\s+(\d+\w*(?:\/\d+\w*)?)$/);
   if (streetMatch) {
     result.street = streetMatch[1];
@@ -44,6 +40,40 @@ function parseAddress(raw: string | null): { street: string; building: string; l
   return result;
 }
 
+/** Try CEIDG API to get JDG business name */
+async function lookupCeidg(nip: string): Promise<{ name: string; firstName: string; lastName: string } | null> {
+  try {
+    const url = `https://dane.biznes.gov.pl/api/ceidg/v2/firma?nip=${nip}`;
+    const resp = await fetch(url, {
+      headers: { "Accept": "application/json" },
+    });
+    if (!resp.ok) {
+      await resp.text();
+      return null;
+    }
+    const data = await resp.json();
+    console.log("CEIDG raw response:", JSON.stringify(data).substring(0, 2000));
+    
+    // CEIDG v2 returns { firpimy: [...] } or { firma: [...] }
+    const firms = data?.firmy || data?.firma || [];
+    const firm = Array.isArray(firms) ? firms[0] : firms;
+    if (!firm) return null;
+
+    // CEIDG fields: nazwa (full business name), imie, nazwisko
+    const name = firm.nazwa || firm.name || null;
+    const firstName = firm.imie || firm.wlasciciel?.imie || null;
+    const lastName = firm.nazwisko || firm.wlasciciel?.nazwisko || null;
+
+    if (name) {
+      return { name, firstName: firstName || "", lastName: lastName || "" };
+    }
+    return null;
+  } catch (e) {
+    console.log("CEIDG lookup failed:", e);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -51,7 +81,6 @@ serve(async (req) => {
     const { nip } = await req.json();
     if (!nip) throw new Error("NIP jest wymagany");
 
-    // Clean NIP
     const cleanNip = nip.replace(/^PL/i, "").replace(/[\s\-]/g, "");
     if (!/^\d{10}$/.test(cleanNip)) {
       return new Response(JSON.stringify({ error: "Nieprawidłowy format NIP (wymagane 10 cyfr)" }), {
@@ -71,7 +100,7 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error(`GUS API error: ${response.status}`);
+      throw new Error(`White List API error: ${response.status}`);
     }
 
     const data = await response.json();
@@ -84,20 +113,32 @@ serve(async (req) => {
       });
     }
 
+    // Debug: log all subject fields to identify what the API returns
+    console.log("White List subject keys:", Object.keys(subject));
+    console.log("White List subject.name:", subject.name);
+    console.log("White List subject.tradeName:", subject.tradeName);
+    console.log("White List subject.krs:", subject.krs);
+    console.log("White List subject.residenceAddress:", subject.residenceAddress);
+    console.log("White List subject.workingAddress:", subject.workingAddress);
+    console.log("White List subject.representatives type:", typeof subject.representatives, 
+      Array.isArray(subject.representatives) ? `(array, len=${subject.representatives.length})` : "");
+
     const address = parseAddress(subject.workingAddress || subject.residenceAddress);
 
-    // For JDG (sole proprietorship), subject.name contains the full business name
-    // e.g. "DW-TECH DAWID WAŚ". We always use subject.name as company_name.
-    // Try to extract first/last name from representatives or by parsing the name.
+    // Determine the best company name.
+    // White List `subject.name` is the full registered name for both sp. z o.o. and JDG.
+    // For JDG it should be e.g. "DW-TECH DAWID WAŚ", not just "DAWID WAŚ".
+    // However, some results might only have owner name. We check multiple fields.
+    let companyName = subject.name || null;
     let firstName: string | null = null;
     let lastName: string | null = null;
+    const isJdg = !subject.krs;
 
-    // The White List API provides representatives as an array of objects or a string
+    // Extract first/last name from representatives
     const reps = subject.representatives;
     if (reps) {
       let repName = "";
       if (Array.isArray(reps) && reps.length > 0) {
-        // Each rep may be an object with name/firstName/lastName or just a string
         const rep = reps[0];
         repName = typeof rep === "string" ? rep : (rep.name || `${rep.firstName || ""} ${rep.lastName || ""}`.trim());
       } else if (typeof reps === "string") {
@@ -112,19 +153,36 @@ serve(async (req) => {
       }
     }
 
-    // If no KRS (likely JDG), and no representatives parsed, try to extract from name
-    // JDG names often end with "IMIĘ NAZWISKO" after the business name
-    if (!firstName && !subject.krs && subject.name) {
-      const nameParts = subject.name.trim().split(/\s+/);
+    // For JDG: if companyName looks like just "FIRST LAST" (2 words, no business prefix),
+    // try CEIDG to get the real business name
+    if (isJdg && companyName) {
+      const nameWords = companyName.trim().split(/\s+/);
+      const looksLikePersonalNameOnly = nameWords.length === 2 && 
+        nameWords.every(w => /^[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+$/.test(w));
+      
+      if (looksLikePersonalNameOnly) {
+        console.log("Company name looks like personal name only, trying CEIDG...");
+        const ceidgData = await lookupCeidg(cleanNip);
+        if (ceidgData && ceidgData.name && ceidgData.name.trim().split(/\s+/).length > 2) {
+          console.log("CEIDG returned better business name:", ceidgData.name);
+          companyName = ceidgData.name;
+          if (ceidgData.firstName) firstName = ceidgData.firstName;
+          if (ceidgData.lastName) lastName = ceidgData.lastName;
+        }
+      }
+    }
+
+    // If no first/last extracted yet, try parsing from name for JDG
+    if (!firstName && isJdg && companyName) {
+      const nameParts = companyName.trim().split(/\s+/);
       if (nameParts.length >= 2) {
-        // Last two words are likely first name + last name
         lastName = nameParts[nameParts.length - 1];
         firstName = nameParts[nameParts.length - 2];
       }
     }
 
     const result = {
-      company_name: subject.name || null,
+      company_name: companyName,
       first_name: firstName,
       last_name: lastName,
       nip: cleanNip,
@@ -137,8 +195,12 @@ serve(async (req) => {
       city: address.city,
       country: "Polska",
       vat_status: subject.statusVat || null,
-      is_jdg: !subject.krs,
+      is_jdg: isJdg,
+      _debug_raw_name: subject.name,
+      _debug_trade_name: subject.tradeName || null,
     };
+
+    console.log("Final result:", JSON.stringify(result));
 
     return new Response(JSON.stringify({ data: result }), {
       status: 200,
