@@ -151,7 +151,7 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
     setInventorySearch("");
     setInvQuantity("1");
     setInvSaleNet("");
-    setCustomItem({ name: "", quantity: "1", sale_net: "", purchase_net: "", note: "" });
+    setCustomItem({ name: "", quantity: "1", sale_net: "", purchase_net: "", note: "", item_type: "SERVICE" });
     setDialogTab("inventory");
   }
 
