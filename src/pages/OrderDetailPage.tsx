@@ -858,7 +858,7 @@ export default function OrderDetailPage() {
                     </div>
                   ))}
                   <div className="flex gap-2">
-                    <Textarea placeholder="Dodaj komentarz..." value={comment} onChange={(e) => setComment(e.target.value)} rows={2} className="flex-1" />
+                    <Textarea placeholder="Dodaj komentarz... Użyj @imię aby oznaczyć osobę" value={comment} onChange={(e) => setComment(e.target.value)} rows={2} className="flex-1" />
                     <Button size="icon" onClick={() => addComment.mutate()} disabled={!comment.trim() || addComment.isPending}>
                       <Send className="h-4 w-4" />
                     </Button>
