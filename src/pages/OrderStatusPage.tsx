@@ -9,7 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Wrench, Search, Monitor, Calendar, FileText, DollarSign, CheckCircle, Clock, AlertTriangle } from "lucide-react";
 import { ORDER_STATUS_LABELS, DEVICE_CATEGORY_LABELS, type OrderStatus, type DeviceCategory } from "@/types/database";
 
+import CustomerMessagesPublic from "@/components/CustomerMessagesPublic";
+
 interface PublicOrderData {
+  order_id: string;
   order_number: string;
   status: OrderStatus;
   received_at: string;
@@ -19,6 +22,7 @@ interface PublicOrderData {
   total_gross: number | null;
   is_paid: boolean;
   estimated_completion_date: string | null;
+  unread_messages: number;
   device: { manufacturer: string; model: string; category: DeviceCategory } | null;
 }
 
