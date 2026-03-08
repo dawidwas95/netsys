@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Users, Monitor, Wrench, X } from "lucide-react";
+import { Search, Users, Monitor, Wrench, ScanLine } from "lucide-react";
 import {
   CommandDialog, CommandInput, CommandList, CommandEmpty,
   CommandGroup, CommandItem, CommandSeparator,
 } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
+import { QRScanner } from "@/components/QRScanner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface SearchResult {
   id: string;
@@ -18,10 +20,12 @@ interface SearchResult {
 
 export function GlobalSearch() {
   const [open, setOpen] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   // Ctrl+K / Cmd+K shortcut
   useEffect(() => {
@@ -144,6 +148,72 @@ export function GlobalSearch() {
     navigate(url);
   };
 
+  const handleScan = useCallback(async (scannedValue: string) => {
+    // Try to extract meaningful value from QR URL (e.g. /status?token=xxx or /orders/uuid)
+    let searchValue = scannedValue;
+    try {
+      const url = new URL(scannedValue);
+      const token = url.searchParams.get("token");
+      if (token) {
+        // It's a status QR - find order by status_token
+        const { data } = await supabase
+          .from("service_orders")
+          .select("id")
+          .eq("status_token", token)
+          .maybeSingle();
+        if (data) {
+          navigate(`/orders/${data.id}`);
+          return;
+        }
+      }
+      // Check if path contains an order/inventory UUID
+      const pathParts = url.pathname.split("/").filter(Boolean);
+      const lastPart = pathParts[pathParts.length - 1];
+      if (lastPart) searchValue = lastPart;
+    } catch {
+      // Not a URL, use raw value
+    }
+
+    // Try exact match: order_number
+    const { data: orderMatch } = await supabase
+      .from("service_orders")
+      .select("id")
+      .eq("order_number", searchValue.toUpperCase())
+      .maybeSingle();
+    if (orderMatch) {
+      navigate(`/orders/${orderMatch.id}`);
+      return;
+    }
+
+    // Try exact match: inventory SKU or inventory_number
+    const { data: invMatch } = await supabase
+      .from("inventory_items")
+      .select("id")
+      .or(`sku.eq.${searchValue},inventory_number.eq.${searchValue}`)
+      .eq("is_archived", false)
+      .maybeSingle();
+    if (invMatch) {
+      navigate(`/inventory`);
+      return;
+    }
+
+    // Try exact match: device serial_number or imei
+    const { data: devMatch } = await supabase
+      .from("devices")
+      .select("id")
+      .or(`serial_number.eq.${searchValue},imei.eq.${searchValue},asset_tag.eq.${searchValue}`)
+      .eq("is_archived", false)
+      .maybeSingle();
+    if (devMatch) {
+      navigate(`/devices`);
+      return;
+    }
+
+    // No exact match - open search with scanned value
+    setQuery(searchValue);
+    setOpen(true);
+  }, [navigate]);
+
   const iconMap = {
     client: Users,
     device: Monitor,
@@ -162,16 +232,31 @@ export function GlobalSearch() {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="relative flex items-center gap-2 w-full max-w-md h-9 rounded-md border border-input bg-muted/50 px-3 text-sm text-muted-foreground hover:bg-muted transition-colors"
-      >
-        <Search className="h-4 w-4 shrink-0" />
-        <span className="flex-1 text-left">Szukaj klientów, zleceń, urządzeń...</span>
-        <kbd className="hidden md:inline-flex h-5 items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] text-muted-foreground">
-          <span className="text-xs">⌘</span>K
-        </kbd>
-      </button>
+      <div className="flex items-center gap-2 flex-1 max-w-lg">
+        <button
+          onClick={() => setOpen(true)}
+          className="relative flex items-center gap-2 w-full h-9 rounded-md border border-input bg-muted/50 px-3 text-sm text-muted-foreground hover:bg-muted transition-colors"
+        >
+          <Search className="h-4 w-4 shrink-0" />
+          <span className="flex-1 text-left truncate">Szukaj klientów, zleceń, urządzeń...</span>
+          <kbd className="hidden md:inline-flex h-5 items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] text-muted-foreground">
+            <span className="text-xs">⌘</span>K
+          </kbd>
+        </button>
+        <button
+          onClick={() => setScannerOpen(true)}
+          className="flex items-center justify-center h-9 w-9 shrink-0 rounded-md border border-input bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          title="Skanuj kod QR / kreskowy"
+        >
+          <ScanLine className="h-4 w-4" />
+        </button>
+      </div>
+
+      <QRScanner
+        open={scannerOpen}
+        onOpenChange={setScannerOpen}
+        onScan={handleScan}
+      />
 
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput
