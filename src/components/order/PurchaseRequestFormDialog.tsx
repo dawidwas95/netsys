@@ -207,21 +207,12 @@ export function PurchaseRequestFormDialog({ open, onOpenChange, orderId, editing
               <div><Label>Model / kompatybilność</Label><Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} /></div>
             </div>
             {isEditing && (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Akceptacja klienta</Label>
-                  <Select value={form.client_approval} onValueChange={(v) => setForm({ ...form, client_approval: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{Object.entries(APPROVAL_LABELS).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}</SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Status zamówienia</Label>
-                  <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{Object.entries(STATUS_LABELS).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}</SelectContent>
-                  </Select>
-                </div>
+              <div>
+                <Label>Status zamówienia</Label>
+                <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{Object.entries(STATUS_LABELS).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}</SelectContent>
+                </Select>
               </div>
             )}
             <div><Label>Uwagi</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} placeholder="np. najlepiej oryginał lub dobry OEM" /></div>

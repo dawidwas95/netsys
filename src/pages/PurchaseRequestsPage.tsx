@@ -360,26 +360,7 @@ export default function PurchaseRequestsPage() {
         />
       )}
 
-      {/* Approval warning dialog */}
-      <AlertDialog open={!!confirmDialog} onOpenChange={(open) => !open && setConfirmDialog(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Klient nie zaakceptował kosztu</AlertDialogTitle>
-            <AlertDialogDescription>
-              Klient nie zaakceptował jeszcze kosztu tej części. Czy na pewno chcesz zmienić status zamówienia? Zalecamy najpierw uzyskać akceptację klienta.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Anuluj</AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              if (confirmDialog) updateStatus.mutate({ id: confirmDialog.id, status: confirmDialog.status });
-              setConfirmDialog(null);
-            }}>
-              Kontynuuj mimo to
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
