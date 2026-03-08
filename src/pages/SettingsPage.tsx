@@ -181,10 +181,22 @@ function TeamManagement() {
   const handleEditSave = async () => {
     if (!editUser) return;
     try {
+      const updates: Record<string, any> = {
+        first_name: editForm.first_name,
+        last_name: editForm.last_name,
+        phone: editForm.phone,
+        is_active: editForm.is_active === "true",
+      };
+      if (editForm.email && editForm.email !== editUser.email) {
+        updates.email = editForm.email;
+      }
+      if (editForm.role && editForm.role !== editUser.role) {
+        updates.role = editForm.role;
+      }
       await manageUser.mutateAsync({
         action: "update_profile",
         target_user_id: editUser.user_id,
-        updates: editForm,
+        updates,
       });
       toast.success("Dane użytkownika zaktualizowane");
       setEditUser(null);
