@@ -334,6 +334,119 @@ function LowStockAlerts() {
 
 import { ORDER_STATUS_LABELS, type OrderStatus } from "@/types/database";
 
+function TodaysScheduledOrders() {
+  const { user } = useAuth();
+  const { isAdmin, isManager, isTechnician } = useUserRole();
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const { data: orders = [] } = useQuery({
+    queryKey: ["dashboard-todays-schedule", user?.id, isAdmin, isManager],
+    queryFn: async () => {
+      // Fetch orders with planned_execution_date = today or overdue (past dates, not completed)
+      let query = supabase
+        .from("service_orders")
+        .select("id, order_number, status, priority, planned_execution_date, planned_execution_time, appointment_note, clients(display_name), devices(manufacturer, model)")
+        .not("status", "in", '("COMPLETED","ARCHIVED","CANCELLED")')
+        .not("planned_execution_date", "is", null)
+        .lte("planned_execution_date", today)
+        .order("planned_execution_date", { ascending: true });
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      let result = (data ?? []) as any[];
+
+      // Filter by technician assignment if not admin/manager
+      if (isTechnician && user?.id) {
+        const { data: assignments } = await supabase
+          .from("order_technicians")
+          .select("order_id")
+          .eq("user_id", user.id);
+        const assignedIds = new Set((assignments ?? []).map((a: any) => a.order_id));
+        result = result.filter((o: any) => assignedIds.has(o.id));
+      }
+
+      // Sort: today first, then overdue; within each group sort by time
+      return result.sort((a: any, b: any) => {
+        const aToday = a.planned_execution_date === today;
+        const bToday = b.planned_execution_date === today;
+        if (aToday !== bToday) return aToday ? -1 : 1;
+        return (a.planned_execution_time || "99:99").localeCompare(b.planned_execution_time || "99:99");
+      });
+    },
+    enabled: !!user,
+  });
+
+  if (orders.length === 0) return null;
+
+  const todayOrders = orders.filter((o: any) => o.planned_execution_date === today);
+  const overdueOrders = orders.filter((o: any) => o.planned_execution_date < today);
+
+  return (
+    <Card className="mb-6 border-primary/20">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <CalendarDays className="h-5 w-5 text-primary" />
+          Dzisiejsze zadania
+          {todayOrders.length > 0 && (
+            <Badge variant="default" className="ml-1">{todayOrders.length}</Badge>
+          )}
+          {overdueOrders.length > 0 && (
+            <Badge variant="destructive" className="ml-1">
+              {overdueOrders.length} zaległe
+            </Badge>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {orders.map((order: any) => {
+            const isOverdue = order.planned_execution_date < today;
+            const isToday = order.planned_execution_date === today;
+            return (
+              <Link
+                key={order.id}
+                to={`/orders/${order.id}`}
+                className="flex items-center justify-between text-sm border-b pb-2 last:border-0 hover:bg-muted/50 -mx-2 px-2 py-1.5 rounded transition-colors"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="text-xs font-mono w-12 shrink-0 text-center">
+                    {order.planned_execution_time
+                      ? order.planned_execution_time.slice(0, 5)
+                      : "—"}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium font-mono">{order.order_number}</span>
+                      {isToday && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">📅 Dziś</Badge>
+                      )}
+                      {isOverdue && (
+                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0">⚠ Zaległe</Badge>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {order.clients?.display_name}
+                      {order.devices && ` · ${order.devices.manufacturer || ""} ${order.devices.model || ""}`.trim()}
+                    </div>
+                    {order.appointment_note && (
+                      <div className="text-xs text-muted-foreground italic truncate">
+                        {order.appointment_note}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <OrderStatusBadge status={order.status} />
+              </Link>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function PurchaseListWidget() {
   const { data: count = 0 } = useQuery({
     queryKey: ["dashboard-purchase-list-count"],
