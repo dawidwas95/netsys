@@ -282,6 +282,33 @@ export default function ServiceOrdersPage() {
   );
 }
 
+function ScheduleBadge({ date, time }: { date?: string; time?: string }) {
+  if (!date) return null;
+  const today = new Date().toISOString().split("T")[0];
+  const isToday = date === today;
+  const isOverdue = date < today;
+
+  if (isToday) {
+    return (
+      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
+        📅 {time ? time.slice(0, 5) : "Dziś"}
+      </Badge>
+    );
+  }
+  if (isOverdue) {
+    return (
+      <Badge variant="destructive" className="text-[10px] px-1.5 py-0 shrink-0">
+        ⚠ Zaległe
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 text-muted-foreground">
+      📅 {new Date(date).toLocaleDateString("pl-PL", { day: "numeric", month: "short" })}
+    </Badge>
+  );
+}
+
 // ── New Order Form (uses shared sections) ──
 function NewOrderForm({ onSubmit, loading }: {
   onSubmit: (data: any) => void;
