@@ -397,6 +397,7 @@ export default function WarehouseDocumentsPage() {
                 <TableHead>Numer</TableHead>
                 <TableHead>Typ</TableHead>
                 <TableHead>Data</TableHead>
+                <TableHead>Powiązanie</TableHead>
                 <TableHead>Pozycje</TableHead>
                 <TableHead>Notatki</TableHead>
                 <TableHead>Utworzył</TableHead>
