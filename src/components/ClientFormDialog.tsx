@@ -244,6 +244,8 @@ export function ClientFormDialog({ onCreated, onUpdated, trigger, externalOpen, 
                             if (data) setForm(prev => ({
                               ...prev,
                               company_name: data.company_name || prev.company_name,
+                              first_name: data.first_name || prev.first_name,
+                              last_name: data.last_name || prev.last_name,
                               nip: data.nip,
                               regon: data.regon || prev.regon,
                               address_street: data.street || prev.address_street,
