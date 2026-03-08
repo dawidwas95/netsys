@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useGusLookup } from "@/hooks/useGusLookup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +14,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, Building2, User, MapPin, Phone, Mail } from "lucide-react";
+import { Plus, Building2, User, MapPin, Phone, Mail, Globe, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { CLIENT_TYPE_LABELS, BUSINESS_ROLE_LABELS, type ClientType, type Client, type BusinessRole } from "@/types/database";
 
@@ -92,6 +93,7 @@ function buildPayload(form: typeof emptyForm) {
 }
 
 export function ClientFormDialog({ onCreated, onUpdated, trigger, externalOpen, onOpenChange, editClient, initialData }: ClientFormDialogProps) {
+  const { lookupNip, loading: gusLoading } = useGusLookup();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
   const setOpen = (v: boolean) => {
@@ -231,10 +233,31 @@ export function ClientFormDialog({ onCreated, onUpdated, trigger, externalOpen, 
                     <Label className="text-xs text-muted-foreground">Nazwa firmy *</Label>
                     <Input value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} className="h-10" required />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-[1fr_auto] gap-4">
                     <div className="space-y-1.5">
                       <Label className="text-xs text-muted-foreground">NIP</Label>
-                      <Input value={form.nip} onChange={(e) => setForm({ ...form, nip: e.target.value })} placeholder="000-000-00-00" className="h-10 font-mono" />
+                      <div className="flex gap-2">
+                        <Input value={form.nip} onChange={(e) => setForm({ ...form, nip: e.target.value })} placeholder="0000000000" className="h-10 font-mono flex-1" />
+                        <Button type="button" variant="outline" size="sm" className="h-10 whitespace-nowrap" disabled={gusLoading || !form.nip}
+                          onClick={async () => {
+                            const data = await lookupNip(form.nip);
+                            if (data) setForm(prev => ({
+                              ...prev,
+                              company_name: data.company_name || prev.company_name,
+                              nip: data.nip,
+                              regon: data.regon || prev.regon,
+                              address_street: data.street || prev.address_street,
+                              address_building: data.building || prev.address_building,
+                              address_local: data.local || prev.address_local,
+                              address_postal_code: data.postal_code || prev.address_postal_code,
+                              address_city: data.city || prev.address_city,
+                              address_country: data.country || prev.address_country,
+                            }));
+                          }}>
+                          {gusLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe className="h-3.5 w-3.5" />}
+                          <span className="ml-1.5">Pobierz z GUS</span>
+                        </Button>
+                      </div>
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-xs text-muted-foreground">REGON</Label>

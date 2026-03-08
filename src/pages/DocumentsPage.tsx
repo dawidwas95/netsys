@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useGusLookup } from "@/hooks/useGusLookup";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +27,7 @@ import {
 import {
   Plus, Search, FileText, ArrowDownCircle, ArrowUpCircle, Pencil, Trash2, Eye,
   DollarSign, ShoppingCart, Receipt, FileCheck, FileMinus2, CalendarDays,
-  Building2, MapPin, Mail, Phone as PhoneIcon, Hash, Paperclip, ScanLine,
+  Building2, MapPin, Mail, Phone as PhoneIcon, Hash, Paperclip, ScanLine, Globe, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { SearchableSelect } from "@/components/SearchableSelect";
@@ -113,8 +114,24 @@ interface Document {
   client_id: string | null;
   contractor_name: string | null;
   contractor_nip: string | null;
+  contractor_street: string | null;
+  contractor_building: string | null;
+  contractor_local: string | null;
+  contractor_postal_code: string | null;
+  contractor_city: string | null;
+  contractor_country: string | null;
+  contractor_email: string | null;
+  contractor_phone: string | null;
   buyer_name: string | null;
   buyer_nip: string | null;
+  buyer_street: string | null;
+  buyer_building: string | null;
+  buyer_local: string | null;
+  buyer_postal_code: string | null;
+  buyer_city: string | null;
+  buyer_country: string | null;
+  buyer_email: string | null;
+  buyer_phone: string | null;
   issue_date: string;
   sale_date: string | null;
   due_date: string | null;
@@ -154,8 +171,24 @@ const emptyForm = {
   client_id: "",
   contractor_name: "",
   contractor_nip: "",
+  contractor_street: "",
+  contractor_building: "",
+  contractor_local: "",
+  contractor_postal_code: "",
+  contractor_city: "",
+  contractor_country: "Polska",
+  contractor_email: "",
+  contractor_phone: "",
   buyer_name: "",
   buyer_nip: "",
+  buyer_street: "",
+  buyer_building: "",
+  buyer_local: "",
+  buyer_postal_code: "",
+  buyer_city: "",
+  buyer_country: "Polska",
+  buyer_email: "",
+  buyer_phone: "",
   issue_date: new Date().toISOString().split("T")[0],
   sale_date: "",
   due_date: "",
@@ -182,6 +215,7 @@ function formatCurrency(v: number) {
 
 export default function DocumentsPage() {
   const { user } = useAuth();
+  const { lookupNip, loading: gusLoading } = useGusLookup();
   const qc = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
   const [typePickerOpen, setTypePickerOpen] = useState(false);
@@ -221,7 +255,7 @@ export default function DocumentsPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("clients")
-        .select("id, display_name, company_name, first_name, last_name, nip, business_role, address_city, address_street, address_building, address_local, address_postal_code, email, phone")
+        .select("id, display_name, company_name, first_name, last_name, nip, business_role, address_city, address_street, address_building, address_local, address_postal_code, address_country, email, phone")
         .eq("is_active", true)
         .order("display_name");
       return data ?? [];
@@ -291,8 +325,24 @@ export default function DocumentsPage() {
         client_id: values.client_id || null,
         contractor_name: values.contractor_name || null,
         contractor_nip: values.contractor_nip || null,
+        contractor_street: values.contractor_street || null,
+        contractor_building: values.contractor_building || null,
+        contractor_local: values.contractor_local || null,
+        contractor_postal_code: values.contractor_postal_code || null,
+        contractor_city: values.contractor_city || null,
+        contractor_country: values.contractor_country || null,
+        contractor_email: values.contractor_email || null,
+        contractor_phone: values.contractor_phone || null,
         buyer_name: values.buyer_name || null,
         buyer_nip: values.buyer_nip || null,
+        buyer_street: values.buyer_street || null,
+        buyer_building: values.buyer_building || null,
+        buyer_local: values.buyer_local || null,
+        buyer_postal_code: values.buyer_postal_code || null,
+        buyer_city: values.buyer_city || null,
+        buyer_country: values.buyer_country || null,
+        buyer_email: values.buyer_email || null,
+        buyer_phone: values.buyer_phone || null,
         issue_date: values.issue_date,
         sale_date: values.sale_date || null,
         due_date: values.due_date || null,
@@ -472,7 +522,15 @@ export default function DocumentsPage() {
     setForm({
       document_number: doc.document_number, document_type: doc.document_type, direction: doc.direction,
       client_id: doc.client_id ?? "", contractor_name: doc.contractor_name ?? "", contractor_nip: doc.contractor_nip ?? "",
+      contractor_street: doc.contractor_street ?? "", contractor_building: doc.contractor_building ?? "",
+      contractor_local: doc.contractor_local ?? "", contractor_postal_code: doc.contractor_postal_code ?? "",
+      contractor_city: doc.contractor_city ?? "", contractor_country: doc.contractor_country ?? "Polska",
+      contractor_email: doc.contractor_email ?? "", contractor_phone: doc.contractor_phone ?? "",
       buyer_name: doc.buyer_name ?? "", buyer_nip: doc.buyer_nip ?? "",
+      buyer_street: doc.buyer_street ?? "", buyer_building: doc.buyer_building ?? "",
+      buyer_local: doc.buyer_local ?? "", buyer_postal_code: doc.buyer_postal_code ?? "",
+      buyer_city: doc.buyer_city ?? "", buyer_country: doc.buyer_country ?? "Polska",
+      buyer_email: doc.buyer_email ?? "", buyer_phone: doc.buyer_phone ?? "",
       issue_date: doc.issue_date, sale_date: doc.sale_date ?? "", due_date: doc.due_date ?? "",
       received_date: doc.received_date ?? "", net_amount: doc.net_amount.toString(), vat_rate: doc.vat_rate.toString(),
       payment_status: doc.payment_status, payment_method: doc.payment_method ?? "", paid_amount: doc.paid_amount.toString(),
@@ -491,11 +549,19 @@ export default function DocumentsPage() {
   }
 
   function onClientSelect(clientId: string) {
-    const client = clients.find((c) => c.id === clientId);
+    const client = clients.find((c: any) => c.id === clientId);
     setForm({
       ...form, client_id: clientId,
       contractor_name: client ? (client.display_name || client.company_name || [client.first_name, client.last_name].filter(Boolean).join(" ")) : "",
       contractor_nip: client?.nip ?? "",
+      contractor_street: client?.address_street ?? "",
+      contractor_building: client?.address_building ?? "",
+      contractor_local: client?.address_local ?? "",
+      contractor_postal_code: client?.address_postal_code ?? "",
+      contractor_city: client?.address_city ?? "",
+      contractor_country: client?.address_country ?? "Polska",
+      contractor_email: client?.email ?? "",
+      contractor_phone: client?.phone ?? "",
     });
   }
 
@@ -1102,7 +1168,7 @@ export default function DocumentsPage() {
                                 )}
                               </div>
                             </div>
-                            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setForm({ ...form, client_id: "", contractor_name: "", contractor_nip: "" })}>
+                            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setForm({ ...form, client_id: "", contractor_name: "", contractor_nip: "", contractor_street: "", contractor_building: "", contractor_local: "", contractor_postal_code: "", contractor_city: "", contractor_country: "Polska", contractor_email: "", contractor_phone: "" })}>
                               Zmień
                             </Button>
                           </div>
@@ -1136,14 +1202,69 @@ export default function DocumentsPage() {
 
                       {/* Manual override fields */}
                       {!selectedClient && (
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-muted-foreground">Nazwa kontrahenta</Label>
-                            <Input value={form.contractor_name} onChange={e => setForm({ ...form, contractor_name: e.target.value })} className="h-10" />
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">Nazwa kontrahenta</Label>
+                              <Input value={form.contractor_name} onChange={e => setForm({ ...form, contractor_name: e.target.value })} className="h-10" />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">NIP</Label>
+                              <div className="flex gap-2">
+                                <Input value={form.contractor_nip} onChange={e => setForm({ ...form, contractor_nip: e.target.value })} placeholder="0000000000" className="h-10 font-mono flex-1" />
+                                <Button type="button" variant="outline" size="sm" className="h-10 whitespace-nowrap" disabled={gusLoading || !form.contractor_nip}
+                                  onClick={async () => {
+                                    const data = await lookupNip(form.contractor_nip);
+                                    if (data) setForm(prev => ({
+                                      ...prev, contractor_name: data.company_name || prev.contractor_name,
+                                      contractor_nip: data.nip, contractor_street: data.street, contractor_building: data.building,
+                                      contractor_local: data.local, contractor_postal_code: data.postal_code,
+                                      contractor_city: data.city, contractor_country: data.country,
+                                    }));
+                                  }}>
+                                  {gusLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe className="h-3.5 w-3.5" />}
+                                  <span className="ml-1.5 hidden sm:inline">GUS</span>
+                                </Button>
+                              </div>
+                            </div>
                           </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-muted-foreground">NIP</Label>
-                            <Input value={form.contractor_nip} onChange={e => setForm({ ...form, contractor_nip: e.target.value })} placeholder="000-000-00-00" className="h-10 font-mono" />
+                          <div className="grid grid-cols-[1fr_90px_70px] gap-3">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">Ulica</Label>
+                              <Input value={form.contractor_street} onChange={e => setForm({ ...form, contractor_street: e.target.value })} className="h-9 text-sm" />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">Nr bud.</Label>
+                              <Input value={form.contractor_building} onChange={e => setForm({ ...form, contractor_building: e.target.value })} className="h-9 text-sm" />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">Lokal</Label>
+                              <Input value={form.contractor_local} onChange={e => setForm({ ...form, contractor_local: e.target.value })} className="h-9 text-sm" />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-[100px_1fr_1fr] gap-3">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">Kod</Label>
+                              <Input value={form.contractor_postal_code} onChange={e => setForm({ ...form, contractor_postal_code: e.target.value })} placeholder="00-000" className="h-9 text-sm font-mono" />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">Miasto</Label>
+                              <Input value={form.contractor_city} onChange={e => setForm({ ...form, contractor_city: e.target.value })} className="h-9 text-sm" />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">Kraj</Label>
+                              <Input value={form.contractor_country} onChange={e => setForm({ ...form, contractor_country: e.target.value })} className="h-9 text-sm" />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">E-mail</Label>
+                              <Input type="email" value={form.contractor_email} onChange={e => setForm({ ...form, contractor_email: e.target.value })} className="h-9 text-sm" />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">Telefon</Label>
+                              <Input value={form.contractor_phone} onChange={e => setForm({ ...form, contractor_phone: e.target.value })} className="h-9 text-sm" />
+                            </div>
                           </div>
                         </div>
                       )}
@@ -1157,18 +1278,73 @@ export default function DocumentsPage() {
                       <Building2 className="h-4 w-4 text-muted-foreground" />
                       Nabywca
                     </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs text-muted-foreground">Nazwa nabywcy</Label>
-                        <Input value={form.buyer_name} onChange={e => setForm({ ...form, buyer_name: e.target.value })} placeholder="np. W3-Support" className="h-10" />
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Nazwa nabywcy</Label>
+                          <Input value={form.buyer_name} onChange={e => setForm({ ...form, buyer_name: e.target.value })} placeholder="np. W3-Support" className="h-10" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">NIP nabywcy</Label>
+                          <div className="flex gap-2">
+                            <Input value={form.buyer_nip} onChange={e => setForm({ ...form, buyer_nip: e.target.value })} placeholder="0000000000" className="h-10 font-mono flex-1" />
+                            <Button type="button" variant="outline" size="sm" className="h-10 whitespace-nowrap" disabled={gusLoading || !form.buyer_nip}
+                              onClick={async () => {
+                                const data = await lookupNip(form.buyer_nip);
+                                if (data) setForm(prev => ({
+                                  ...prev, buyer_name: data.company_name || prev.buyer_name,
+                                  buyer_nip: data.nip, buyer_street: data.street, buyer_building: data.building,
+                                  buyer_local: data.local, buyer_postal_code: data.postal_code,
+                                  buyer_city: data.city, buyer_country: data.country,
+                                }));
+                              }}>
+                              {gusLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe className="h-3.5 w-3.5" />}
+                              <span className="ml-1.5 hidden sm:inline">GUS</span>
+                            </Button>
+                          </div>
+                        </div>
                       </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs text-muted-foreground">NIP nabywcy</Label>
-                        <Input value={form.buyer_nip} onChange={e => setForm({ ...form, buyer_nip: e.target.value })} placeholder="000-000-00-00" className="h-10 font-mono" />
+                      <div className="grid grid-cols-[1fr_90px_70px] gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Ulica</Label>
+                          <Input value={form.buyer_street} onChange={e => setForm({ ...form, buyer_street: e.target.value })} className="h-9 text-sm" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Nr bud.</Label>
+                          <Input value={form.buyer_building} onChange={e => setForm({ ...form, buyer_building: e.target.value })} className="h-9 text-sm" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Lokal</Label>
+                          <Input value={form.buyer_local} onChange={e => setForm({ ...form, buyer_local: e.target.value })} className="h-9 text-sm" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-[100px_1fr_1fr] gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Kod</Label>
+                          <Input value={form.buyer_postal_code} onChange={e => setForm({ ...form, buyer_postal_code: e.target.value })} placeholder="00-000" className="h-9 text-sm font-mono" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Miasto</Label>
+                          <Input value={form.buyer_city} onChange={e => setForm({ ...form, buyer_city: e.target.value })} className="h-9 text-sm" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Kraj</Label>
+                          <Input value={form.buyer_country} onChange={e => setForm({ ...form, buyer_country: e.target.value })} className="h-9 text-sm" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">E-mail</Label>
+                          <Input type="email" value={form.buyer_email} onChange={e => setForm({ ...form, buyer_email: e.target.value })} className="h-9 text-sm" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Telefon</Label>
+                          <Input value={form.buyer_phone} onChange={e => setForm({ ...form, buyer_phone: e.target.value })} className="h-9 text-sm" />
+                        </div>
                       </div>
                     </div>
                     {companySettings && !form.buyer_name && (
-                      <Button type="button" variant="link" size="sm" className="text-xs mt-1 h-auto p-0"
+                      <Button type="button" variant="link" size="sm" className="text-xs mt-2 h-auto p-0"
                         onClick={() => setForm({ ...form, buyer_name: companySettings.company_name || "", buyer_nip: companySettings.nip || "" })}>
                         Użyj: {companySettings.company_name}
                       </Button>
