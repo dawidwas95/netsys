@@ -280,6 +280,8 @@ export default function DocumentsPage() {
         client_id: values.client_id || null,
         contractor_name: values.contractor_name || null,
         contractor_nip: values.contractor_nip || null,
+        buyer_name: values.buyer_name || null,
+        buyer_nip: values.buyer_nip || null,
         issue_date: values.issue_date,
         sale_date: values.sale_date || null,
         due_date: values.due_date || null,
