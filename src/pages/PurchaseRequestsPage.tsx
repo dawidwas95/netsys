@@ -237,13 +237,11 @@ export default function PurchaseRequestsPage() {
                 filtered.map((r: any) => (
                   <TableRow key={r.id}>
                     <TableCell>
-                      <Select value={r.client_approval} onValueChange={(v) => updateApproval.mutate({ id: r.id, approval: v })}>
-                        <SelectTrigger className="h-7 text-[10px] w-auto min-w-[110px] border-none p-0 gap-1">
-                          <ApprovalBadge status={r.client_approval} />
+                      <Select value={r.status} onValueChange={(v) => handleStatusChange(r, v)}>
+                        <SelectTrigger className="h-7 text-[10px] w-auto min-w-[100px] border-none p-0 gap-1">
+                          <Badge className={`text-[10px] ${STATUS_COLORS[r.status] || ""}`} variant="outline">{STATUS_LABELS[r.status]}</Badge>
                         </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(APPROVAL_LABELS).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}
-                        </SelectContent>
+                        <SelectContent>{ALL_STATUSES.map((s) => (<SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>))}</SelectContent>
                       </Select>
                     </TableCell>
                     <TableCell>
