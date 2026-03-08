@@ -92,6 +92,13 @@ function buildPayload(form: typeof emptyForm) {
   };
 }
 
+function preferExistingBusinessName(existing: string, incoming: string | null, incomingIsPersonalOnly?: boolean) {
+  if (!incoming) return existing;
+  const hasExisting = existing.trim().length > 0;
+  if (hasExisting && incomingIsPersonalOnly) return existing;
+  return incoming;
+}
+
 export function ClientFormDialog({ onCreated, onUpdated, trigger, externalOpen, onOpenChange, editClient, initialData }: ClientFormDialogProps) {
   const { lookupNip, loading: gusLoading } = useGusLookup();
   const [internalOpen, setInternalOpen] = useState(false);
