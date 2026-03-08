@@ -1202,14 +1202,69 @@ export default function DocumentsPage() {
 
                       {/* Manual override fields */}
                       {!selectedClient && (
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-muted-foreground">Nazwa kontrahenta</Label>
-                            <Input value={form.contractor_name} onChange={e => setForm({ ...form, contractor_name: e.target.value })} className="h-10" />
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">Nazwa kontrahenta</Label>
+                              <Input value={form.contractor_name} onChange={e => setForm({ ...form, contractor_name: e.target.value })} className="h-10" />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">NIP</Label>
+                              <div className="flex gap-2">
+                                <Input value={form.contractor_nip} onChange={e => setForm({ ...form, contractor_nip: e.target.value })} placeholder="0000000000" className="h-10 font-mono flex-1" />
+                                <Button type="button" variant="outline" size="sm" className="h-10 whitespace-nowrap" disabled={gusLoading || !form.contractor_nip}
+                                  onClick={async () => {
+                                    const data = await lookupNip(form.contractor_nip);
+                                    if (data) setForm(prev => ({
+                                      ...prev, contractor_name: data.company_name || prev.contractor_name,
+                                      contractor_nip: data.nip, contractor_street: data.street, contractor_building: data.building,
+                                      contractor_local: data.local, contractor_postal_code: data.postal_code,
+                                      contractor_city: data.city, contractor_country: data.country,
+                                    }));
+                                  }}>
+                                  {gusLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe className="h-3.5 w-3.5" />}
+                                  <span className="ml-1.5 hidden sm:inline">GUS</span>
+                                </Button>
+                              </div>
+                            </div>
                           </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-muted-foreground">NIP</Label>
-                            <Input value={form.contractor_nip} onChange={e => setForm({ ...form, contractor_nip: e.target.value })} placeholder="000-000-00-00" className="h-10 font-mono" />
+                          <div className="grid grid-cols-[1fr_90px_70px] gap-3">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">Ulica</Label>
+                              <Input value={form.contractor_street} onChange={e => setForm({ ...form, contractor_street: e.target.value })} className="h-9 text-sm" />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">Nr bud.</Label>
+                              <Input value={form.contractor_building} onChange={e => setForm({ ...form, contractor_building: e.target.value })} className="h-9 text-sm" />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">Lokal</Label>
+                              <Input value={form.contractor_local} onChange={e => setForm({ ...form, contractor_local: e.target.value })} className="h-9 text-sm" />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-[100px_1fr_1fr] gap-3">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">Kod</Label>
+                              <Input value={form.contractor_postal_code} onChange={e => setForm({ ...form, contractor_postal_code: e.target.value })} placeholder="00-000" className="h-9 text-sm font-mono" />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">Miasto</Label>
+                              <Input value={form.contractor_city} onChange={e => setForm({ ...form, contractor_city: e.target.value })} className="h-9 text-sm" />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">Kraj</Label>
+                              <Input value={form.contractor_country} onChange={e => setForm({ ...form, contractor_country: e.target.value })} className="h-9 text-sm" />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">E-mail</Label>
+                              <Input type="email" value={form.contractor_email} onChange={e => setForm({ ...form, contractor_email: e.target.value })} className="h-9 text-sm" />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">Telefon</Label>
+                              <Input value={form.contractor_phone} onChange={e => setForm({ ...form, contractor_phone: e.target.value })} className="h-9 text-sm" />
+                            </div>
                           </div>
                         </div>
                       )}
@@ -1223,18 +1278,73 @@ export default function DocumentsPage() {
                       <Building2 className="h-4 w-4 text-muted-foreground" />
                       Nabywca
                     </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs text-muted-foreground">Nazwa nabywcy</Label>
-                        <Input value={form.buyer_name} onChange={e => setForm({ ...form, buyer_name: e.target.value })} placeholder="np. W3-Support" className="h-10" />
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Nazwa nabywcy</Label>
+                          <Input value={form.buyer_name} onChange={e => setForm({ ...form, buyer_name: e.target.value })} placeholder="np. W3-Support" className="h-10" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">NIP nabywcy</Label>
+                          <div className="flex gap-2">
+                            <Input value={form.buyer_nip} onChange={e => setForm({ ...form, buyer_nip: e.target.value })} placeholder="0000000000" className="h-10 font-mono flex-1" />
+                            <Button type="button" variant="outline" size="sm" className="h-10 whitespace-nowrap" disabled={gusLoading || !form.buyer_nip}
+                              onClick={async () => {
+                                const data = await lookupNip(form.buyer_nip);
+                                if (data) setForm(prev => ({
+                                  ...prev, buyer_name: data.company_name || prev.buyer_name,
+                                  buyer_nip: data.nip, buyer_street: data.street, buyer_building: data.building,
+                                  buyer_local: data.local, buyer_postal_code: data.postal_code,
+                                  buyer_city: data.city, buyer_country: data.country,
+                                }));
+                              }}>
+                              {gusLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe className="h-3.5 w-3.5" />}
+                              <span className="ml-1.5 hidden sm:inline">GUS</span>
+                            </Button>
+                          </div>
+                        </div>
                       </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs text-muted-foreground">NIP nabywcy</Label>
-                        <Input value={form.buyer_nip} onChange={e => setForm({ ...form, buyer_nip: e.target.value })} placeholder="000-000-00-00" className="h-10 font-mono" />
+                      <div className="grid grid-cols-[1fr_90px_70px] gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Ulica</Label>
+                          <Input value={form.buyer_street} onChange={e => setForm({ ...form, buyer_street: e.target.value })} className="h-9 text-sm" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Nr bud.</Label>
+                          <Input value={form.buyer_building} onChange={e => setForm({ ...form, buyer_building: e.target.value })} className="h-9 text-sm" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Lokal</Label>
+                          <Input value={form.buyer_local} onChange={e => setForm({ ...form, buyer_local: e.target.value })} className="h-9 text-sm" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-[100px_1fr_1fr] gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Kod</Label>
+                          <Input value={form.buyer_postal_code} onChange={e => setForm({ ...form, buyer_postal_code: e.target.value })} placeholder="00-000" className="h-9 text-sm font-mono" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Miasto</Label>
+                          <Input value={form.buyer_city} onChange={e => setForm({ ...form, buyer_city: e.target.value })} className="h-9 text-sm" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Kraj</Label>
+                          <Input value={form.buyer_country} onChange={e => setForm({ ...form, buyer_country: e.target.value })} className="h-9 text-sm" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">E-mail</Label>
+                          <Input type="email" value={form.buyer_email} onChange={e => setForm({ ...form, buyer_email: e.target.value })} className="h-9 text-sm" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Telefon</Label>
+                          <Input value={form.buyer_phone} onChange={e => setForm({ ...form, buyer_phone: e.target.value })} className="h-9 text-sm" />
+                        </div>
                       </div>
                     </div>
                     {companySettings && !form.buyer_name && (
-                      <Button type="button" variant="link" size="sm" className="text-xs mt-1 h-auto p-0"
+                      <Button type="button" variant="link" size="sm" className="text-xs mt-2 h-auto p-0"
                         onClick={() => setForm({ ...form, buyer_name: companySettings.company_name || "", buyer_nip: companySettings.nip || "" })}>
                         Użyj: {companySettings.company_name}
                       </Button>
