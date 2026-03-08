@@ -98,7 +98,7 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
         .select("id, inventory_item_id, quantity")
         .eq("status", "RESERVED");
       if (error) throw error;
-      return (data ?? []) as Reservation[];
+      return (data ?? []) as unknown as Reservation[];
     },
   });
 
