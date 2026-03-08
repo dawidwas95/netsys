@@ -590,6 +590,7 @@ export default function DocumentsPage() {
                       {DOC_TYPE_SHORT[doc.document_type]}
                     </Badge>
                     <span className="font-medium font-mono text-sm">{doc.document_number}</span>
+                    {attachmentCounts[doc.id] && <Paperclip className="h-3 w-3 text-muted-foreground" />}
                   </div>
                   <Badge className={PAYMENT_STATUS_COLORS[doc.payment_status]} variant="secondary">{PAYMENT_STATUS_LABELS[doc.payment_status]}</Badge>
                 </div>
