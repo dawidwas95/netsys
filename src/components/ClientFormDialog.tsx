@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
-import { CLIENT_TYPE_LABELS, type ClientType, type Client } from "@/types/database";
+import { CLIENT_TYPE_LABELS, BUSINESS_ROLE_LABELS, type ClientType, type Client, type BusinessRole } from "@/types/database";
 
 interface ClientFormDialogProps {
   onCreated?: (clientId: string) => void;
