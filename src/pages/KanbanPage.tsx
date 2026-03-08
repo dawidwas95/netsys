@@ -140,6 +140,15 @@ export default function KanbanPage() {
               className="pl-9 w-64"
             />
           </div>
+          <Select value={deptFilter} onValueChange={setDeptFilter}>
+            <SelectTrigger className="w-52"><SelectValue placeholder="Dział serwisu" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Wszystkie działy</SelectItem>
+              {Object.entries(DEPARTMENT_LABELS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{DEPARTMENT_ICONS[k]} {v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Link to="/orders" className="text-sm text-muted-foreground hover:text-primary">
             Widok listy →
           </Link>
