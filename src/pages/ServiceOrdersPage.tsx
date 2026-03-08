@@ -20,6 +20,7 @@ import { Link } from "react-router-dom";
 import { TechnicianBadges, QuickAssignButton } from "@/components/TechnicianAssignment";
 import {
   ORDER_STATUS_LABELS, ORDER_PRIORITY_LABELS, SERVICE_TYPE_LABELS,
+  DEPARTMENT_LABELS, DEPARTMENT_ICONS,
   type OrderStatus, type OrderPriority, type ServiceType,
   type ServiceOrderInsert,
 } from "@/types/database";
