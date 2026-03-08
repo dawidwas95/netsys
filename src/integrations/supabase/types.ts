@@ -2147,6 +2147,8 @@ export type Database = {
         | "READONLY"
         | "TECHNICIAN"
         | "OFFICE"
+        | "KIEROWNIK"
+        | "SERWISANT"
       billing_status: "UNBILLED" | "BILLED" | "CANCELLED"
       cash_source_type: "SERVICE_ORDER" | "MANUAL" | "WITHDRAWAL" | "CORRECTION"
       cash_transaction_type: "IN" | "OUT" | "RESET"
@@ -2362,6 +2364,8 @@ export const Constants = {
         "READONLY",
         "TECHNICIAN",
         "OFFICE",
+        "KIEROWNIK",
+        "SERWISANT",
       ],
       billing_status: ["UNBILLED", "BILLED", "CANCELLED"],
       cash_source_type: ["SERVICE_ORDER", "MANUAL", "WITHDRAWAL", "CORRECTION"],
