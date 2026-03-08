@@ -245,11 +245,11 @@ export default function PurchaseRequestsPage() {
                       </Select>
                     </TableCell>
                     <TableCell>
-                      <Select value={r.status} onValueChange={(v) => handleStatusChange(r, v)}>
+                      <Select value={r.client_approval} onValueChange={(v) => updateApproval.mutate({ id: r.id, approval: v })}>
                         <SelectTrigger className="h-7 text-[10px] w-auto min-w-[100px] border-none p-0 gap-1">
-                          <Badge className={`text-[10px] ${STATUS_COLORS[r.status] || ""}`} variant="outline">{STATUS_LABELS[r.status]}</Badge>
+                          <Badge className={`text-[10px] ${APPROVAL_COLORS[r.client_approval] || ""}`} variant="outline">{APPROVAL_LABELS[r.client_approval] || r.client_approval}</Badge>
                         </SelectTrigger>
-                        <SelectContent>{ALL_STATUSES.map((s) => (<SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>))}</SelectContent>
+                        <SelectContent>{ALL_APPROVALS.map((s) => (<SelectItem key={s} value={s}>{APPROVAL_LABELS[s]}</SelectItem>))}</SelectContent>
                       </Select>
                     </TableCell>
                     <TableCell>
