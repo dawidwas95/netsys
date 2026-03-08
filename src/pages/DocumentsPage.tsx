@@ -524,6 +524,11 @@ export default function DocumentsPage() {
   function handleOcrData(data: OcrExtractedData) {
     const docType = (data.document_type as DocType) || "PURCHASE_INVOICE";
     const cfg = TYPE_CONFIG[docType] || TYPE_CONFIG.OTHER;
+
+    // For purchase invoices: seller = contractor (external party), buyer = our company
+    // For sales invoices: seller = our company, buyer = contractor (external party)
+    const isPurchase = docType === "PURCHASE_INVOICE";
+
     setForm({
       ...emptyForm,
       document_type: docType,
@@ -532,8 +537,12 @@ export default function DocumentsPage() {
       issue_date: data.issue_date || new Date().toISOString().split("T")[0],
       sale_date: data.sale_date || "",
       due_date: data.due_date || "",
-      contractor_name: data.contractor_name || "",
-      contractor_nip: data.contractor_nip || "",
+      // For purchase: contractor = seller, buyer = nabywca
+      // For sales: contractor = buyer, buyer (our company) = seller
+      contractor_name: isPurchase ? (data.seller_name || "") : (data.buyer_name || ""),
+      contractor_nip: isPurchase ? (data.seller_nip || "") : (data.buyer_nip || ""),
+      buyer_name: isPurchase ? (data.buyer_name || "") : (data.seller_name || ""),
+      buyer_nip: isPurchase ? (data.buyer_nip || "") : (data.seller_nip || ""),
       net_amount: data.net_amount != null ? data.net_amount.toString() : "",
       vat_rate: data.net_amount && data.vat_amount
         ? ((data.vat_amount / data.net_amount) * 100).toFixed(0)
@@ -543,9 +552,10 @@ export default function DocumentsPage() {
       paid_amount: "",
     });
 
-    // Match contractor by NIP
-    if (data.contractor_nip) {
-      const match = clients.find((c: any) => c.nip === data.contractor_nip);
+    // Match contractor by NIP (the external party)
+    const contractorNip = isPurchase ? data.seller_nip : data.buyer_nip;
+    if (contractorNip) {
+      const match = clients.find((c: any) => c.nip === contractorNip);
       if (match) {
         setForm(prev => ({
           ...prev,
@@ -554,6 +564,15 @@ export default function DocumentsPage() {
         }));
         toast.info(`Dopasowano kontrahenta: ${match.display_name || match.company_name}`);
       }
+    }
+
+    // If buyer not detected for purchase invoices, prefill from company settings
+    if (isPurchase && !data.buyer_name && companySettings) {
+      setForm(prev => ({
+        ...prev,
+        buyer_name: companySettings.company_name || "",
+        buyer_nip: companySettings.nip || "",
+      }));
     }
 
     // Set line items if available
