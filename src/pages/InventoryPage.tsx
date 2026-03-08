@@ -311,8 +311,8 @@ export default function InventoryPage() {
                       <TableHead>Kompatybilność</TableHead>
                       <TableHead className="text-right">Stan</TableHead>
                       <TableHead className="text-right">Min.</TableHead>
-                      <TableHead className="text-right">Zakup</TableHead>
-                      <TableHead className="text-right">Sprzedaż</TableHead>
+                      <TableHead className="text-right">Zakup brutto</TableHead>
+                      <TableHead className="text-right">Sprzedaż brutto</TableHead>
                       <TableHead>Akcje</TableHead>
                     </TableRow>
                   </TableHeader>
