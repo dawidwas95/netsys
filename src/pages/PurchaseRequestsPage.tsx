@@ -195,7 +195,7 @@ export default function PurchaseRequestsPage() {
     return true;
   });
 
-  const activeCount = requests.filter((r: any) => !["DELIVERED", "CANCELLED"].includes(r.status)).length;
+  const activeCount = requests.filter((r: any) => !["DELIVERED", "INSTALLED", "CANCELLED"].includes(r.status)).length;
   const totalGross = filtered.reduce((sum: number, r: any) => sum + (Number(r.estimated_gross) || 0), 0);
 
   return (
