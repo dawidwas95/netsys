@@ -358,6 +358,23 @@ export default function OrderDetailPage() {
               .update({ status: "CONSUMED", consumed_at: new Date().toISOString() })
               .eq("id", res.id);
           }
+
+          // Auto-create WZ warehouse document
+          const wzItems = (reservations as any[]).map((res: any) => ({
+            inventory_item_id: res.inventory_item_id,
+            quantity: res.quantity,
+            price_net: 0,
+          }));
+          if (wzItems.length > 0) {
+            await createWarehouseDocument({
+              document_type: "WZ",
+              related_order_id: id!,
+              client_id: order?.client_id || null,
+              notes: `Auto z zlecenia ${order?.order_number}`,
+              created_by: user?.id || null,
+              items: wzItems,
+            });
+          }
         }
       }
     },
