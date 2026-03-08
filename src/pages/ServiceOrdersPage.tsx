@@ -249,7 +249,7 @@ export default function ServiceOrdersPage() {
                   {order.order_number}
                 </span>
                 <div className="flex items-center gap-1">
-                  <ScheduleBadge date={(order as any).planned_execution_date} time={(order as any).planned_execution_time} />
+                  <ScheduleBadgeWithAction orderId={order.id} orderNumber={order.order_number} date={(order as any).planned_execution_date} time={(order as any).planned_execution_time} />
                   <OrderStatusBadge status={order.status} />
                 </div>
               </div>
