@@ -60,6 +60,7 @@ const App = () => (
         <Routes>
           <Route path="/auth" element={<AuthPageWrapper />} />
           <Route path="/status" element={<OrderStatusPage />} />
+          <Route path="/service-board-display" element={<ServiceBoardDisplayWrapper />} />
           <Route element={<ProtectedRoutes />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/mobile" element={<MobileHomePage />} />
