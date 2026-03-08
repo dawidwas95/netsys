@@ -287,9 +287,8 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                       <div className="flex-1 overflow-auto border rounded-md">
                         <Table>
                           <TableHeader>
-                            <TableRow>
-                              <TableHead>Nazwa</TableHead>
-                              <TableHead>SKU</TableHead>
+                             <TableRow>
+                              <TableHead>ID / Nazwa</TableHead>
                               <TableHead className="text-right">Stan</TableHead>
                               <TableHead className="text-right">Zakup</TableHead>
                               <TableHead className="text-right">Sprzedaż</TableHead>
@@ -299,12 +298,12 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                           <TableBody>
                             {filteredInventory.length === 0 ? (
                               <TableRow>
-                                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                                   {inventorySearch ? "Brak wyników" : "Brak pozycji magazynowych"}
                                 </TableCell>
                               </TableRow>
                             ) : (
-                              filteredInventory.map((item) => {
+                              filteredInventory.map((item: any) => {
                                 const isLow = item.stock_quantity <= item.minimum_quantity;
                                 const noStock = item.stock_quantity <= 0;
                                 return (
@@ -318,14 +317,15 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                                     onClick={() => !noStock && selectInventoryItem(item)}
                                   >
                                     <TableCell>
+                                      {item.inventory_number && <div className="font-mono text-[10px] text-primary">{item.inventory_number}</div>}
                                       <div className="font-medium text-sm">{item.name}</div>
-                                      {(item.manufacturer || item.model) && (
-                                        <div className="text-xs text-muted-foreground">
-                                          {[item.manufacturer, item.model].filter(Boolean).join(" ")}
-                                        </div>
-                                      )}
+                                      <div className="text-xs text-muted-foreground">
+                                        {[item.manufacturer, item.model].filter(Boolean).join(" ")}
+                                        {(item.compatible_models || []).length > 0 && (
+                                          <span className="ml-1">· {item.compatible_models.slice(0, 2).join(", ")}{item.compatible_models.length > 2 ? "..." : ""}</span>
+                                        )}
+                                      </div>
                                     </TableCell>
-                                    <TableCell className="font-mono text-xs">{item.sku || "—"}</TableCell>
                                     <TableCell className="text-right tabular-nums">
                                       <div className="flex items-center justify-end gap-1">
                                         {isLow && <AlertTriangle className="h-3 w-3 text-amber-400" />}
