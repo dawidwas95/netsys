@@ -25,6 +25,7 @@ import {
 } from "@/types/database";
 import { OrderStatusBadge } from "@/pages/DashboardPage";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Calendar, User, Monitor, AlertTriangle, CheckCircle, UserPlus, Building2 } from "lucide-react";
 import { toast } from "sonner";
