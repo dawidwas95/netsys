@@ -12,6 +12,35 @@ import { Check, Plus, Star, X, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+// Shared helper: fetch technicians for an order with profile names (no FK join needed)
+async function fetchOrderTechnicians(orderId: string) {
+  const { data: rows } = await supabase
+    .from("order_technicians")
+    .select("id, user_id, is_primary")
+    .eq("order_id", orderId);
+
+  if (!rows?.length) return [];
+
+  const userIds = rows.map((r) => r.user_id);
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("user_id, first_name, last_name, email")
+    .in("user_id", userIds);
+
+  const profileMap: Record<string, { first_name: string | null; last_name: string | null; email: string | null }> = {};
+  (profiles ?? []).forEach((p) => { profileMap[p.user_id] = p; });
+
+  return rows.map((t) => {
+    const p = profileMap[t.user_id];
+    return {
+      id: t.id,
+      userId: t.user_id,
+      isPrimary: Boolean(t.is_primary),
+      name: p ? ([p.first_name, p.last_name].filter(Boolean).join(" ") || p.email || "Użytkownik") : "Użytkownik",
+    };
+  });
+}
+
 interface TechnicianAvatarProps {
   name: string;
   isPrimary?: boolean;
@@ -54,31 +83,24 @@ interface TechnicianBadgesProps {
 export function TechnicianBadges({ orderId, compact }: TechnicianBadgesProps) {
   const { data: techs = [] } = useQuery({
     queryKey: ["order-technicians", orderId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("order_technicians")
-        .select("user_id, is_primary, profiles!inner(first_name, last_name, email)")
-        .eq("order_id", orderId) as any;
-      return (data ?? []).map((t: any) => ({
-        userId: t.user_id,
-        isPrimary: t.is_primary,
-        name: [t.profiles?.first_name, t.profiles?.last_name].filter(Boolean).join(" ") || t.profiles?.email || "?",
-      }));
-    },
+    queryFn: () => fetchOrderTechnicians(orderId),
   });
 
-  if (!techs.length) return null;
+  if (!techs.length) {
+    return compact
+      ? <span className="text-xs text-muted-foreground">Nieprzypisany</span>
+      : <span className="text-xs text-muted-foreground">Nieprzypisany</span>;
+  }
 
   const sorted = [...techs].sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0));
 
   if (compact) {
     return (
-      <div className="flex items-center -space-x-1">
-        {sorted.slice(0, 3).map((t) => (
-          <TechnicianAvatar key={t.userId} name={t.name} isPrimary={t.isPrimary} size="sm" />
-        ))}
-        {sorted.length > 3 && (
-          <span className="text-[10px] text-muted-foreground ml-1">+{sorted.length - 3}</span>
+      <div className="flex items-center gap-1.5">
+        <TechnicianAvatar key={sorted[0].userId} name={sorted[0].name} isPrimary={sorted[0].isPrimary} size="sm" />
+        <span className="text-xs truncate max-w-[120px]">{sorted[0].name}</span>
+        {sorted.length > 1 && (
+          <span className="text-[10px] text-muted-foreground">+{sorted.length - 1}</span>
         )}
       </div>
     );
@@ -133,18 +155,7 @@ export function TechnicianAssignment({ orderId, orderNumber }: TechnicianAssignm
 
   const { data: assigned = [] } = useQuery({
     queryKey: ["order-technicians", orderId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("order_technicians")
-        .select("id, user_id, is_primary, profiles(first_name, last_name, email)")
-        .eq("order_id", orderId) as any;
-      return (data ?? []).map((t: any) => ({
-        id: t.id,
-        userId: t.user_id,
-        isPrimary: Boolean(t.is_primary),
-        name: [t.profiles?.first_name, t.profiles?.last_name].filter(Boolean).join(" ") || t.profiles?.email || "Użytkownik",
-      }));
-    },
+    queryFn: () => fetchOrderTechnicians(orderId),
   });
 
   const assignedIds = new Set(assigned.map((a: any) => a.userId));
