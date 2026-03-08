@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
-import { CLIENT_TYPE_LABELS, type ClientType, type Client } from "@/types/database";
+import { CLIENT_TYPE_LABELS, BUSINESS_ROLE_LABELS, type ClientType, type Client, type BusinessRole } from "@/types/database";
 
 interface ClientFormDialogProps {
   onCreated?: (clientId: string) => void;
@@ -28,6 +28,7 @@ interface ClientFormDialogProps {
 
 const emptyForm = {
   client_type: "PRIVATE" as ClientType,
+  business_role: "CUSTOMER" as BusinessRole,
   first_name: "",
   last_name: "",
   company_name: "",
@@ -45,6 +46,7 @@ const emptyForm = {
 function clientToForm(client: Client) {
   return {
     client_type: client.client_type as ClientType,
+    business_role: ((client as any).business_role ?? "CUSTOMER") as BusinessRole,
     first_name: client.first_name ?? "",
     last_name: client.last_name ?? "",
     company_name: client.company_name ?? "",
@@ -64,6 +66,7 @@ function clientToForm(client: Client) {
 function buildPayload(form: typeof emptyForm) {
   return {
     client_type: form.client_type,
+    business_role: form.business_role,
     first_name: form.first_name || null,
     last_name: form.last_name || null,
     company_name: form.company_name || null,
@@ -164,16 +167,29 @@ export function ClientFormDialog({ onCreated, onUpdated, trigger, externalOpen, 
         <DialogTitle>{isEdit ? "Edytuj klienta" : "Nowy klient"}</DialogTitle>
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-1.5">
-          <Label>Typ klienta</Label>
-          <Select value={form.client_type} onValueChange={(v) => setForm({ ...form, client_type: v as ClientType })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {(Object.keys(CLIENT_TYPE_LABELS) as ClientType[]).map((k) => (
-                <SelectItem key={k} value={k}>{CLIENT_TYPE_LABELS[k]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>Typ klienta</Label>
+            <Select value={form.client_type} onValueChange={(v) => setForm({ ...form, client_type: v as ClientType })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.keys(CLIENT_TYPE_LABELS) as ClientType[]).map((k) => (
+                  <SelectItem key={k} value={k}>{CLIENT_TYPE_LABELS[k]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Rola biznesowa</Label>
+            <Select value={form.business_role} onValueChange={(v) => setForm({ ...form, business_role: v as BusinessRole })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.keys(BUSINESS_ROLE_LABELS) as BusinessRole[]).map((k) => (
+                  <SelectItem key={k} value={k}>{BUSINESS_ROLE_LABELS[k]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {form.client_type === "COMPANY" && (

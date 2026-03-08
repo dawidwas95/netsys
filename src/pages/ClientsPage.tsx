@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
@@ -13,19 +16,21 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Search, Phone, Mail, Archive, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { CLIENT_TYPE_LABELS, type Client, type ClientType } from "@/types/database";
+import { CLIENT_TYPE_LABELS, BUSINESS_ROLE_LABELS, type Client, type ClientType, type BusinessRole } from "@/types/database";
 import { Link } from "react-router-dom";
 import { ClientFormDialog } from "@/components/ClientFormDialog";
+import { Badge } from "@/components/ui/badge";
 
 export default function ClientsPage() {
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("customers");
   const [editClient, setEditClient] = useState<Client | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [archiveClient, setArchiveClient] = useState<Client | null>(null);
   const queryClient = useQueryClient();
 
   const { data: clients, isLoading } = useQuery({
-    queryKey: ["clients", search],
+    queryKey: ["clients", search, roleFilter],
     queryFn: async () => {
       let query = supabase
         .from("clients")
@@ -33,6 +38,14 @@ export default function ClientsPage() {
         .eq("is_active", true)
         .eq("is_archived", false)
         .order("created_at", { ascending: false });
+
+      // Filter by business role
+      if (roleFilter === "customers") {
+        query = query.in("business_role", ["CUSTOMER", "CUSTOMER_AND_SUPPLIER"]);
+      } else if (roleFilter === "suppliers") {
+        query = query.in("business_role", ["SUPPLIER", "CUSTOMER_AND_SUPPLIER"]);
+      }
+      // "all" shows everything
 
       if (search) {
         query = query.or(
@@ -67,20 +80,32 @@ export default function ClientsPage() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Klienci</h1>
-          <p className="text-muted-foreground text-sm">{clients?.length ?? 0} klientów</p>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {roleFilter === "suppliers" ? "Dostawcy" : roleFilter === "all" ? "Kontrahenci" : "Klienci"}
+          </h1>
+          <p className="text-muted-foreground text-sm">{clients?.length ?? 0} pozycji</p>
         </div>
         <ClientFormDialog />
       </div>
 
-      <div className="mb-4 relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Szukaj po nazwie, telefonie, NIP..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9 min-h-[44px] max-w-full sm:max-w-sm"
-        />
+      <div className="mb-4 flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Szukaj po nazwie, telefonie, NIP..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 min-h-[44px]"
+          />
+        </div>
+        <Select value={roleFilter} onValueChange={setRoleFilter}>
+          <SelectTrigger className="w-full sm:w-48 min-h-[44px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="customers">Klienci</SelectItem>
+            <SelectItem value="suppliers">Dostawcy</SelectItem>
+            <SelectItem value="all">Wszyscy</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Mobile card view */}

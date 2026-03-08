@@ -162,16 +162,24 @@ export default function DocumentsPage() {
   });
 
   const { data: clients = [] } = useQuery({
-    queryKey: ["clients-select"],
+    queryKey: ["clients-select-with-role"],
     queryFn: async () => {
       const { data } = await supabase
         .from("clients")
-        .select("id, display_name, company_name, first_name, last_name, nip")
+        .select("id, display_name, company_name, first_name, last_name, nip, business_role")
         .eq("is_active", true)
         .order("display_name");
       return data ?? [];
     },
   });
+
+  // For purchase documents, filter to suppliers only
+  const supplierClients = clients.filter((c: any) =>
+    c.business_role === "SUPPLIER" || c.business_role === "CUSTOMER_AND_SUPPLIER"
+  );
+  const customerClients = clients.filter((c: any) =>
+    c.business_role === "CUSTOMER" || c.business_role === "CUSTOMER_AND_SUPPLIER"
+  );
 
   const { data: inventoryItems = [] } = useQuery({
     queryKey: ["inventory-items-select"],
@@ -442,7 +450,9 @@ export default function DocumentsPage() {
     setLineItems(updated);
   }
 
-  const clientOptions = clients.map(c => ({
+  // Use filtered client list based on document direction
+  const relevantClients = form.direction === "EXPENSE" ? supplierClients : customerClients;
+  const clientOptions = relevantClients.map((c: any) => ({
     value: c.id,
     label: c.display_name || c.company_name || [c.first_name, c.last_name].filter(Boolean).join(" ") || "—",
     sublabel: c.nip ? `NIP: ${c.nip}` : undefined,
@@ -937,7 +947,7 @@ export default function DocumentsPage() {
         externalOpen={clientDialogOpen}
         onOpenChange={setClientDialogOpen}
         onCreated={(clientId) => {
-          qc.invalidateQueries({ queryKey: ["clients-select"] });
+          qc.invalidateQueries({ queryKey: ["clients-select-with-role"] });
           // Auto-select after short delay for data to refresh
           setTimeout(() => {
             onClientSelect(clientId);
