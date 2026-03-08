@@ -230,6 +230,14 @@ export default function DocumentsPage() {
 
   const { data: attachmentCounts = {} } = useDocumentAttachmentCounts();
 
+  const { data: companySettings } = useQuery({
+    queryKey: ["company-settings"],
+    queryFn: async () => {
+      const { data } = await supabase.from("company_settings").select("*").limit(1).maybeSingle();
+      return data;
+    },
+  });
+
   const { data: inventoryItems = [] } = useQuery({
     queryKey: ["inventory-items-select"],
     queryFn: async () => {
