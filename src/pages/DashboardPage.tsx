@@ -157,7 +157,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-6">
         {kpis.map((kpi) => (
           <Card key={kpi.label}>
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
