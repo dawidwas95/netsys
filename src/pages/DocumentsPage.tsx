@@ -388,6 +388,21 @@ export default function DocumentsPage() {
         }
       }
 
+      // Upload pending attachment files
+      if (docId && attachmentsRef.current) {
+        const pending = attachmentsRef.current.getPendingFiles();
+        if (pending.length > 0) {
+          uploadPendingFiles(docId, pending, user?.id).then(() => {
+            qc.invalidateQueries({ queryKey: ["document-attachments", docId] });
+            qc.invalidateQueries({ queryKey: ["document-attachment-counts"] });
+            toast.success(`Przesłano ${pending.length} załącznik(ów)`);
+          }).catch(() => {
+            toast.error("Błąd przesyłania załączników");
+          });
+          attachmentsRef.current.clearPending();
+        }
+      }
+
       resetForm();
     },
     onError: (err: any) => toast.error(err?.message || "Błąd zapisu"),
