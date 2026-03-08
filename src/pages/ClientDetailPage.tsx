@@ -458,6 +458,13 @@ export default function ClientDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* Device history dialog */}
+      <DeviceHistoryDialog
+        open={!!historyDevice}
+        onOpenChange={(o) => !o && setHistoryDevice(null)}
+        deviceId={historyDevice?.id ?? ""}
+        deviceName={`${historyDevice?.manufacturer ?? ""} ${historyDevice?.model ?? ""}`.trim() || "Urządzenie"}
+      />
     </div>
   );
 }
