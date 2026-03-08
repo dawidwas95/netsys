@@ -9,6 +9,7 @@ interface OrderQRCodeProps {
   orderNumber: string;
   clientName?: string | null;
   deviceName?: string | null;
+  statusToken?: string | null;
 }
 
 export default function OrderQRCode({ orderId, orderNumber, clientName, deviceName }: OrderQRCodeProps) {
