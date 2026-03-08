@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -9,15 +9,58 @@ import {
   type OrderStatus,
   type ServiceOrderWithRelations,
 } from "@/types/database";
-import { Monitor, Clock, AlertTriangle, Maximize, Minimize } from "lucide-react";
+import { Monitor, Clock, AlertTriangle, Maximize, Minimize, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-const REFRESH_INTERVAL = 12_000; // 12 seconds
+const REFRESH_INTERVAL = 12_000;
+
+// Generate a soft notification beep using Web Audio API
+function playNotificationSound() {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+    osc.frequency.setValueAtTime(880, ctx.currentTime + 0.2);
+
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.5);
+
+    // Play a second gentle tone for a "bell" effect
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.type = "sine";
+    osc2.frequency.setValueAtTime(1320, ctx.currentTime + 0.05);
+    gain2.gain.setValueAtTime(0.08, ctx.currentTime + 0.05);
+    gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+    osc2.start(ctx.currentTime + 0.05);
+    osc2.stop(ctx.currentTime + 0.6);
+  } catch {
+    // Web Audio not available — silent fallback
+  }
+}
 
 export default function ServiceBoardDisplay() {
   const [deptFilter, setDeptFilter] = useState<string>("all");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [now, setNow] = useState(new Date());
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [newOrderIds, setNewOrderIds] = useState<Set<string>>(new Set());
+
+  // Track known order IDs to detect new ones
+  const knownOrderIdsRef = useRef<Set<string> | null>(null);
+  const isFirstLoadRef = useRef(true);
 
   // Clock update
   useEffect(() => {
@@ -32,6 +75,13 @@ export default function ServiceBoardDisplay() {
     return () => document.removeEventListener("fullscreenchange", handler);
   }, []);
 
+  // Clear highlight after 8 seconds
+  useEffect(() => {
+    if (newOrderIds.size === 0) return;
+    const t = setTimeout(() => setNewOrderIds(new Set()), 8000);
+    return () => clearTimeout(t);
+  }, [newOrderIds]);
+
   const toggleFullscreen = () => {
     if (document.fullscreenElement) {
       document.exitFullscreen();
@@ -39,6 +89,38 @@ export default function ServiceBoardDisplay() {
       document.documentElement.requestFullscreen();
     }
   };
+
+  const handleNewOrders = useCallback(
+    (orders: ServiceOrderWithRelations[]) => {
+      const currentIds = new Set(orders.map((o) => o.id));
+
+      if (isFirstLoadRef.current) {
+        // First load — seed known IDs, don't alert
+        knownOrderIdsRef.current = currentIds;
+        isFirstLoadRef.current = false;
+        return;
+      }
+
+      const known = knownOrderIdsRef.current ?? new Set<string>();
+      const freshIds = new Set<string>();
+
+      for (const order of orders) {
+        if (!known.has(order.id) && order.status === "NEW") {
+          freshIds.add(order.id);
+        }
+      }
+
+      if (freshIds.size > 0) {
+        setNewOrderIds(freshIds);
+        if (soundEnabled) {
+          playNotificationSound();
+        }
+      }
+
+      knownOrderIdsRef.current = currentIds;
+    },
+    [soundEnabled],
+  );
 
   const { data: orders = [] } = useQuery({
     queryKey: ["board-display-orders", deptFilter],
@@ -55,7 +137,9 @@ export default function ServiceBoardDisplay() {
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data ?? []) as unknown as ServiceOrderWithRelations[];
+      const result = (data ?? []) as unknown as ServiceOrderWithRelations[];
+      handleNewOrders(result);
+      return result;
     },
     refetchInterval: REFRESH_INTERVAL,
   });
@@ -139,6 +223,23 @@ export default function ServiceBoardDisplay() {
         </div>
 
         <div className="flex items-center gap-4">
+          {/* Sound toggle */}
+          <button
+            onClick={() => setSoundEnabled((v) => !v)}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+              soundEnabled
+                ? "bg-primary/10 text-primary"
+                : "bg-muted text-muted-foreground",
+            )}
+            title={soundEnabled ? "Dźwięk powiadomień: WŁĄCZONY" : "Dźwięk powiadomień: WYŁĄCZONY"}
+          >
+            {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            <span className="hidden sm:inline">
+              {soundEnabled ? "Dźwięk: WŁ" : "Dźwięk: WYŁ"}
+            </span>
+          </button>
+
           <div className="flex items-center gap-2 text-muted-foreground">
             <Clock className="h-5 w-5" />
             <span className="text-lg font-mono tabular-nums">
@@ -179,20 +280,29 @@ export default function ServiceBoardDisplay() {
                 {colOrders.map((order) => {
                   const techs = getTechs(order.id);
                   const device = (order as any).devices;
-                  const client = (order as any).clients;
+                  const isNew = newOrderIds.has(order.id);
 
                   return (
                     <div
                       key={order.id}
-                      className={`rounded-lg bg-background border border-border p-3.5 border-l-4 ${
-                        priorityColors[order.priority] || "border-l-transparent"
-                      } shadow-sm`}
+                      className={cn(
+                        "rounded-lg bg-background border border-border p-3.5 border-l-4 shadow-sm transition-all duration-500",
+                        priorityColors[order.priority] || "border-l-transparent",
+                        isNew && "ring-2 ring-primary animate-pulse",
+                      )}
                     >
-                      {/* Order number + department */}
+                      {/* Order number + priority + NEW badge */}
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-base font-mono font-bold text-primary">
-                          {order.order_number}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-base font-mono font-bold text-primary">
+                            {order.order_number}
+                          </span>
+                          {isNew && (
+                            <span className="text-[10px] font-bold uppercase bg-primary text-primary-foreground px-1.5 py-0.5 rounded">
+                              Nowe!
+                            </span>
+                          )}
+                        </div>
                         {order.priority === "URGENT" && (
                           <AlertTriangle className="h-5 w-5 text-destructive" />
                         )}
@@ -236,7 +346,7 @@ export default function ServiceBoardDisplay() {
                         </div>
                       )}
 
-                      {/* Department icon (when showing all) */}
+                      {/* Department icon */}
                       {deptFilter === "all" && (
                         <div className="mt-2 text-xs text-muted-foreground">
                           {DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] ?? ""}
