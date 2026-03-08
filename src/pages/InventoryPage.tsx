@@ -255,7 +255,7 @@ export default function InventoryPage() {
           <div className="text-2xl font-bold">{activeItems.length}</div>
         </CardContent></Card>
         <Card><CardContent className="pt-4 pb-4">
-          <div className="text-xs text-muted-foreground">Wartość magazynu (netto)</div>
+          <div className="text-xs text-muted-foreground">Wartość magazynu (brutto)</div>
           <div className="text-2xl font-bold">{totalValue.toFixed(2)} zł</div>
         </CardContent></Card>
         <Card><CardContent className="pt-4 pb-4">
