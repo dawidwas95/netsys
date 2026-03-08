@@ -40,7 +40,7 @@ interface PurchaseRequestFormData {
 const emptyForm: PurchaseRequestFormData = {
   item_name: "", quantity: "1", category: "", manufacturer: "", model: "",
   product_url: "", supplier: "", estimated_gross: "", description: "",
-  urgency: "NORMAL", client_approval: "PENDING", status: "NEW",
+  urgency: "NORMAL", status: "NEW",
 };
 
 interface Props {
