@@ -825,8 +825,9 @@ export default function OrderDetailPage() {
           <OrderQRCode
             orderId={order.id}
             orderNumber={order.order_number}
-            clientName={order.clients?.display_name}
-            deviceName={order.devices ? `${order.devices.manufacturer || ""} ${order.devices.model || ""}`.trim() || null : null}
+            clientName={(order.clients as any)?.display_name}
+            deviceName={order.devices ? `${(order.devices as any).manufacturer || ""} ${(order.devices as any).model || ""}`.trim() || null : null}
+            statusToken={(order as any).status_token}
           />
           <FinanceSection formData={currentForm} onChange={handleFieldChange} orderItems={orderItems} />
           <PaymentSection formData={currentForm} onChange={handleFieldChange} />

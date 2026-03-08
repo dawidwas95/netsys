@@ -22,6 +22,7 @@ import DocumentsPage from "@/pages/DocumentsPage";
 import SystemLogsPage from "@/pages/SystemLogsPage";
 import DataManagementPage from "@/pages/DataManagementPage";
 import SettingsPage from "@/pages/SettingsPage";
+import OrderStatusPage from "@/pages/OrderStatusPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<AuthPageWrapper />} />
+          <Route path="/status" element={<OrderStatusPage />} />
           <Route element={<ProtectedRoutes />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/clients" element={<ClientsPage />} />

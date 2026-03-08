@@ -9,13 +9,14 @@ interface OrderQRCodeProps {
   orderNumber: string;
   clientName?: string | null;
   deviceName?: string | null;
+  statusToken?: string | null;
 }
 
-export default function OrderQRCode({ orderId, orderNumber, clientName, deviceName }: OrderQRCodeProps) {
+export default function OrderQRCode({ orderId, orderNumber, clientName, deviceName, statusToken }: OrderQRCodeProps) {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const labelRef = useRef<HTMLDivElement>(null);
 
-  const orderUrl = `${window.location.origin}/orders/${orderId}`;
+  const orderUrl = `${window.location.origin}/status?token=${statusToken ?? orderId}`;
 
   useEffect(() => {
     QRCode.toDataURL(orderUrl, { width: 256, margin: 1, errorCorrectionLevel: "M" })
