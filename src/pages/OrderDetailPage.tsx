@@ -378,6 +378,9 @@ export default function OrderDetailPage() {
           </Button>
           {!isCompleted && (
             <>
+              <Button variant="outline" size="sm" onClick={() => setCancelDialogOpen(true)}>
+                <XCircle className="mr-1 h-4 w-4" /> Anuluj
+              </Button>
               <Button variant="outline" size="sm" onClick={() => setArchiveDialogOpen(true)}>
                 <Archive className="mr-1 h-4 w-4" /> Archiwizuj
               </Button>
@@ -415,6 +418,9 @@ export default function OrderDetailPage() {
               </Dialog>
             </>
           )}
+          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setDeleteDialogOpen(true)}>
+            <Trash2 className="mr-1 h-4 w-4" /> Usuń
+          </Button>
         </div>
       </div>
 
