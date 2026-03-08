@@ -183,6 +183,8 @@ export default function DashboardPage() {
 
       <LowStockAlerts />
 
+      <PurchaseListWidget />
+
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 mb-6">
         <Card>
           <CardHeader><CardTitle className="text-lg">Ostatnie zlecenia</CardTitle></CardHeader>

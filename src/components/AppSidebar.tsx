@@ -9,6 +9,7 @@ import {
   LogOut,
   Search,
   Package,
+  ShoppingCart,
   FileText,
   Wallet,
   BookOpen,
