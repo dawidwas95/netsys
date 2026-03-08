@@ -138,6 +138,9 @@ export default function DevicesPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" title="Historia" onClick={() => setHistoryDevice(device)}>
+                        <History className="h-3.5 w-3.5" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditDevice(device); setEditDialogOpen(true); }}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
