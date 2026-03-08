@@ -414,23 +414,33 @@ function TeamManagement() {
 
       {/* Edit Dialog */}
       <Dialog open={!!editUser} onOpenChange={() => setEditUser(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Edytuj użytkownika</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="space-y-1">
-              <Label>Imię</Label>
-              <Input
-                value={editForm.first_name ?? ""}
-                onChange={(e) => setEditForm((p) => ({ ...p, first_name: e.target.value }))}
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Imię</Label>
+                <Input
+                  value={editForm.first_name ?? ""}
+                  onChange={(e) => setEditForm((p) => ({ ...p, first_name: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Nazwisko</Label>
+                <Input
+                  value={editForm.last_name ?? ""}
+                  onChange={(e) => setEditForm((p) => ({ ...p, last_name: e.target.value }))}
+                />
+              </div>
             </div>
             <div className="space-y-1">
-              <Label>Nazwisko</Label>
+              <Label>E-mail</Label>
               <Input
-                value={editForm.last_name ?? ""}
-                onChange={(e) => setEditForm((p) => ({ ...p, last_name: e.target.value }))}
+                type="email"
+                value={editForm.email ?? ""}
+                onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
               />
             </div>
             <div className="space-y-1">
@@ -440,11 +450,70 @@ function TeamManagement() {
                 onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
               />
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Rola</Label>
+                <Select
+                  value={editForm.role ?? "EMPLOYEE"}
+                  onValueChange={(v) => setEditForm((p) => ({ ...p, role: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROLE_OPTIONS.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Status</Label>
+                <Select
+                  value={editForm.is_active ?? "true"}
+                  onValueChange={(v) => setEditForm((p) => ({ ...p, is_active: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Aktywny</SelectItem>
+                    <SelectItem value="false">Nieaktywny</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditUser(null)}>Anuluj</Button>
             <Button onClick={handleEditSave} disabled={manageUser.isPending}>
               <Save className="mr-1 h-4 w-4" /> Zapisz
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={!!resetPasswordUserId} onOpenChange={() => setResetPasswordUserId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Resetuj hasło użytkownika</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <Label>Nowe hasło</Label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Minimum 6 znaków"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetPasswordUserId(null)}>Anuluj</Button>
+            <Button onClick={handleResetPassword} disabled={resettingPassword || newPassword.length < 6}>
+              <KeyRound className="mr-1 h-4 w-4" /> Ustaw hasło
             </Button>
           </DialogFooter>
         </DialogContent>
