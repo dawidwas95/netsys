@@ -11,18 +11,18 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { ShoppingCart, Search, Package, ExternalLink } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ShoppingCart, Search, Package, ExternalLink, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 const STATUS_LABELS: Record<string, string> = {
-  NEW: "Nowe",
-  TO_ORDER: "Do zamówienia",
-  ORDERED: "Zamówione",
-  DELIVERED: "Dostarczone",
-  CANCELLED: "Anulowane",
+  NEW: "Nowe", TO_ORDER: "Do zamówienia", ORDERED: "Zamówione",
+  DELIVERED: "Dostarczone", CANCELLED: "Anulowane",
 };
-
 const STATUS_COLORS: Record<string, string> = {
   NEW: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
   TO_ORDER: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
@@ -30,32 +30,35 @@ const STATUS_COLORS: Record<string, string> = {
   DELIVERED: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
   CANCELLED: "bg-muted text-muted-foreground",
 };
-
-const URGENCY_LABELS: Record<string, string> = {
-  LOW: "Niski",
-  NORMAL: "Normalny",
-  HIGH: "Wysoki",
-  URGENT: "Pilny",
+const APPROVAL_LABELS: Record<string, string> = {
+  PENDING: "Oczekuje", APPROVED: "Zaakceptowane", REJECTED: "Odrzucone",
 };
-
-const URGENCY_COLORS: Record<string, string> = {
-  URGENT: "text-destructive font-semibold",
-  HIGH: "text-orange-600 font-medium",
-  NORMAL: "",
-  LOW: "text-muted-foreground",
+const APPROVAL_BADGE_CFG: Record<string, { icon: typeof Clock; className: string }> = {
+  PENDING: { icon: Clock, className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300" },
+  APPROVED: { icon: CheckCircle2, className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" },
+  REJECTED: { icon: XCircle, className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" },
 };
-
+const URGENCY_LABELS: Record<string, string> = { LOW: "Niski", NORMAL: "Normalny", HIGH: "Wysoki", URGENT: "Pilny" };
+const URGENCY_COLORS: Record<string, string> = { URGENT: "text-destructive font-semibold", HIGH: "text-orange-600 font-medium", NORMAL: "", LOW: "text-muted-foreground" };
 const ALL_STATUSES = ["NEW", "TO_ORDER", "ORDERED", "DELIVERED", "CANCELLED"];
 
-const formatCurrency = (v: number | null | undefined) =>
-  v && v > 0 ? `${Number(v).toFixed(2)} zł` : null;
+const formatCurrency = (v: number | null | undefined) => v && v > 0 ? `${Number(v).toFixed(2)} zł` : null;
+
+const ApprovalBadge = ({ status }: { status: string }) => {
+  const cfg = APPROVAL_BADGE_CFG[status] || APPROVAL_BADGE_CFG.PENDING;
+  const Icon = cfg.icon;
+  return (
+    <Badge className={`text-[10px] px-1.5 gap-1 ${cfg.className}`} variant="outline">
+      <Icon className="h-3 w-3" />{APPROVAL_LABELS[status] || status}
+    </Badge>
+  );
+};
 
 const ProductLink = ({ url, supplier }: { url?: string | null; supplier?: string | null }) => {
   if (!url) return supplier ? <span className="text-xs text-muted-foreground">{supplier}</span> : <span className="text-muted-foreground">—</span>;
   return (
     <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1 max-w-[160px] truncate">
-      <ExternalLink className="h-3 w-3 shrink-0" />
-      {supplier || "Link"}
+      <ExternalLink className="h-3 w-3 shrink-0" />{supplier || "Link"}
     </a>
   );
 };
@@ -67,6 +70,8 @@ export default function PurchaseRequestsPage() {
   const [statusFilter, setStatusFilter] = useState("ACTIVE");
   const [urgencyFilter, setUrgencyFilter] = useState("ALL");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
+  const [approvalFilter, setApprovalFilter] = useState("ALL");
+  const [confirmDialog, setConfirmDialog] = useState<{ id: string; status: string } | null>(null);
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["purchase-requests-global"],
@@ -83,25 +88,18 @@ export default function PurchaseRequestsPage() {
   const { data: categories = [] } = useQuery({
     queryKey: ["purchase-categories"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("purchase_categories")
-        .select("label")
-        .eq("is_active", true)
-        .order("sort_order");
+      const { data } = await supabase.from("purchase_categories").select("label").eq("is_active", true).order("sort_order");
       return (data ?? []).map((c: any) => c.label);
     },
   });
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase
-        .from("purchase_requests")
-        .update({
-          status: status as any,
-          status_changed_by: user?.id,
-          status_changed_at: new Date().toISOString(),
-        })
-        .eq("id", id);
+      const { error } = await supabase.from("purchase_requests").update({
+        status: status as any,
+        status_changed_by: user?.id,
+        status_changed_at: new Date().toISOString(),
+      }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -112,22 +110,46 @@ export default function PurchaseRequestsPage() {
     onError: () => toast.error("Błąd aktualizacji statusu"),
   });
 
+  const updateApproval = useMutation({
+    mutationFn: async ({ id, approval }: { id: string; approval: string }) => {
+      const { error } = await supabase.from("purchase_requests").update({
+        client_approval: approval as any,
+        client_approval_changed_by: user?.id,
+        client_approval_changed_at: new Date().toISOString(),
+      }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["purchase-requests-global"] });
+      queryClient.invalidateQueries({ queryKey: ["purchase-requests"] });
+      toast.success("Status akceptacji zmieniony");
+    },
+    onError: () => toast.error("Błąd zmiany statusu akceptacji"),
+  });
+
+  const handleStatusChange = (r: any, newStatus: string) => {
+    // Guard: warn if trying to order without client approval
+    if (["TO_ORDER", "ORDERED"].includes(newStatus) && r.client_approval !== "APPROVED") {
+      setConfirmDialog({ id: r.id, status: newStatus });
+      return;
+    }
+    updateStatus.mutate({ id: r.id, status: newStatus });
+  };
+
   const filtered = requests.filter((r: any) => {
     if (statusFilter === "ACTIVE" && ["DELIVERED", "CANCELLED"].includes(r.status)) return false;
     if (statusFilter !== "ACTIVE" && statusFilter !== "ALL" && r.status !== statusFilter) return false;
     if (urgencyFilter !== "ALL" && r.urgency !== urgencyFilter) return false;
     if (categoryFilter !== "ALL" && r.category !== categoryFilter) return false;
+    if (approvalFilter !== "ALL" && r.client_approval !== approvalFilter) return false;
     if (search) {
       const q = search.toLowerCase();
       const orderNum = r.service_orders?.order_number?.toLowerCase() || "";
       const clientName = r.service_orders?.clients?.display_name?.toLowerCase() || "";
       if (
-        !r.item_name.toLowerCase().includes(q) &&
-        !orderNum.includes(q) &&
-        !clientName.includes(q) &&
-        !(r.requested_by_name || "").toLowerCase().includes(q) &&
-        !(r.supplier || "").toLowerCase().includes(q) &&
-        !(r.category || "").toLowerCase().includes(q)
+        !r.item_name.toLowerCase().includes(q) && !orderNum.includes(q) &&
+        !clientName.includes(q) && !(r.requested_by_name || "").toLowerCase().includes(q) &&
+        !(r.supplier || "").toLowerCase().includes(q) && !(r.category || "").toLowerCase().includes(q)
       ) return false;
     }
     return true;
@@ -153,49 +175,39 @@ export default function PurchaseRequestsPage() {
 
       <Card>
         <CardContent className="py-3">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
+          <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+            <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Szukaj po nazwie, zleceniu, kliencie, techniku, dostawcy..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
+              <Input placeholder="Szukaj..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-40">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
+              <SelectTrigger className="w-full sm:w-36"><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="ACTIVE">Aktywne</SelectItem>
                 <SelectItem value="ALL">Wszystkie</SelectItem>
-                {ALL_STATUSES.map((s) => (
-                  <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
-                ))}
+                {ALL_STATUSES.map((s) => (<SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>))}
+              </SelectContent>
+            </Select>
+            <Select value={approvalFilter} onValueChange={setApprovalFilter}>
+              <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="Akceptacja" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Wszystkie</SelectItem>
+                {Object.entries(APPROVAL_LABELS).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}
               </SelectContent>
             </Select>
             <Select value={urgencyFilter} onValueChange={setUrgencyFilter}>
-              <SelectTrigger className="w-full sm:w-36">
-                <SelectValue placeholder="Pilność" />
-              </SelectTrigger>
+              <SelectTrigger className="w-full sm:w-32"><SelectValue placeholder="Pilność" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">Wszystkie</SelectItem>
-                {Object.entries(URGENCY_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
+                {Object.entries(URGENCY_LABELS).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}
               </SelectContent>
             </Select>
             {categories.length > 0 && (
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full sm:w-40">
-                  <SelectValue placeholder="Kategoria" />
-                </SelectTrigger>
+                <SelectTrigger className="w-full sm:w-36"><SelectValue placeholder="Kategoria" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">Wszystkie</SelectItem>
-                  {categories.map((c: string) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
+                  {categories.map((c: string) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
                 </SelectContent>
               </Select>
             )}
@@ -209,6 +221,7 @@ export default function PurchaseRequestsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Akceptacja</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Nazwa części</TableHead>
                 <TableHead className="text-center">Ilość</TableHead>
@@ -225,63 +238,47 @@ export default function PurchaseRequestsPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-8">Ładowanie...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={13} className="text-center text-muted-foreground py-8">Ładowanie...</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-8">Brak zapotrzebowań</TableCell></TableRow>
+                <TableRow><TableCell colSpan={13} className="text-center text-muted-foreground py-8">Brak zapotrzebowań</TableCell></TableRow>
               ) : (
                 filtered.map((r: any) => (
                   <TableRow key={r.id}>
                     <TableCell>
-                      <Badge className={`text-[10px] ${STATUS_COLORS[r.status] || ""}`} variant="outline">
-                        {STATUS_LABELS[r.status]}
-                      </Badge>
+                      <Select value={r.client_approval} onValueChange={(v) => updateApproval.mutate({ id: r.id, approval: v })}>
+                        <SelectTrigger className="h-7 text-[10px] w-auto min-w-[110px] border-none p-0 gap-1">
+                          <ApprovalBadge status={r.client_approval} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(APPROVAL_LABELS).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={`text-[10px] ${STATUS_COLORS[r.status] || ""}`} variant="outline">{STATUS_LABELS[r.status]}</Badge>
                     </TableCell>
                     <TableCell>
                       <div className="font-medium">{r.item_name}</div>
-                      {(r.manufacturer || r.model) && (
-                        <div className="text-xs text-muted-foreground">{[r.manufacturer, r.model].filter(Boolean).join(" · ")}</div>
-                      )}
+                      {(r.manufacturer || r.model) && <div className="text-xs text-muted-foreground">{[r.manufacturer, r.model].filter(Boolean).join(" · ")}</div>}
                       {r.description && <div className="text-xs text-muted-foreground italic truncate max-w-[200px]">{r.description}</div>}
                     </TableCell>
                     <TableCell className="text-center">{r.quantity}</TableCell>
-                    <TableCell>
-                      {r.category ? <span className="text-xs bg-muted px-1.5 py-0.5 rounded">{r.category}</span> : "—"}
-                    </TableCell>
+                    <TableCell>{r.category ? <span className="text-xs bg-muted px-1.5 py-0.5 rounded">{r.category}</span> : "—"}</TableCell>
                     <TableCell>
                       <Link to={`/orders/${r.order_id}`} className="text-primary hover:underline text-xs font-mono flex items-center gap-1">
-                        {r.service_orders?.order_number}
-                        <ExternalLink className="h-3 w-3" />
+                        {r.service_orders?.order_number}<ExternalLink className="h-3 w-3" />
                       </Link>
                     </TableCell>
                     <TableCell className="text-sm">{r.service_orders?.clients?.display_name || "—"}</TableCell>
                     <TableCell className="text-sm">{r.requested_by_name || "—"}</TableCell>
-                    <TableCell>
-                      <span className={`text-xs ${URGENCY_COLORS[r.urgency] || ""}`}>
-                        {URGENCY_LABELS[r.urgency] || r.urgency}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <ProductLink url={r.product_url} supplier={r.supplier} />
-                    </TableCell>
-                    <TableCell className="text-right text-sm font-medium">
-                      {formatCurrency(r.estimated_gross) || "—"}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {new Date(r.created_at).toLocaleDateString("pl-PL")}
-                    </TableCell>
+                    <TableCell><span className={`text-xs ${URGENCY_COLORS[r.urgency] || ""}`}>{URGENCY_LABELS[r.urgency] || r.urgency}</span></TableCell>
+                    <TableCell><ProductLink url={r.product_url} supplier={r.supplier} /></TableCell>
+                    <TableCell className="text-right text-sm font-medium">{formatCurrency(r.estimated_gross) || "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString("pl-PL")}</TableCell>
                     <TableCell className="text-right">
-                      <Select
-                        value={r.status}
-                        onValueChange={(v) => updateStatus.mutate({ id: r.id, status: v })}
-                      >
-                        <SelectTrigger className="h-7 text-xs w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ALL_STATUSES.map((s) => (
-                            <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
-                          ))}
-                        </SelectContent>
+                      <Select value={r.status} onValueChange={(v) => handleStatusChange(r, v)}>
+                        <SelectTrigger className="h-7 text-xs w-32"><SelectValue /></SelectTrigger>
+                        <SelectContent>{ALL_STATUSES.map((s) => (<SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>))}</SelectContent>
                       </Select>
                     </TableCell>
                   </TableRow>
@@ -310,47 +307,32 @@ export default function PurchaseRequestsPage() {
                     </div>
                     <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground ml-5.5 mt-0.5">
                       {r.category && <span className="bg-muted px-1.5 py-0.5 rounded">{r.category}</span>}
-                      {r.manufacturer && <span>{r.manufacturer}</span>}
-                      {formatCurrency(r.estimated_gross) && (
-                        <span className="font-medium text-foreground">{formatCurrency(r.estimated_gross)}</span>
-                      )}
+                      {formatCurrency(r.estimated_gross) && <span className="font-medium text-foreground">{formatCurrency(r.estimated_gross)}</span>}
                     </div>
                   </div>
-                  <Badge className={`text-[10px] shrink-0 ${STATUS_COLORS[r.status] || ""}`} variant="outline">
-                    {STATUS_LABELS[r.status]}
-                  </Badge>
+                  <Badge className={`text-[10px] shrink-0 ${STATUS_COLORS[r.status] || ""}`} variant="outline">{STATUS_LABELS[r.status]}</Badge>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <ApprovalBadge status={r.client_approval} />
+                  <Select value={r.client_approval} onValueChange={(v) => updateApproval.mutate({ id: r.id, approval: v })}>
+                    <SelectTrigger className="h-6 text-[10px] w-auto min-w-[100px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>{Object.entries(APPROVAL_LABELS).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}</SelectContent>
+                  </Select>
                 </div>
                 {r.product_url && (
                   <a href={r.product_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1">
-                    <ExternalLink className="h-3 w-3" />
-                    {r.supplier || "Link do produktu"}
+                    <ExternalLink className="h-3 w-3" />{r.supplier || "Link do produktu"}
                   </a>
                 )}
-                {!r.product_url && r.supplier && (
-                  <div className="text-xs text-muted-foreground">Dostawca: {r.supplier}</div>
-                )}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <Link to={`/orders/${r.order_id}`} className="text-primary hover:underline font-mono">
-                    {r.service_orders?.order_number}
-                  </Link>
+                  <Link to={`/orders/${r.order_id}`} className="text-primary hover:underline font-mono">{r.service_orders?.order_number}</Link>
                   <span>{r.service_orders?.clients?.display_name}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className={`text-xs ${URGENCY_COLORS[r.urgency] || ""}`}>
-                    {URGENCY_LABELS[r.urgency]}
-                  </span>
-                  <Select
-                    value={r.status}
-                    onValueChange={(v) => updateStatus.mutate({ id: r.id, status: v })}
-                  >
-                    <SelectTrigger className="h-7 text-xs w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ALL_STATUSES.map((s) => (
-                        <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
-                      ))}
-                    </SelectContent>
+                  <span className={`text-xs ${URGENCY_COLORS[r.urgency] || ""}`}>{URGENCY_LABELS[r.urgency]}</span>
+                  <Select value={r.status} onValueChange={(v) => handleStatusChange(r, v)}>
+                    <SelectTrigger className="h-7 text-xs w-32"><SelectValue /></SelectTrigger>
+                    <SelectContent>{ALL_STATUSES.map((s) => (<SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
               </CardContent>
@@ -358,6 +340,27 @@ export default function PurchaseRequestsPage() {
           ))
         )}
       </div>
+
+      {/* Approval warning dialog */}
+      <AlertDialog open={!!confirmDialog} onOpenChange={(open) => !open && setConfirmDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Klient nie zaakceptował kosztu</AlertDialogTitle>
+            <AlertDialogDescription>
+              Klient nie zaakceptował jeszcze kosztu tej części. Czy na pewno chcesz zmienić status zamówienia? Zalecamy najpierw uzyskać akceptację klienta.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (confirmDialog) updateStatus.mutate({ id: confirmDialog.id, status: confirmDialog.status });
+              setConfirmDialog(null);
+            }}>
+              Kontynuuj mimo to
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

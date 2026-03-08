@@ -14,17 +14,13 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, ShoppingCart, Package, ExternalLink } from "lucide-react";
+import { Plus, ShoppingCart, Package, ExternalLink, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 const STATUS_LABELS: Record<string, string> = {
-  NEW: "Nowe",
-  TO_ORDER: "Do zamówienia",
-  ORDERED: "Zamówione",
-  DELIVERED: "Dostarczone",
-  CANCELLED: "Anulowane",
+  NEW: "Nowe", TO_ORDER: "Do zamówienia", ORDERED: "Zamówione",
+  DELIVERED: "Dostarczone", CANCELLED: "Anulowane",
 };
-
 const STATUS_COLORS: Record<string, string> = {
   NEW: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
   TO_ORDER: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
@@ -32,17 +28,19 @@ const STATUS_COLORS: Record<string, string> = {
   DELIVERED: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
   CANCELLED: "bg-muted text-muted-foreground",
 };
-
+const APPROVAL_LABELS: Record<string, string> = {
+  PENDING: "Oczekuje na akceptację", APPROVED: "Zaakceptowane", REJECTED: "Odrzucone",
+};
+const APPROVAL_BADGE: Record<string, { icon: typeof Clock; className: string }> = {
+  PENDING: { icon: Clock, className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300" },
+  APPROVED: { icon: CheckCircle2, className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" },
+  REJECTED: { icon: XCircle, className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" },
+};
 const URGENCY_LABELS: Record<string, string> = {
-  LOW: "Niski",
-  NORMAL: "Normalny",
-  HIGH: "Wysoki",
-  URGENT: "Pilny",
+  LOW: "Niski", NORMAL: "Normalny", HIGH: "Wysoki", URGENT: "Pilny",
 };
 
-interface OrderPurchaseRequestsProps {
-  orderId: string;
-}
+interface OrderPurchaseRequestsProps { orderId: string; }
 
 export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
   const { user } = useAuth();
@@ -51,26 +49,16 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
   const [newCatDialogOpen, setNewCatDialogOpen] = useState(false);
   const [newCatLabel, setNewCatLabel] = useState("");
   const [form, setForm] = useState({
-    item_name: "",
-    quantity: "1",
-    category: "",
-    manufacturer: "",
-    model: "",
-    product_url: "",
-    supplier: "",
-    estimated_gross: "",
-    description: "",
-    urgency: "NORMAL",
+    item_name: "", quantity: "1", category: "", manufacturer: "", model: "",
+    product_url: "", supplier: "", estimated_gross: "", description: "", urgency: "NORMAL",
   });
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["purchase-requests", orderId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("purchase_requests")
-        .select("*")
-        .eq("order_id", orderId)
-        .order("created_at", { ascending: false });
+        .from("purchase_requests").select("*")
+        .eq("order_id", orderId).order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -80,10 +68,8 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
     queryKey: ["purchase-categories"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("purchase_categories")
-        .select("*")
-        .eq("is_active", true)
-        .order("sort_order", { ascending: true });
+        .from("purchase_categories").select("*")
+        .eq("is_active", true).order("sort_order", { ascending: true });
       if (error) throw error;
       return data;
     },
@@ -93,11 +79,9 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
     queryKey: ["my-profile", user?.id],
     queryFn: async () => {
       if (!user) return null;
-      const { data } = await supabase
-        .from("profiles")
+      const { data } = await supabase.from("profiles")
         .select("first_name, last_name, full_name")
-        .eq("user_id", user.id)
-        .maybeSingle();
+        .eq("user_id", user.id).maybeSingle();
       return data;
     },
     enabled: !!user,
@@ -117,21 +101,13 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
       const net = gross > 0 ? Math.round((gross / 1.23) * 100) / 100 : 0;
       const vat = gross > 0 ? Math.round((gross - net) * 100) / 100 : 0;
       const { error } = await supabase.from("purchase_requests").insert({
-        order_id: orderId,
-        item_name: form.item_name,
-        quantity: Number(form.quantity) || 1,
-        category: form.category || null,
-        manufacturer: form.manufacturer || null,
-        model: form.model || null,
-        product_url: form.product_url || null,
-        supplier: form.supplier || null,
-        estimated_gross: gross,
-        estimated_net: net,
-        estimated_vat: vat,
-        description: form.description || null,
-        urgency: form.urgency as any,
-        requested_by: user?.id,
-        requested_by_name: name,
+        order_id: orderId, item_name: form.item_name,
+        quantity: Number(form.quantity) || 1, category: form.category || null,
+        manufacturer: form.manufacturer || null, model: form.model || null,
+        product_url: form.product_url || null, supplier: form.supplier || null,
+        estimated_gross: gross, estimated_net: net, estimated_vat: vat,
+        description: form.description || null, urgency: form.urgency as any,
+        requested_by: user?.id, requested_by_name: name,
       });
       if (error) throw error;
     },
@@ -145,13 +121,28 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
     onError: () => toast.error("Nie udało się dodać zapotrzebowania"),
   });
 
+  const updateApproval = useMutation({
+    mutationFn: async ({ id, approval }: { id: string; approval: string }) => {
+      const { error } = await supabase.from("purchase_requests").update({
+        client_approval: approval as any,
+        client_approval_changed_by: user?.id,
+        client_approval_changed_at: new Date().toISOString(),
+      }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["purchase-requests", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["purchase-requests-global"] });
+      toast.success("Status akceptacji zmieniony");
+    },
+    onError: () => toast.error("Błąd zmiany statusu akceptacji"),
+  });
+
   const addCategory = useMutation({
     mutationFn: async () => {
       const name = newCatLabel.toUpperCase().replace(/\s+/g, "_").replace(/[^A-Z0-9_]/g, "");
       const { error } = await supabase.from("purchase_categories").insert({
-        name,
-        label: newCatLabel.trim(),
-        sort_order: 50,
+        name, label: newCatLabel.trim(), sort_order: 50,
       });
       if (error) throw error;
     },
@@ -167,6 +158,17 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
 
   const formatCurrency = (v: number) => v > 0 ? `${v.toFixed(2)} zł` : null;
 
+  const ApprovalBadge = ({ status }: { status: string }) => {
+    const cfg = APPROVAL_BADGE[status] || APPROVAL_BADGE.PENDING;
+    const Icon = cfg.icon;
+    return (
+      <Badge className={`text-[10px] px-1.5 gap-1 ${cfg.className}`} variant="outline">
+        <Icon className="h-3 w-3" />
+        {APPROVAL_LABELS[status] || status}
+      </Badge>
+    );
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -177,33 +179,21 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
           </span>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" variant="outline">
-                <Plus className="mr-1 h-3 w-3" /> Dodaj
-              </Button>
+              <Button size="sm" variant="outline"><Plus className="mr-1 h-3 w-3" /> Dodaj</Button>
             </DialogTrigger>
             <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Nowe zapotrzebowanie</DialogTitle>
-              </DialogHeader>
+              <DialogHeader><DialogTitle>Nowe zapotrzebowanie</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <div>
                   <Label>Nazwa części / produktu *</Label>
                   <Input value={form.item_name} onChange={(e) => setForm({ ...form, item_name: e.target.value })} placeholder="np. Bateria iPhone 12" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>Ilość</Label>
-                    <Input type="number" min="1" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
-                  </div>
-                  <div>
-                    <Label>Pilność</Label>
+                  <div><Label>Ilość</Label><Input type="number" min="1" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} /></div>
+                  <div><Label>Pilność</Label>
                     <Select value={form.urgency} onValueChange={(v) => setForm({ ...form, urgency: v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(URGENCY_LABELS).map(([k, v]) => (
-                          <SelectItem key={k} value={k}>{v}</SelectItem>
-                        ))}
-                      </SelectContent>
+                      <SelectContent>{Object.entries(URGENCY_LABELS).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}</SelectContent>
                     </Select>
                   </div>
                 </div>
@@ -212,15 +202,9 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
                   <div className="flex gap-2">
                     <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
                       <SelectTrigger className="flex-1"><SelectValue placeholder="Wybierz kategorię..." /></SelectTrigger>
-                      <SelectContent>
-                        {categories.map((c: any) => (
-                          <SelectItem key={c.id} value={c.label}>{c.label}</SelectItem>
-                        ))}
-                      </SelectContent>
+                      <SelectContent>{categories.map((c: any) => (<SelectItem key={c.id} value={c.label}>{c.label}</SelectItem>))}</SelectContent>
                     </Select>
-                    <Button type="button" size="icon" variant="outline" className="shrink-0" onClick={() => setNewCatDialogOpen(true)}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
+                    <Button type="button" size="icon" variant="outline" className="shrink-0" onClick={() => setNewCatDialogOpen(true)}><Plus className="h-4 w-4" /></Button>
                   </div>
                 </div>
                 <div>
@@ -228,44 +212,25 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
                   <Input value={form.product_url} onChange={(e) => setForm({ ...form, product_url: e.target.value })} placeholder="https://sklep.pl/produkt" type="url" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>Sklep / Dostawca</Label>
-                    <Input value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} placeholder="np. Allegro, x-kom" />
-                  </div>
-                  <div>
-                    <Label>Koszt brutto (zł)</Label>
-                    <Input type="number" min="0" step="0.01" value={form.estimated_gross} onChange={(e) => setForm({ ...form, estimated_gross: e.target.value })} placeholder="0.00" />
-                  </div>
+                  <div><Label>Sklep / Dostawca</Label><Input value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} placeholder="np. Allegro, x-kom" /></div>
+                  <div><Label>Koszt brutto (zł)</Label><Input type="number" min="0" step="0.01" value={form.estimated_gross} onChange={(e) => setForm({ ...form, estimated_gross: e.target.value })} placeholder="0.00" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>Producent</Label>
-                    <Input value={form.manufacturer} onChange={(e) => setForm({ ...form, manufacturer: e.target.value })} />
-                  </div>
-                  <div>
-                    <Label>Model / kompatybilność</Label>
-                    <Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} />
-                  </div>
+                  <div><Label>Producent</Label><Input value={form.manufacturer} onChange={(e) => setForm({ ...form, manufacturer: e.target.value })} /></div>
+                  <div><Label>Model / kompatybilność</Label><Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} /></div>
                 </div>
-                <div>
-                  <Label>Uwagi</Label>
-                  <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} placeholder="np. najlepiej oryginał lub dobry OEM" />
-                </div>
+                <div><Label>Uwagi</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} placeholder="np. najlepiej oryginał lub dobry OEM" /></div>
                 <Button className="w-full" onClick={() => addRequest.mutate()} disabled={!form.item_name.trim() || addRequest.isPending}>
                   {addRequest.isPending ? "Dodawanie..." : "Dodaj zapotrzebowanie"}
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
-          {/* Add category dialog */}
           <Dialog open={newCatDialogOpen} onOpenChange={setNewCatDialogOpen}>
             <DialogContent className="max-w-xs">
               <DialogHeader><DialogTitle>Nowa kategoria</DialogTitle></DialogHeader>
               <div className="space-y-3">
-                <div>
-                  <Label>Nazwa kategorii</Label>
-                  <Input value={newCatLabel} onChange={(e) => setNewCatLabel(e.target.value)} placeholder="np. Matryca" />
-                </div>
+                <div><Label>Nazwa kategorii</Label><Input value={newCatLabel} onChange={(e) => setNewCatLabel(e.target.value)} placeholder="np. Matryca" /></div>
                 <Button className="w-full" onClick={() => addCategory.mutate()} disabled={!newCatLabel.trim() || addCategory.isPending}>
                   {addCategory.isPending ? "Dodawanie..." : "Dodaj kategorię"}
                 </Button>
@@ -282,34 +247,44 @@ export function OrderPurchaseRequests({ orderId }: OrderPurchaseRequestsProps) {
         ) : (
           <div className="space-y-2">
             {requests.map((r: any) => (
-              <div key={r.id} className="flex items-center justify-between border rounded-md p-2.5 text-sm">
-                <div className="min-w-0 space-y-0.5">
-                  <div className="flex items-center gap-2 flex-wrap">
+              <div key={r.id} className="border rounded-md p-2.5 text-sm space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap min-w-0">
                     <Package className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <span className="font-medium">{r.item_name}</span>
                     <span className="text-muted-foreground">×{r.quantity}</span>
                     {r.urgency === "URGENT" && <Badge variant="destructive" className="text-[10px] px-1.5">Pilne</Badge>}
                     {r.urgency === "HIGH" && <Badge variant="secondary" className="text-[10px] px-1.5 bg-orange-100 text-orange-800">Wysoki</Badge>}
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground ml-5.5">
-                    {r.category && <span className="bg-muted px-1.5 py-0.5 rounded">{r.category}</span>}
-                    {r.manufacturer && <span>{r.manufacturer}</span>}
-                    {r.model && <span>· {r.model}</span>}
-                    {r.estimated_gross > 0 && <span className="font-medium text-foreground">{formatCurrency(r.estimated_gross)}</span>}
-                  </div>
-                  {r.product_url && (
-                    <a href={r.product_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline ml-5.5 flex items-center gap-1">
-                      <ExternalLink className="h-3 w-3" />
-                      {r.supplier || "Link do produktu"}
-                    </a>
-                  )}
-                  {!r.product_url && r.supplier && (
-                    <div className="text-xs text-muted-foreground ml-5.5">{r.supplier}</div>
-                  )}
+                  <Badge className={`shrink-0 text-[10px] ${STATUS_COLORS[r.status] || ""}`} variant="outline">
+                    {STATUS_LABELS[r.status] || r.status}
+                  </Badge>
                 </div>
-                <Badge className={`shrink-0 text-[10px] ${STATUS_COLORS[r.status] || ""}`} variant="outline">
-                  {STATUS_LABELS[r.status] || r.status}
-                </Badge>
+                <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground ml-5.5">
+                  {r.category && <span className="bg-muted px-1.5 py-0.5 rounded">{r.category}</span>}
+                  {r.manufacturer && <span>{r.manufacturer}</span>}
+                  {r.model && <span>· {r.model}</span>}
+                  {r.estimated_gross > 0 && <span className="font-medium text-foreground">{formatCurrency(r.estimated_gross)}</span>}
+                </div>
+                {r.product_url && (
+                  <a href={r.product_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline ml-5.5 flex items-center gap-1">
+                    <ExternalLink className="h-3 w-3" />{r.supplier || "Link do produktu"}
+                  </a>
+                )}
+                {!r.product_url && r.supplier && <div className="text-xs text-muted-foreground ml-5.5">{r.supplier}</div>}
+                {/* Approval row */}
+                <div className="flex items-center justify-between ml-5.5 pt-1 border-t border-border/50">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Akceptacja klienta:</span>
+                    <ApprovalBadge status={r.client_approval} />
+                  </div>
+                  <Select value={r.client_approval} onValueChange={(v) => updateApproval.mutate({ id: r.id, approval: v })}>
+                    <SelectTrigger className="h-6 text-[10px] w-auto min-w-[120px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(APPROVAL_LABELS).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             ))}
           </div>
