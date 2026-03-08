@@ -23,13 +23,14 @@ import { Badge } from "@/components/ui/badge";
 
 export default function ClientsPage() {
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("customers");
   const [editClient, setEditClient] = useState<Client | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [archiveClient, setArchiveClient] = useState<Client | null>(null);
   const queryClient = useQueryClient();
 
   const { data: clients, isLoading } = useQuery({
-    queryKey: ["clients", search],
+    queryKey: ["clients", search, roleFilter],
     queryFn: async () => {
       let query = supabase
         .from("clients")
@@ -37,6 +38,14 @@ export default function ClientsPage() {
         .eq("is_active", true)
         .eq("is_archived", false)
         .order("created_at", { ascending: false });
+
+      // Filter by business role
+      if (roleFilter === "customers") {
+        query = query.in("business_role", ["CUSTOMER", "CUSTOMER_AND_SUPPLIER"]);
+      } else if (roleFilter === "suppliers") {
+        query = query.in("business_role", ["SUPPLIER", "CUSTOMER_AND_SUPPLIER"]);
+      }
+      // "all" shows everything
 
       if (search) {
         query = query.or(
