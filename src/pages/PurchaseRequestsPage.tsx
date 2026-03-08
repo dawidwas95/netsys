@@ -299,6 +299,10 @@ export default function PurchaseRequestsPage() {
                         {r.service_orders?.order_number}<ExternalLink className="h-3 w-3" />
                       </Link>
                     </TableCell>
+                    <TableCell className="text-xs">
+                      {r.service_orders?.service_type === "COMPUTER_SERVICE" ? "💻" : r.service_orders?.service_type === "PHONE_SERVICE" ? "📱" : ""}{" "}
+                      {r.service_orders?.service_type === "COMPUTER_SERVICE" ? "Komputery" : r.service_orders?.service_type === "PHONE_SERVICE" ? "Telefony" : "—"}
+                    </TableCell>
                     <TableCell className="text-sm">{r.service_orders?.clients?.display_name || "—"}</TableCell>
                     <TableCell className="text-sm">{r.requested_by_name || "—"}</TableCell>
                     <TableCell><span className={`text-xs ${URGENCY_COLORS[r.urgency] || ""}`}>{URGENCY_LABELS[r.urgency] || r.urgency}</span></TableCell>
