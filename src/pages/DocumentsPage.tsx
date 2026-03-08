@@ -26,6 +26,7 @@ import {
 import {
   Plus, Search, FileText, ArrowDownCircle, ArrowUpCircle, Pencil, Trash2, Eye,
   DollarSign, ShoppingCart, Receipt, FileCheck, FileMinus2, CalendarDays,
+  Building2, MapPin, Mail, Phone as PhoneIcon, Hash,
 } from "lucide-react";
 import { toast } from "sonner";
 import { SearchableSelect } from "@/components/SearchableSelect";
@@ -838,7 +839,7 @@ export default function DocumentsPage() {
 
             {/* Body: 2-column layout */}
             <div className="flex-1 overflow-y-auto">
-              <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-0">
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-0">
 
                 {/* LEFT: Main form content */}
                 <div className="p-6 space-y-6 border-r border-border">
@@ -904,23 +905,76 @@ export default function DocumentsPage() {
 
                   {/* Section: Contractor */}
                   <div>
-                    <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                      <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
                       {typeConfig.contractorLabel}
                     </h3>
-                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-5">
-                      <div className="space-y-3">
-                        <div className="space-y-1.5">
+                    <div className="space-y-4">
+                      <div className="flex items-end gap-3">
+                        <div className="flex-1 space-y-1.5">
                           <Label className="text-xs text-muted-foreground">{typeConfig.contractorLabel} z bazy</Label>
                           <SearchableSelect
                             options={clientOptions}
                             value={form.client_id}
                             onChange={onClientSelect}
-                            placeholder={`Szukaj ${derivedDirection === "EXPENSE" ? "dostawcy" : "klienta"}...`}
+                            placeholder={`Szukaj po nazwie, NIP, mieście...`}
                             onAddNew={() => setClientDialogOpen(true)}
                             addNewLabel={`+ Dodaj kontrahenta`}
                           />
                         </div>
+                      </div>
+
+                      {/* Contractor detail card */}
+                      {selectedClient ? (
+                        <div className="rounded-lg border-l-4 border-l-primary border border-border bg-muted/20 p-5">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                <Building2 className="h-5 w-5 text-primary" />
+                              </div>
+                              <div>
+                                <p className="font-semibold text-base">{selectedClient.display_name || selectedClient.company_name || [selectedClient.first_name, selectedClient.last_name].filter(Boolean).join(" ")}</p>
+                                {selectedClient.nip && (
+                                  <p className="text-sm text-muted-foreground font-mono flex items-center gap-1.5 mt-0.5">
+                                    <Hash className="h-3 w-3" />NIP: {selectedClient.nip}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setForm({ ...form, client_id: "", contractor_name: "", contractor_nip: "" })}>
+                              Zmień
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                            {getClientAddress(selectedClient) && (
+                              <div className="flex items-start gap-2 text-muted-foreground">
+                                <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                                <span>{getClientAddress(selectedClient)}</span>
+                              </div>
+                            )}
+                            {selectedClient.email && (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Mail className="h-3.5 w-3.5 shrink-0" />
+                                <span>{selectedClient.email}</span>
+                              </div>
+                            )}
+                            {selectedClient.phone && (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <PhoneIcon className="h-3.5 w-3.5 shrink-0" />
+                                <span>{selectedClient.phone}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border border-dashed border-border p-5 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                          <Building2 className="h-6 w-6 opacity-40" />
+                          <p className="text-sm">Wybierz kontrahenta z bazy lub wpisz dane ręcznie</p>
+                        </div>
+                      )}
+
+                      {/* Manual override fields */}
+                      {!selectedClient && (
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1.5">
                             <Label className="text-xs text-muted-foreground">Nazwa kontrahenta</Label>
@@ -930,29 +984,6 @@ export default function DocumentsPage() {
                             <Label className="text-xs text-muted-foreground">NIP</Label>
                             <Input value={form.contractor_nip} onChange={e => setForm({ ...form, contractor_nip: e.target.value })} placeholder="000-000-00-00" className="h-10 font-mono" />
                           </div>
-                        </div>
-                      </div>
-                      {/* Client detail card */}
-                      {selectedClient ? (
-                        <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
-                          <p className="font-semibold text-sm">{selectedClient.display_name || selectedClient.company_name || [selectedClient.first_name, selectedClient.last_name].filter(Boolean).join(" ")}</p>
-                          {selectedClient.nip && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <span className="text-muted-foreground text-xs">NIP</span>
-                              <span className="font-mono text-sm">{selectedClient.nip}</span>
-                            </div>
-                          )}
-                          {getClientAddress(selectedClient) && (
-                            <p className="text-sm text-muted-foreground">{getClientAddress(selectedClient)}</p>
-                          )}
-                          <div className="flex gap-4 text-xs text-muted-foreground pt-1">
-                            {selectedClient.email && <span>{selectedClient.email}</span>}
-                            {selectedClient.phone && <span>{selectedClient.phone}</span>}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="rounded-lg border border-dashed border-border p-4 flex items-center justify-center text-sm text-muted-foreground">
-                          Wybierz kontrahenta z bazy lub wpisz dane ręcznie
                         </div>
                       )}
                     </div>
@@ -1037,10 +1068,11 @@ export default function DocumentsPage() {
 
                   {/* Section: Line Items */}
                   <div>
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-4">
                       <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                         <Receipt className="h-4 w-4 text-muted-foreground" />
                         {typeConfig.itemsLabel}
+                        {hasLineItems && <Badge variant="secondary" className="text-xs ml-1">{lineItems.filter(i => i.name.trim()).length}</Badge>}
                       </h3>
                       <div className="flex items-center gap-2">
                         <Button type="button" variant="outline" size="sm" className="h-8" onClick={() => setLineItems([...lineItems, { ...emptyLineItem, item_type: "SERVICE" }])}>
@@ -1049,21 +1081,24 @@ export default function DocumentsPage() {
                         <Button type="button" variant="outline" size="sm" className="h-8" onClick={() => setLineItems([...lineItems, { ...emptyLineItem, item_type: "PRODUCT" }])}>
                           <Plus className="h-3 w-3 mr-1" /> Towar
                         </Button>
+                        <Button type="button" variant="outline" size="sm" className="h-8" onClick={() => setLineItems([...lineItems, { ...emptyLineItem, item_type: "INTERNAL_COST" }])}>
+                          <Plus className="h-3 w-3 mr-1" /> Koszt
+                        </Button>
                       </div>
                     </div>
                     {/* Items header */}
-                    <div className="hidden sm:grid grid-cols-[1fr_100px_70px_110px_60px_110px_36px] gap-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2 px-1">
+                    <div className="hidden sm:grid grid-cols-[1fr_110px_70px_110px_65px_120px_36px] gap-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2 px-2 pb-2 border-b border-border">
                       <span>Nazwa pozycji</span>
                       <span>Typ</span>
-                      <span>Ilość</span>
-                      <span>Cena brutto</span>
-                      <span>VAT%</span>
-                      <span>Wartość brutto</span>
+                      <span className="text-center">Ilość</span>
+                      <span className="text-right">Cena brutto</span>
+                      <span className="text-center">VAT%</span>
+                      <span className="text-right">Wartość brutto</span>
                       <span></span>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       {lineItems.map((item, idx) => (
-                        <div key={idx} className="grid grid-cols-1 sm:grid-cols-[1fr_100px_70px_110px_60px_110px_36px] gap-2 items-center rounded-md border border-border/50 p-2 sm:p-0 sm:border-0 hover:bg-muted/20 transition-colors">
+                        <div key={idx} className="grid grid-cols-1 sm:grid-cols-[1fr_110px_70px_110px_65px_120px_36px] gap-2 items-center rounded-md border border-border/50 p-2 sm:p-1.5 sm:px-2 sm:border-0 hover:bg-muted/30 transition-colors">
                           <Input value={item.name} onChange={e => updateLineItem(idx, "name", e.target.value)} placeholder="Nazwa pozycji" className="h-9 text-sm" />
                           <Select value={item.item_type} onValueChange={v => updateLineItem(idx, "item_type", v)}>
                             <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
@@ -1073,13 +1108,13 @@ export default function DocumentsPage() {
                               <SelectItem value="INTERNAL_COST">Koszt wewn.</SelectItem>
                             </SelectContent>
                           </Select>
-                          <Input type="number" min="0" step="1" value={item.quantity} placeholder="1" onChange={e => updateLineItem(idx, "quantity", e.target.value)} className="h-9 text-sm tabular-nums" />
+                          <Input type="number" min="0" step="1" value={item.quantity} placeholder="1" onChange={e => updateLineItem(idx, "quantity", e.target.value)} className="h-9 text-sm tabular-nums text-center" />
                           <Input type="number" step="0.01"
                             value={(() => { const net = parseFloat(item.unit_net) || 0; const vat = parseFloat(item.vat_rate) || 23; return net > 0 ? (net * (1 + vat / 100)).toFixed(2) : ""; })()}
                             onChange={e => { const gross = parseFloat(e.target.value) || 0; const vat = parseFloat(item.vat_rate) || 23; updateLineItem(idx, "unit_net", (gross / (1 + vat / 100)).toFixed(2)); }}
-                            placeholder="0.00" className="h-9 text-sm tabular-nums" />
+                            placeholder="0.00" className="h-9 text-sm tabular-nums text-right" />
                           <Input type="number" min="0" max="100" value={item.vat_rate} placeholder="23" onChange={e => updateLineItem(idx, "vat_rate", e.target.value)} className="h-9 text-sm tabular-nums text-center" />
-                          <Input value={formatCurrency((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_net) || 0) * (1 + (parseFloat(item.vat_rate) || 23) / 100))} disabled className="h-9 text-sm bg-muted/50 tabular-nums font-medium" />
+                          <Input value={formatCurrency((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_net) || 0) * (1 + (parseFloat(item.vat_rate) || 23) / 100))} disabled className="h-9 text-sm bg-muted/50 tabular-nums font-medium text-right" />
                           {lineItems.length > 1 ? (
                             <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive" onClick={() => setLineItems(lineItems.filter((_, i) => i !== idx))}><Trash2 className="h-3.5 w-3.5" /></Button>
                           ) : <div />}
@@ -1140,32 +1175,32 @@ export default function DocumentsPage() {
                 </div>
 
                 {/* RIGHT: Summary Panel */}
-                <div className="p-6 bg-muted/20 space-y-5">
+                <div className="p-6 bg-muted/30 space-y-5 lg:sticky lg:top-0">
                   {/* Summary totals */}
-                  <div className="rounded-lg border border-border bg-card p-5 space-y-3">
-                    <h3 className="text-sm font-semibold text-foreground">Podsumowanie</h3>
-                    <div className="space-y-2.5 text-sm">
+                  <div className="rounded-xl border border-border bg-card p-6 space-y-4 shadow-sm">
+                    <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Razem</h3>
+                    <div className="space-y-3 text-sm">
                       <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Netto</span>
-                        <span className="font-mono tabular-nums font-medium">{formatCurrency(hasLineItems ? computedFromItems.net : (parseFloat(form.net_amount) || 0))}</span>
+                        <span className="font-mono tabular-nums font-medium text-base">{formatCurrency(hasLineItems ? computedFromItems.net : (parseFloat(form.net_amount) || 0))}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">VAT</span>
-                        <span className="font-mono tabular-nums">{formatCurrency(hasLineItems ? computedFromItems.vat : ((parseFloat(form.net_amount) || 0) * (parseFloat(form.vat_rate) || 23) / 100))}</span>
+                        <span className="font-mono tabular-nums text-base">{formatCurrency(hasLineItems ? computedFromItems.vat : ((parseFloat(form.net_amount) || 0) * (parseFloat(form.vat_rate) || 23) / 100))}</span>
                       </div>
                       <Separator />
-                      <div className="flex justify-between items-center text-lg">
-                        <span className="font-semibold">Brutto</span>
-                        <span className="font-mono tabular-nums font-bold text-primary">{formatCurrency(hasLineItems ? computedFromItems.gross : ((parseFloat(form.net_amount) || 0) * (1 + (parseFloat(form.vat_rate) || 23) / 100)))}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-bold">Brutto</span>
+                        <span className="font-mono tabular-nums font-bold text-xl text-primary">{formatCurrency(hasLineItems ? computedFromItems.gross : ((parseFloat(form.net_amount) || 0) * (1 + (parseFloat(form.vat_rate) || 23) / 100)))}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Payment status card */}
                   {typeConfig.showPayment && (
-                    <div className="rounded-lg border border-border bg-card p-5 space-y-3">
-                      <h3 className="text-sm font-semibold text-foreground">Płatność</h3>
-                      <div className="space-y-2 text-sm">
+                    <div className="rounded-xl border border-border bg-card p-5 space-y-3 shadow-sm">
+                      <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Płatność</h3>
+                      <div className="space-y-2.5 text-sm">
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Status</span>
                           <Badge className={PAYMENT_STATUS_COLORS[form.payment_status as PaymentStatus]} variant="secondary">{PAYMENT_STATUS_LABELS[form.payment_status as PaymentStatus]}</Badge>
@@ -1173,23 +1208,26 @@ export default function DocumentsPage() {
                         {form.payment_method && (
                           <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">Metoda</span>
-                            <span className="text-sm">{PAYMENT_METHOD_LABELS[form.payment_method as PaymentMethod] || form.payment_method}</span>
+                            <span className="text-sm font-medium">{PAYMENT_METHOD_LABELS[form.payment_method as PaymentMethod] || form.payment_method}</span>
                           </div>
                         )}
-                        {parseFloat(form.paid_amount) > 0 && (
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Zapłacono</span>
-                            <span className="font-mono tabular-nums font-medium">{formatCurrency(parseFloat(form.paid_amount))}</span>
-                          </div>
-                        )}
+                        <Separator />
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Zapłacono</span>
+                          <span className="font-mono tabular-nums font-medium">{formatCurrency(parseFloat(form.paid_amount) || 0)}</span>
+                        </div>
                         {(() => {
                           const grossTotal = hasLineItems ? computedFromItems.gross : ((parseFloat(form.net_amount) || 0) * (1 + (parseFloat(form.vat_rate) || 23) / 100));
                           const paid = parseFloat(form.paid_amount) || 0;
                           const remaining = Math.max(0, grossTotal - paid);
                           return remaining > 0 ? (
-                            <div className="flex justify-between items-center pt-1 border-t border-border">
-                              <span className="text-muted-foreground">Pozostało</span>
-                              <span className="font-mono tabular-nums font-medium text-destructive">{formatCurrency(remaining)}</span>
+                            <div className="flex justify-between items-center rounded-md bg-destructive/10 px-3 py-2">
+                              <span className="text-sm font-medium text-destructive">Pozostało</span>
+                              <span className="font-mono tabular-nums font-bold text-destructive">{formatCurrency(remaining)}</span>
+                            </div>
+                          ) : grossTotal > 0 ? (
+                            <div className="flex justify-between items-center rounded-md bg-primary/10 px-3 py-2">
+                              <span className="text-sm font-medium text-primary">Opłacono w całości</span>
                             </div>
                           ) : null;
                         })()}
@@ -1199,20 +1237,22 @@ export default function DocumentsPage() {
 
                   {/* Items breakdown */}
                   {hasLineItems && (
-                    <div className="rounded-lg border border-border bg-card p-5 space-y-3">
-                      <h3 className="text-sm font-semibold text-foreground">Pozycje ({lineItems.filter(i => i.name.trim()).length})</h3>
-                      <div className="space-y-1.5 text-xs">
+                    <div className="rounded-xl border border-border bg-card p-5 space-y-3 shadow-sm">
+                      <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">
+                        Pozycje <span className="text-muted-foreground font-normal">({lineItems.filter(i => i.name.trim()).length})</span>
+                      </h3>
+                      <div className="space-y-1.5 text-xs max-h-[200px] overflow-y-auto">
                         {lineItems.filter(i => i.name.trim()).map((item, idx) => {
                           const gross = (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_net) || 0) * (1 + (parseFloat(item.vat_rate) || 23) / 100);
                           return (
-                            <div key={idx} className="flex justify-between items-center py-1">
-                              <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                <Badge variant="outline" className="text-[9px] shrink-0 px-1">
-                                  {item.item_type === "PRODUCT" ? "P" : item.item_type === "INTERNAL_COST" ? "K" : "U"}
+                            <div key={idx} className="flex justify-between items-center py-1.5 border-b border-border/50 last:border-0">
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <Badge variant="outline" className="text-[9px] shrink-0 px-1.5 py-0.5">
+                                  {item.item_type === "PRODUCT" ? "MAG" : item.item_type === "INTERNAL_COST" ? "KOSZT" : "USŁ"}
                                 </Badge>
                                 <span className="truncate">{item.name}</span>
                               </div>
-                              <span className="font-mono tabular-nums ml-2 shrink-0">{formatCurrency(gross)}</span>
+                              <span className="font-mono tabular-nums ml-2 shrink-0 font-medium">{formatCurrency(gross)}</span>
                             </div>
                           );
                         })}
@@ -1221,7 +1261,7 @@ export default function DocumentsPage() {
                   )}
 
                   {/* Direction info */}
-                  <div className="rounded-lg border border-border bg-card p-4">
+                  <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
                     <div className="flex items-center gap-2 text-sm">
                       {derivedDirection === "EXPENSE" ? (
                         <ArrowUpCircle className="h-4 w-4 text-destructive" />
@@ -1229,7 +1269,7 @@ export default function DocumentsPage() {
                         <ArrowDownCircle className="h-4 w-4 text-primary" />
                       )}
                       <span className="font-medium">{DIRECTION_LABELS[derivedDirection]}</span>
-                      <span className="text-muted-foreground text-xs">(auto na podstawie typu)</span>
+                      <span className="text-muted-foreground text-xs">(auto)</span>
                     </div>
                   </div>
                 </div>
