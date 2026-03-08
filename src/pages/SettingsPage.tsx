@@ -106,7 +106,7 @@ function TeamManagement() {
         .select("role")
         .eq("user_id", user.id)
         .maybeSingle();
-      return data?.role ?? null;
+      return (data?.role as string) ?? null;
     },
     enabled: !!user,
   });
