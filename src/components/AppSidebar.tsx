@@ -1,4 +1,3 @@
-import logoW3s from "@/assets/logo-w3s.png";
 import {
   LayoutDashboard,
   Users,
@@ -92,7 +91,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         <div className="px-4 py-4 flex items-center gap-2">
-          <img src={logoW3s} alt="W3-Support" className="h-8 w-auto" />
+          <Wrench className="h-8 w-8 text-primary shrink-0" />
           {!collapsed &&
           <h1 className="text-lg font-bold text-sidebar-accent-foreground tracking-tight">
               Serwis
