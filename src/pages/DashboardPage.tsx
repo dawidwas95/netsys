@@ -185,6 +185,8 @@ export default function DashboardPage() {
 
       <LowStockAlerts />
 
+      <TodaysScheduledOrders />
+
       <PurchaseListWidget />
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 mb-6">
