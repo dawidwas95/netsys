@@ -829,9 +829,16 @@ export default function DocumentsPage() {
               <div className="rounded-lg border border-dashed border-border p-4 space-y-3">
                 <p className="text-sm font-medium text-muted-foreground">Kwoty ręczne (jeśli brak pozycji)</p>
                 <div className="grid grid-cols-3 gap-4">
-                  <div><Label>Netto</Label><Input type="number" step="0.01" value={form.net_amount} onChange={e => setForm({ ...form, net_amount: e.target.value })} /></div>
+                  <div>
+                    <Label>Brutto</Label>
+                    <Input type="number" step="0.01"
+                      value={(() => { const net = parseFloat(form.net_amount) || 0; const vat = parseFloat(form.vat_rate) || 23; return net > 0 ? (net * (1 + vat / 100)).toFixed(2) : ""; })()}
+                      onChange={e => { const gross = parseFloat(e.target.value) || 0; const vat = parseFloat(form.vat_rate) || 23; setForm({ ...form, net_amount: (gross / (1 + vat / 100)).toFixed(2) }); }}
+                    />
+                    <p className="text-[10px] text-muted-foreground mt-1 tabular-nums">netto: {(parseFloat(form.net_amount) || 0).toFixed(2)} zł</p>
+                  </div>
                   <div><Label>Stawka VAT (%)</Label><Input type="number" value={form.vat_rate} onChange={e => setForm({ ...form, vat_rate: e.target.value })} /></div>
-                  <div><Label>Brutto</Label><Input value={formatCurrency(computedGross)} disabled className="bg-muted" /></div>
+                  <div><Label>Netto</Label><Input value={formatCurrency(parseFloat(form.net_amount) || 0)} disabled className="bg-muted" /></div>
                 </div>
               </div>
             )}
