@@ -80,20 +80,32 @@ export default function ClientsPage() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Klienci</h1>
-          <p className="text-muted-foreground text-sm">{clients?.length ?? 0} klientów</p>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {roleFilter === "suppliers" ? "Dostawcy" : roleFilter === "all" ? "Kontrahenci" : "Klienci"}
+          </h1>
+          <p className="text-muted-foreground text-sm">{clients?.length ?? 0} pozycji</p>
         </div>
         <ClientFormDialog />
       </div>
 
-      <div className="mb-4 relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Szukaj po nazwie, telefonie, NIP..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9 min-h-[44px] max-w-full sm:max-w-sm"
-        />
+      <div className="mb-4 flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Szukaj po nazwie, telefonie, NIP..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 min-h-[44px]"
+          />
+        </div>
+        <Select value={roleFilter} onValueChange={setRoleFilter}>
+          <SelectTrigger className="w-full sm:w-48 min-h-[44px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="customers">Klienci</SelectItem>
+            <SelectItem value="suppliers">Dostawcy</SelectItem>
+            <SelectItem value="all">Wszyscy</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Mobile card view */}
