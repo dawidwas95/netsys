@@ -20,10 +20,12 @@ interface SearchResult {
 
 export function GlobalSearch() {
   const [open, setOpen] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   // Ctrl+K / Cmd+K shortcut
   useEffect(() => {
