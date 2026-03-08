@@ -197,7 +197,10 @@ export default function ServiceOrdersPage() {
             <Link key={order.id} to={`/orders/${order.id}`} className="mobile-data-card block">
               <div className="mobile-card-header">
                 <span className="font-medium font-mono text-primary">{order.order_number}</span>
-                <OrderStatusBadge status={order.status} />
+                <div className="flex items-center gap-1">
+                  <ScheduleBadge date={(order as any).planned_execution_date} time={(order as any).planned_execution_time} />
+                  <OrderStatusBadge status={order.status} />
+                </div>
               </div>
               <div className="mobile-card-row">
                 <span className="mobile-card-label">Klient</span>
