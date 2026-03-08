@@ -23,18 +23,19 @@ import { PurchaseRequestFormDialog } from "@/components/order/PurchaseRequestFor
 
 const STATUS_LABELS: Record<string, string> = {
   NEW: "Nowe", TO_ORDER: "Do zamówienia", ORDERED: "Zamówione",
-  DELIVERED: "Dostarczone", CANCELLED: "Anulowane",
+  DELIVERED: "Dostarczone", INSTALLED: "Zamontowane", CANCELLED: "Anulowane",
 };
 const STATUS_COLORS: Record<string, string> = {
   NEW: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
   TO_ORDER: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
   ORDERED: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
   DELIVERED: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+  INSTALLED: "bg-primary/10 text-primary",
   CANCELLED: "bg-muted text-muted-foreground",
 };
 const URGENCY_LABELS: Record<string, string> = { LOW: "Niski", NORMAL: "Normalny", HIGH: "Wysoki", URGENT: "Pilny" };
 const URGENCY_COLORS: Record<string, string> = { URGENT: "text-destructive font-semibold", HIGH: "text-orange-600 font-medium", NORMAL: "", LOW: "text-muted-foreground" };
-const ALL_STATUSES = ["NEW", "TO_ORDER", "ORDERED", "DELIVERED", "CANCELLED"];
+const ALL_STATUSES = ["NEW", "TO_ORDER", "ORDERED", "DELIVERED", "INSTALLED", "CANCELLED"];
 const APPROVAL_LABELS: Record<string, string> = { PENDING: "Oczekuje", APPROVED: "Zaakceptowane", REJECTED: "Odrzucone" };
 const APPROVAL_COLORS: Record<string, string> = {
   PENDING: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
@@ -92,17 +93,43 @@ export default function PurchaseRequestsPage() {
   const categories = categoriesRaw.map((c: any) => c.label as string);
 
   const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+    mutationFn: async ({ id, status, orderId, itemName }: { id: string; status: string; orderId?: string; itemName?: string }) => {
       const { error } = await supabase.from("purchase_requests").update({
         status: status as any,
         status_changed_by: user?.id,
         status_changed_at: new Date().toISOString(),
       }).eq("id", id);
       if (error) throw error;
+
+      // When part is DELIVERED, notify assigned technicians
+      if (status === "DELIVERED" && orderId) {
+        const { data: techs } = await supabase
+          .from("order_technicians")
+          .select("user_id")
+          .eq("order_id", orderId);
+
+        const { data: orderData } = await supabase
+          .from("service_orders")
+          .select("order_number")
+          .eq("id", orderId)
+          .single();
+
+        if (techs && techs.length > 0 && orderData && itemName) {
+          const notifications = techs.map((t: any) => ({
+            user_id: t.user_id,
+            title: `📦 Część dostarczona: ${itemName}`,
+            body: `Część "${itemName}" dla zlecenia ${orderData.order_number} została dostarczona i czeka na montaż.`,
+            type: "PART_DELIVERED",
+            related_order_id: orderId,
+          }));
+          await supabase.from("notifications").insert(notifications);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-requests-global"] });
       queryClient.invalidateQueries({ queryKey: ["purchase-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
       toast.success("Status zaktualizowany");
     },
     onError: () => toast.error("Błąd aktualizacji statusu"),
@@ -141,7 +168,7 @@ export default function PurchaseRequestsPage() {
   });
 
   const handleStatusChange = (r: any, newStatus: string) => {
-    updateStatus.mutate({ id: r.id, status: newStatus });
+    updateStatus.mutate({ id: r.id, status: newStatus, orderId: r.order_id, itemName: r.item_name });
   };
 
   const handleEdit = (r: any) => {
@@ -150,7 +177,7 @@ export default function PurchaseRequestsPage() {
   };
 
   const filtered = requests.filter((r: any) => {
-    if (statusFilter === "ACTIVE" && ["DELIVERED", "CANCELLED"].includes(r.status)) return false;
+    if (statusFilter === "ACTIVE" && ["DELIVERED", "INSTALLED", "CANCELLED"].includes(r.status)) return false;
     if (statusFilter !== "ACTIVE" && statusFilter !== "ALL" && r.status !== statusFilter) return false;
     if (urgencyFilter !== "ALL" && r.urgency !== urgencyFilter) return false;
     if (categoryFilter !== "ALL" && r.category !== categoryFilter) return false;
@@ -168,7 +195,7 @@ export default function PurchaseRequestsPage() {
     return true;
   });
 
-  const activeCount = requests.filter((r: any) => !["DELIVERED", "CANCELLED"].includes(r.status)).length;
+  const activeCount = requests.filter((r: any) => !["DELIVERED", "INSTALLED", "CANCELLED"].includes(r.status)).length;
   const totalGross = filtered.reduce((sum: number, r: any) => sum + (Number(r.estimated_gross) || 0), 0);
 
   return (

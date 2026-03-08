@@ -2528,6 +2528,7 @@ export type Database = {
         | "ORDERED"
         | "DELIVERED"
         | "CANCELLED"
+        | "INSTALLED"
       purchase_request_urgency: "LOW" | "NORMAL" | "HIGH" | "URGENT"
       repair_approval_status:
         | "NONE"
@@ -2759,6 +2760,7 @@ export const Constants = {
         "ORDERED",
         "DELIVERED",
         "CANCELLED",
+        "INSTALLED",
       ],
       purchase_request_urgency: ["LOW", "NORMAL", "HIGH", "URGENT"],
       repair_approval_status: [
