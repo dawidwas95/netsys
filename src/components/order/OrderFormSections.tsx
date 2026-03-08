@@ -201,8 +201,8 @@ export function DescriptionSection({ formData, onChange }: { formData: Record<st
           <Label className="text-xs">Opis klienta</Label>
           <Textarea rows={2} value={formData.client_description ?? ""} onChange={(e) => onChange("client_description", e.target.value)} placeholder="Co klient powiedział / jak opisał problem" />
         </div>
+        <AccessoryChecklist value={formData.accessories_received ?? ""} onChange={(v) => onChange("accessories_received", v)} />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="space-y-1"><Label className="text-xs">Akcesoria przekazane</Label><Input value={formData.accessories_received ?? ""} onChange={(e) => onChange("accessories_received", e.target.value)} placeholder="np. ładowarka, torba, kabel" className="h-9" /></div>
           <div className="space-y-1"><Label className="text-xs">Stan wizualny</Label><Input value={formData.visual_condition ?? ""} onChange={(e) => onChange("visual_condition", e.target.value)} placeholder="np. zarysowania, pęknięcia" className="h-9" /></div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
