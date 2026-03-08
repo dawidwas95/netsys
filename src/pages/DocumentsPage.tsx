@@ -352,8 +352,9 @@ export default function DocumentsPage() {
           }
         }
       }
+      return docId;
     },
-    onSuccess: (_data, values) => {
+    onSuccess: (docId, values) => {
       qc.invalidateQueries({ queryKey: ["documents"] });
       qc.invalidateQueries({ queryKey: ["inventory-items"] });
       const docNum = form.document_number || "auto";
