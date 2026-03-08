@@ -337,7 +337,7 @@ import { ORDER_STATUS_LABELS, type OrderStatus } from "@/types/database";
 
 function TodaysScheduledOrders() {
   const { user } = useAuth();
-  const { isAdmin, isManager, isTechnician } = useUserRole();
+  const { isAdmin, isKierownik, isSerwisant } = useUserRole();
 
   const today = new Date().toISOString().split("T")[0];
 
