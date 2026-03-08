@@ -1615,6 +1615,9 @@ export type Database = {
       purchase_requests: {
         Row: {
           category: string | null
+          client_approval: Database["public"]["Enums"]["client_approval_status"]
+          client_approval_changed_at: string | null
+          client_approval_changed_by: string | null
           created_at: string
           description: string | null
           estimated_gross: number | null
@@ -1639,6 +1642,9 @@ export type Database = {
         }
         Insert: {
           category?: string | null
+          client_approval?: Database["public"]["Enums"]["client_approval_status"]
+          client_approval_changed_at?: string | null
+          client_approval_changed_by?: string | null
           created_at?: string
           description?: string | null
           estimated_gross?: number | null
@@ -1663,6 +1669,9 @@ export type Database = {
         }
         Update: {
           category?: string | null
+          client_approval?: Database["public"]["Enums"]["client_approval_status"]
+          client_approval_changed_at?: string | null
+          client_approval_changed_by?: string | null
           created_at?: string
           description?: string | null
           estimated_gross?: number | null
@@ -2126,6 +2135,7 @@ export type Database = {
       billing_status: "UNBILLED" | "BILLED" | "CANCELLED"
       cash_source_type: "SERVICE_ORDER" | "MANUAL" | "WITHDRAWAL" | "CORRECTION"
       cash_transaction_type: "IN" | "OUT" | "RESET"
+      client_approval_status: "PENDING" | "APPROVED" | "REJECTED"
       client_type: "PRIVATE" | "COMPANY"
       device_category:
         | "DESKTOP"
@@ -2336,6 +2346,7 @@ export const Constants = {
       billing_status: ["UNBILLED", "BILLED", "CANCELLED"],
       cash_source_type: ["SERVICE_ORDER", "MANUAL", "WITHDRAWAL", "CORRECTION"],
       cash_transaction_type: ["IN", "OUT", "RESET"],
+      client_approval_status: ["PENDING", "APPROVED", "REJECTED"],
       client_type: ["PRIVATE", "COMPANY"],
       device_category: [
         "DESKTOP",
