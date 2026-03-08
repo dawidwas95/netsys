@@ -68,12 +68,22 @@ interface OrderItem {
   total_purchase_net: number;
   created_at: string;
 }
+const ORDER_DETAIL_TABS = [
+  { value: "edit", label: "Edycja" },
+  { value: "photos", label: "Zdjęcia" },
+  { value: "comments", label: "Komentarze" },
+  { value: "customer-messages", label: "Wiadomości klienta" },
+  { value: "history", label: "Historia" },
+  { value: "documents", label: "Dokumenty" },
+  { value: "signatures", label: "Podpisy" },
+];
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState("edit");
   const [comment, setComment] = useState("");
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
@@ -689,17 +699,35 @@ export default function OrderDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-5">
         {/* LEFT COLUMN */}
         <div className="space-y-5">
-          <Tabs defaultValue="edit">
-            <TabsList className="h-auto flex-wrap gap-1 bg-muted/50 p-1 overflow-x-auto scrollbar-none md:flex-nowrap md:overflow-x-visible">
-              <TabsTrigger value="edit" className="min-h-[36px] text-xs sm:text-sm whitespace-nowrap">Edycja</TabsTrigger>
-              <TabsTrigger value="photos" className="min-h-[36px] text-xs sm:text-sm whitespace-nowrap">Zdjęcia</TabsTrigger>
-              <TabsTrigger value="comments" className="min-h-[36px] text-xs sm:text-sm whitespace-nowrap">Komentarze ({comments?.length ?? 0})</TabsTrigger>
-              <TabsTrigger value="customer-messages" className="min-h-[36px] text-xs sm:text-sm whitespace-nowrap">
-                <MessageSquare className="mr-1 h-3 w-3 shrink-0" />Wiadomości
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            {/* Mobile: dropdown section selector */}
+            <div className="md:hidden">
+              <Select value={activeTab} onValueChange={setActiveTab}>
+                <SelectTrigger className="min-h-[44px] w-full">
+                  <SelectValue>
+                    Sekcja: {ORDER_DETAIL_TABS.find(t => t.value === activeTab)?.label ?? activeTab}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {ORDER_DETAIL_TABS.map(t => (
+                    <SelectItem key={t.value} value={t.value} className="min-h-[40px]">
+                      {t.value === "comments" ? `${t.label} (${comments?.length ?? 0})` : t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Desktop: normal tab bar */}
+            <TabsList className="hidden md:inline-flex">
+              <TabsTrigger value="edit">Edycja</TabsTrigger>
+              <TabsTrigger value="photos">Zdjęcia</TabsTrigger>
+              <TabsTrigger value="comments">Komentarze ({comments?.length ?? 0})</TabsTrigger>
+              <TabsTrigger value="customer-messages">
+                <MessageSquare className="mr-1 h-3 w-3" />Wiadomości klienta
               </TabsTrigger>
-              <TabsTrigger value="history" className="min-h-[36px] text-xs sm:text-sm whitespace-nowrap">Historia</TabsTrigger>
-              <TabsTrigger value="documents" className="min-h-[36px] text-xs sm:text-sm whitespace-nowrap">Dokumenty</TabsTrigger>
-              <TabsTrigger value="signatures" className="min-h-[36px] text-xs sm:text-sm whitespace-nowrap"><PenLine className="mr-1 h-3 w-3 shrink-0" />Podpisy</TabsTrigger>
+              <TabsTrigger value="history">Historia</TabsTrigger>
+              <TabsTrigger value="documents">Dokumenty</TabsTrigger>
+              <TabsTrigger value="signatures"><PenLine className="mr-1 h-3 w-3" />Podpisy</TabsTrigger>
             </TabsList>
 
             <TabsContent value="edit" className="mt-4 space-y-5">
