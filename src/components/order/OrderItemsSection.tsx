@@ -421,14 +421,14 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                           <Input
                             type="number"
                             min="1"
-                            max={selectedInvItem.stock_quantity}
+                            max={availableStock}
                             value={invQuantity}
                             onChange={(e) => setInvQuantity(e.target.value)}
                           />
                           {stockWarning && (
                             <p className="text-xs text-destructive flex items-center gap-1">
                               <AlertTriangle className="h-3 w-3" />
-                              Niewystarczający stan! Dostępne: {selectedInvItem.stock_quantity}
+                              Brak dostępnych sztuk w magazynie. Dostępne: {availableStock}
                             </p>
                           )}
                         </div>
