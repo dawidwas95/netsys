@@ -284,6 +284,23 @@ export default function CashRegisterPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!revertTx} onOpenChange={(open) => { if (!open) setRevertTx(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cofnąć wpis kasowy?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Zamiast usuwania zostanie dodana transakcja korygująca o przeciwnej wartości. To zachowuje pełną historię kasy.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction onClick={() => revertTx && reverseTransaction.mutate(revertTx)}>
+              {reverseTransaction.isPending ? "Korygowanie..." : "Dodaj korektę"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
