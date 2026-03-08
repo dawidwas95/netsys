@@ -63,6 +63,7 @@ interface OrderItem {
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [comment, setComment] = useState("");
@@ -70,6 +71,8 @@ export default function OrderDetailPage() {
   const [newItem, setNewItem] = useState({ name: "", quantity: "1", sale_net: "", purchase_net: "" });
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDirty, setEditDirty] = useState(false);
   const [editForm, setEditForm] = useState<Record<string, any> | null>(null);
 
