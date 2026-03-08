@@ -68,6 +68,7 @@ const App = () => (
             <Route path="/documents" element={<DocumentsPage />} />
             <Route path="/system-logs" element={<SystemLogsPage />} />
             <Route path="/data-management" element={<DataManagementPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
