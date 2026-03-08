@@ -68,12 +68,22 @@ interface OrderItem {
   total_purchase_net: number;
   created_at: string;
 }
+const ORDER_DETAIL_TABS = [
+  { value: "edit", label: "Edycja" },
+  { value: "photos", label: "Zdjęcia" },
+  { value: "comments", label: "Komentarze" },
+  { value: "customer-messages", label: "Wiadomości klienta" },
+  { value: "history", label: "Historia" },
+  { value: "documents", label: "Dokumenty" },
+  { value: "signatures", label: "Podpisy" },
+];
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState("edit");
   const [comment, setComment] = useState("");
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
