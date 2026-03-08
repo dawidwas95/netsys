@@ -594,9 +594,14 @@ export default function DocumentsPage() {
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Rejestr dokumentów</h1>
           <p className="text-muted-foreground text-sm">Faktury zakupowe, sprzedażowe, proformy i korekty</p>
         </div>
-        <Button onClick={() => setTypePickerOpen(true)} className="w-full sm:w-auto min-h-[44px]">
-          <Plus className="mr-2 h-4 w-4" />Dodaj dokument
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button variant="outline" onClick={() => setOcrOpen(true)} className="w-full sm:w-auto min-h-[44px]">
+            <ScanLine className="mr-2 h-4 w-4" />OCR import
+          </Button>
+          <Button onClick={() => setTypePickerOpen(true)} className="w-full sm:w-auto min-h-[44px]">
+            <Plus className="mr-2 h-4 w-4" />Dodaj dokument
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
