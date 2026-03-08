@@ -46,6 +46,12 @@ interface InventoryItem {
   is_active: boolean;
 }
 
+interface Reservation {
+  id: string;
+  inventory_item_id: string;
+  quantity: number;
+}
+
 function formatCurrency(v: number) {
   return new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(v);
 }
