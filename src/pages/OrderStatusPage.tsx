@@ -149,7 +149,15 @@ export default function OrderStatusPage() {
           </Card>
         )}
 
-        {order && <OrderStatusView order={order} onBack={() => setOrder(null)} />}
+        {order && (
+          <OrderStatusView
+            order={order}
+            onBack={() => setOrder(null)}
+            token={token}
+            orderNumber={orderNumber}
+            phone={phone}
+          />
+        )}
       </main>
     </div>
   );
