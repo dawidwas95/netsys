@@ -2419,7 +2419,12 @@ export type Database = {
         | "OTHER"
       intake_channel: "PHONE" | "EMAIL" | "IN_PERSON" | "REMOTE" | "OTHER"
       it_doc_category: "PASSWORD" | "NETWORK" | "LICENSE" | "NOTE"
-      movement_source: "PURCHASE" | "SERVICE_ORDER" | "IT_WORK" | "MANUAL"
+      movement_source:
+        | "PURCHASE"
+        | "SERVICE_ORDER"
+        | "IT_WORK"
+        | "MANUAL"
+        | "DOCUMENT"
       movement_type:
         | "IN"
         | "OUT"
@@ -2641,7 +2646,13 @@ export const Constants = {
       ],
       intake_channel: ["PHONE", "EMAIL", "IN_PERSON", "REMOTE", "OTHER"],
       it_doc_category: ["PASSWORD", "NETWORK", "LICENSE", "NOTE"],
-      movement_source: ["PURCHASE", "SERVICE_ORDER", "IT_WORK", "MANUAL"],
+      movement_source: [
+        "PURCHASE",
+        "SERVICE_ORDER",
+        "IT_WORK",
+        "MANUAL",
+        "DOCUMENT",
+      ],
       movement_type: [
         "IN",
         "OUT",
