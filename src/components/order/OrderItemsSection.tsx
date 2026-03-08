@@ -46,6 +46,12 @@ interface InventoryItem {
   is_active: boolean;
 }
 
+interface Reservation {
+  id: string;
+  inventory_item_id: string;
+  quantity: number;
+}
+
 function formatCurrency(v: number) {
   return new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(v);
 }
@@ -83,6 +89,33 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
     },
   });
 
+  // Fetch all active reservations to compute available stock
+  const { data: allReservations = [] } = useQuery({
+    queryKey: ["inventory-reservations-active"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("inventory_reservations" as any)
+        .select("id, inventory_item_id, quantity")
+        .eq("status", "RESERVED");
+      if (error) throw error;
+      return (data ?? []) as unknown as Reservation[];
+    },
+  });
+
+  // Map: inventory_item_id -> total reserved quantity
+  const reservedMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    allReservations.forEach((r) => {
+      map[r.inventory_item_id] = (map[r.inventory_item_id] || 0) + Number(r.quantity);
+    });
+    return map;
+  }, [allReservations]);
+
+  // Helper: get available stock for an item
+  const getAvailableStock = (item: InventoryItem) => {
+    return Number(item.stock_quantity) - (reservedMap[item.id] || 0);
+  };
+
   const filteredInventory = useMemo(() => {
     if (!inventorySearch) return inventoryItems;
     const q = inventorySearch.toLowerCase();
@@ -113,7 +146,7 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
     setDialogTab("inventory");
   }
 
-  // ── Add inventory item ──
+  // ── Add inventory item (reservation-based) ──
   const addInventoryItem = useMutation({
     mutationFn: async () => {
       if (!selectedInvItem) throw new Error("Nie wybrano pozycji");
@@ -121,12 +154,14 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
       const saleNet = parseFloat(invSaleNet) || 0;
       const purchaseNet = selectedInvItem.purchase_net;
 
-      // Check stock
-      if (qty > selectedInvItem.stock_quantity) {
-        throw new Error(`Niewystarczający stan magazynowy. Dostępne: ${selectedInvItem.stock_quantity} ${selectedInvItem.unit}`);
+      // Check available stock (stock minus active reservations)
+      const available = getAvailableStock(selectedInvItem);
+      if (qty > available) {
+        throw new Error(`Brak dostępnych sztuk w magazynie. Dostępne: ${available} ${selectedInvItem.unit}`);
       }
 
-      const { error } = await supabase.from("service_order_items").insert({
+      // Insert order item
+      const { data: insertedItem, error } = await supabase.from("service_order_items").insert({
         order_id: orderId,
         inventory_item_id: selectedInvItem.id,
         item_name_snapshot: selectedInvItem.name,
@@ -136,19 +171,16 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
         total_sale_net: qty * saleNet,
         total_purchase_net: qty * purchaseNet,
         created_by: user?.id,
-      });
+      }).select("id").single();
       if (error) throw error;
 
-      // Create inventory OUT movement immediately (reserve stock)
-      await supabase.from("inventory_movements").insert({
-        item_id: selectedInvItem.id,
-        movement_type: "OUT",
+      // Create reservation (no OUT movement yet)
+      await supabase.from("inventory_reservations" as any).insert({
+        inventory_item_id: selectedInvItem.id,
+        service_order_id: orderId,
+        service_order_item_id: insertedItem.id,
         quantity: qty,
-        source_type: "SERVICE_ORDER",
-        source_id: orderId,
-        sale_net: saleNet,
-        purchase_net: purchaseNet,
-        notes: `Zlecenie: ${orderId.slice(0, 8)}...`,
+        status: "RESERVED",
         created_by: user?.id,
       });
 
@@ -158,7 +190,7 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
         entity_id: orderId,
         action_type: "INVENTORY_OUT",
         user_id: user?.id,
-        description: `Użyto ${qty}× ${selectedInvItem.name} z magazynu`,
+        description: `Zarezerwowano ${qty}× ${selectedInvItem.name} z magazynu`,
         entity_name: selectedInvItem.name,
       } as any);
     },
@@ -167,10 +199,10 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
       queryClient.invalidateQueries({ queryKey: ["inventory_items"] });
       queryClient.invalidateQueries({ queryKey: ["inventory-items-active"] });
-      queryClient.invalidateQueries({ queryKey: ["inventory_movements"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory-reservations-active"] });
       onItemsChanged();
       resetDialog();
-      toast.success("Dodano część z magazynu");
+      toast.success("Zarezerwowano część z magazynu");
     },
     onError: (err: any) => toast.error(err.message || "Błąd dodawania"),
   });
@@ -206,32 +238,16 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
     onError: (err: any) => toast.error(err.message || "Błąd dodawania"),
   });
 
-  // ── Delete item ──
+  // ── Delete item (release reservation) ──
   const deleteItem = useMutation({
     mutationFn: async (item: OrderItem) => {
-      // If linked to inventory, reverse the movement
+      // Release reservation if linked to inventory
       if (item.inventory_item_id) {
-        // Delete the OUT movement linked to this order + item
-        const { data: movements } = await supabase
-          .from("inventory_movements")
-          .select("id")
-          .eq("item_id", item.inventory_item_id)
-          .eq("source_id", orderId)
-          .eq("source_type", "SERVICE_ORDER")
-          .eq("movement_type", "OUT");
-
-        if (movements && movements.length > 0) {
-          // Create a reversal IN movement
-          await supabase.from("inventory_movements").insert({
-            item_id: item.inventory_item_id,
-            movement_type: "IN",
-            quantity: item.quantity,
-            source_type: "SERVICE_ORDER",
-            source_id: orderId,
-            notes: `Zwrot: usunięto z zlecenia`,
-            created_by: user?.id,
-          });
-        }
+        await supabase
+          .from("inventory_reservations" as any)
+          .update({ status: "RELEASED", released_at: new Date().toISOString() })
+          .eq("service_order_item_id", item.id)
+          .eq("status", "RESERVED");
       }
 
       const { error } = await supabase.from("service_order_items").delete().eq("id", item.id);
@@ -242,13 +258,14 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
       queryClient.invalidateQueries({ queryKey: ["inventory_items"] });
       queryClient.invalidateQueries({ queryKey: ["inventory-items-active"] });
-      queryClient.invalidateQueries({ queryKey: ["inventory_movements"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory-reservations-active"] });
       onItemsChanged();
-      toast.success("Usunięto pozycję (stan magazynowy przywrócony)");
+      toast.success("Usunięto pozycję (rezerwacja zwolniona)");
     },
   });
 
-  const stockWarning = selectedInvItem && parseFloat(invQuantity) > selectedInvItem.stock_quantity;
+  const availableStock = selectedInvItem ? getAvailableStock(selectedInvItem) : 0;
+  const stockWarning = selectedInvItem && parseFloat(invQuantity) > availableStock;
 
   return (
     <div className="space-y-3">
@@ -304,8 +321,10 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                               </TableRow>
                             ) : (
                               filteredInventory.map((item: any) => {
-                                const isLow = item.stock_quantity <= item.minimum_quantity;
-                                const noStock = item.stock_quantity <= 0;
+                                const available = getAvailableStock(item);
+                                const reserved = reservedMap[item.id] || 0;
+                                const isLow = available <= item.minimum_quantity;
+                                const noStock = available <= 0;
                                 return (
                                   <TableRow
                                     key={item.id}
@@ -330,9 +349,12 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                                       <div className="flex items-center justify-end gap-1">
                                         {isLow && <AlertTriangle className="h-3 w-3 text-amber-400" />}
                                         <span className={cn("font-medium", noStock && "text-destructive")}>
-                                          {item.stock_quantity} {item.unit}
+                                          {available} {item.unit}
                                         </span>
                                       </div>
+                                      {reserved > 0 && (
+                                        <div className="text-[10px] text-muted-foreground">rezerw: {reserved}</div>
+                                      )}
                                       {isLow && (
                                         <div className="text-[10px] text-amber-400">min: {item.minimum_quantity}</div>
                                       )}
@@ -371,11 +393,19 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                             Zmień
                           </Button>
                         </div>
-                        <div className="flex gap-4 text-sm">
+                        <div className="flex gap-4 text-sm flex-wrap">
                           <div>
-                            <span className="text-muted-foreground">Stan: </span>
-                            <span className={cn("font-medium", selectedInvItem.stock_quantity <= selectedInvItem.minimum_quantity && "text-amber-400")}>
-                              {selectedInvItem.stock_quantity} {selectedInvItem.unit}
+                            <span className="text-muted-foreground">Magazyn: </span>
+                            <span className="font-medium">{selectedInvItem.stock_quantity} {selectedInvItem.unit}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Rezerw: </span>
+                            <span className="font-medium">{reservedMap[selectedInvItem.id] || 0}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Dostępne: </span>
+                            <span className={cn("font-medium", availableStock <= selectedInvItem.minimum_quantity && "text-amber-400")}>
+                              {availableStock} {selectedInvItem.unit}
                             </span>
                           </div>
                           <div>
@@ -391,14 +421,14 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                           <Input
                             type="number"
                             min="1"
-                            max={selectedInvItem.stock_quantity}
+                            max={availableStock}
                             value={invQuantity}
                             onChange={(e) => setInvQuantity(e.target.value)}
                           />
                           {stockWarning && (
                             <p className="text-xs text-destructive flex items-center gap-1">
                               <AlertTriangle className="h-3 w-3" />
-                              Niewystarczający stan! Dostępne: {selectedInvItem.stock_quantity}
+                              Brak dostępnych sztuk w magazynie. Dostępne: {availableStock}
                             </p>
                           )}
                         </div>
@@ -531,9 +561,16 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                       {formatCurrency(profitGross)}
                     </TableCell>
                     <TableCell className="text-center">
-                      <Badge variant="outline" className="text-[10px]">
-                        {item.inventory_item_id ? "Magazyn" : "Własna"}
-                      </Badge>
+                      {item.inventory_item_id ? (
+                        <div className="flex flex-col items-center gap-0.5">
+                          <Badge variant="outline" className="text-[10px]">Magazyn</Badge>
+                          {!isCompleted && (
+                            <Badge variant="secondary" className="text-[9px] px-1 py-0">Rezerw.</Badge>
+                          )}
+                        </div>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px]">Własna</Badge>
+                      )}
                     </TableCell>
                     {!isCompleted && (
                       <TableCell>

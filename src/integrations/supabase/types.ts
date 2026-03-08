@@ -1000,6 +1000,67 @@ export type Database = {
           },
         ]
       }
+      inventory_reservations: {
+        Row: {
+          consumed_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          inventory_item_id: string
+          quantity: number
+          released_at: string | null
+          service_order_id: string
+          service_order_item_id: string
+          status: string
+        }
+        Insert: {
+          consumed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          inventory_item_id: string
+          quantity?: number
+          released_at?: string | null
+          service_order_id: string
+          service_order_item_id: string
+          status?: string
+        }
+        Update: {
+          consumed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          inventory_item_id?: string
+          quantity?: number
+          released_at?: string | null
+          service_order_id?: string
+          service_order_item_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_reservations_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_reservations_service_order_id_fkey"
+            columns: ["service_order_id"]
+            isOneToOne: false
+            referencedRelation: "service_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_reservations_service_order_item_id_fkey"
+            columns: ["service_order_item_id"]
+            isOneToOne: false
+            referencedRelation: "service_order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       it_work_comments: {
         Row: {
           comment: string

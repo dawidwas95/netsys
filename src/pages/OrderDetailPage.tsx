@@ -249,7 +249,8 @@ export default function OrderDetailPage() {
 
   const updateOrder = useMutation({
     mutationFn: async (updates: Record<string, any>) => {
-      if (updates.status === "COMPLETED" && order?.status !== "COMPLETED") {
+      const isCompletingNow = updates.status === "COMPLETED" && order?.status !== "COMPLETED";
+      if (isCompletingNow) {
         updates.completed_at = new Date().toISOString();
       }
       const laborNet = parseFloat(updates.labor_net ?? currentForm.labor_net ?? 0) || 0;
@@ -297,12 +298,46 @@ export default function OrderDetailPage() {
           }
         }
       }
+
+      // Convert reservations to actual OUT movements on completion
+      if (isCompletingNow) {
+        const { data: reservations } = await supabase
+          .from("inventory_reservations" as any)
+          .select("id, inventory_item_id, quantity, service_order_item_id")
+          .eq("service_order_id", id!)
+          .eq("status", "RESERVED");
+
+        if (reservations && reservations.length > 0) {
+          for (const res of reservations as any[]) {
+            // Create actual OUT movement
+            await supabase.from("inventory_movements").insert({
+              item_id: res.inventory_item_id,
+              movement_type: "OUT",
+              quantity: res.quantity,
+              source_type: "SERVICE_ORDER",
+              source_id: id!,
+              notes: `Zlecenie ${order?.order_number} — zużycie (rezerwacja → wydanie)`,
+              created_by: user?.id,
+            });
+
+            // Mark reservation as consumed
+            await supabase
+              .from("inventory_reservations" as any)
+              .update({ status: "CONSUMED", consumed_at: new Date().toISOString() })
+              .eq("id", res.id);
+          }
+        }
+      }
     },
     onSuccess: (_, updates) => {
       queryClient.invalidateQueries({ queryKey: ["order", id] });
       queryClient.invalidateQueries({ queryKey: ["order-logs", id] });
       queryClient.invalidateQueries({ queryKey: ["kanban-orders"] });
       queryClient.invalidateQueries({ queryKey: ["cash_transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory_items"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory-items-active"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory-reservations-active"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory_movements"] });
       setEditForm(null);
       setEditDirty(false);
       toast.success("Zlecenie zaktualizowane");
