@@ -56,6 +56,7 @@ import CustomerMessagesStaff from "@/components/CustomerMessagesStaff";
 import { TechnicianAssignment } from "@/components/TechnicianAssignment";
 import { MobileQuickActions } from "@/components/MobileQuickActions";
 import { OrderPurchaseRequests } from "@/components/order/OrderPurchaseRequests";
+import { OrderCostSummary } from "@/components/order/OrderCostSummary";
 import { MentionTextarea, renderCommentWithMentions } from "@/components/MentionTextarea";
 import { ScheduleOrderDialog } from "@/components/ScheduleOrderDialog";
 
