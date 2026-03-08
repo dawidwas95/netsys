@@ -19,11 +19,20 @@ import { Plus, Trash2, Package, PenLine, AlertTriangle, Search } from "lucide-re
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+type OrderItemType = "PRODUCT" | "SERVICE" | "INTERNAL_COST";
+
+const ITEM_TYPE_LABELS: Record<OrderItemType, string> = {
+  PRODUCT: "Magazyn",
+  SERVICE: "Usługa",
+  INTERNAL_COST: "Koszt wewn.",
+};
+
 interface OrderItem {
   id: string;
   order_id: string;
   inventory_item_id: string | null;
   item_name_snapshot: string;
+  item_type: string;
   quantity: number;
   sale_net: number;
   purchase_net: number;
