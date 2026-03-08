@@ -89,13 +89,12 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-        <div className="px-4 py-4">
-          {!collapsed ? (
+        <div className="px-4 py-4 flex items-center gap-2">
+          <img src={logoW3s} alt="W3-Support" className="h-8 w-auto" />
+          {!collapsed && (
             <h1 className="text-lg font-bold text-sidebar-accent-foreground tracking-tight">
-              🔧 Serwis<span className="text-sidebar-primary">Pro</span>
+              W3-Support
             </h1>
-          ) : (
-            <span className="text-lg">🔧</span>
           )}
         </div>
 
