@@ -14,12 +14,13 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Phone, Mail, MapPin, Building2, Pencil, Archive, ClipboardList, Monitor, Banknote } from "lucide-react";
+import { ArrowLeft, Phone, Mail, MapPin, Building2, Pencil, Archive, ClipboardList, Monitor, Banknote, History } from "lucide-react";
 import { toast } from "sonner";
 import { CLIENT_TYPE_LABELS, BUSINESS_ROLE_LABELS, DEVICE_CATEGORY_LABELS, type Client, type ClientType, type Device, type DeviceCategory, type BusinessRole } from "@/types/database";
 import { OrderStatusBadge } from "@/pages/DashboardPage";
 import { ClientFormDialog } from "@/components/ClientFormDialog";
 import { DeviceFormDialog } from "@/components/DeviceFormDialog";
+import { DeviceHistoryDialog } from "@/components/DeviceHistoryDialog";
 
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +29,7 @@ export default function ClientDetailPage() {
   const [editDeviceDialogOpen, setEditDeviceDialogOpen] = useState(false);
   const [editDevice, setEditDevice] = useState<Device | null>(null);
   const [archiveDevice, setArchiveDevice] = useState<Device | null>(null);
+  const [historyDevice, setHistoryDevice] = useState<Device | null>(null);
 
   const { data: client, isLoading } = useQuery({
     queryKey: ["client", id],
@@ -246,6 +248,9 @@ export default function ClientDetailPage() {
                       </div>
                     )}
                     <div className="flex gap-1 pt-1">
+                      <Button variant="ghost" size="sm" onClick={() => setHistoryDevice(device)}>
+                        <History className="h-3.5 w-3.5 mr-1" />Historia
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={() => { setEditDevice(device); setEditDeviceDialogOpen(true); }}>
                         <Pencil className="h-3.5 w-3.5 mr-1" />Edytuj
                       </Button>
@@ -297,6 +302,9 @@ export default function ClientDetailPage() {
                         <TableCell><Badge variant="secondary">{device.status}</Badge></TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" title="Historia" onClick={() => setHistoryDevice(device)}>
+                              <History className="h-3.5 w-3.5" />
+                            </Button>
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditDevice(device); setEditDeviceDialogOpen(true); }}>
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
@@ -450,6 +458,13 @@ export default function ClientDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* Device history dialog */}
+      <DeviceHistoryDialog
+        open={!!historyDevice}
+        onOpenChange={(o) => !o && setHistoryDevice(null)}
+        deviceId={historyDevice?.id ?? ""}
+        deviceName={`${historyDevice?.manufacturer ?? ""} ${historyDevice?.model ?? ""}`.trim() || "Urządzenie"}
+      />
     </div>
   );
 }

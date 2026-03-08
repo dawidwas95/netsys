@@ -12,17 +12,19 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Pencil, Archive } from "lucide-react";
+import { Search, Pencil, Archive, History } from "lucide-react";
 import { toast } from "sonner";
 import { DEVICE_CATEGORY_LABELS, type Device, type DeviceCategory } from "@/types/database";
 import { Link } from "react-router-dom";
 import { DeviceFormDialog } from "@/components/DeviceFormDialog";
+import { DeviceHistoryDialog } from "@/components/DeviceHistoryDialog";
 
 export default function DevicesPage() {
   const [search, setSearch] = useState("");
   const [editDevice, setEditDevice] = useState<Device | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [archiveDevice, setArchiveDevice] = useState<Device | null>(null);
+  const [historyDevice, setHistoryDevice] = useState<Device | null>(null);
   const queryClient = useQueryClient();
 
   const { data: devices, isLoading } = useQuery({
@@ -136,6 +138,9 @@ export default function DevicesPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" title="Historia" onClick={() => setHistoryDevice(device)}>
+                        <History className="h-3.5 w-3.5" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditDevice(device); setEditDialogOpen(true); }}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
@@ -179,6 +184,13 @@ export default function DevicesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* Device history dialog */}
+      <DeviceHistoryDialog
+        open={!!historyDevice}
+        onOpenChange={(o) => !o && setHistoryDevice(null)}
+        deviceId={historyDevice?.id ?? ""}
+        deviceName={`${historyDevice?.manufacturer ?? ""} ${historyDevice?.model ?? ""}`.trim() || "Urządzenie"}
+      />
     </div>
   );
 }
