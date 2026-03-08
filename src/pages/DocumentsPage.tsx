@@ -1191,7 +1191,7 @@ export default function DocumentsPage() {
                         <Paperclip className="h-4 w-4 text-muted-foreground" />
                         Załączniki
                       </h3>
-                      <DocumentAttachments documentId={editId} />
+                      <DocumentAttachments ref={attachmentsRef} documentId={editId} />
                     </div>
                   </>
                 </div>
