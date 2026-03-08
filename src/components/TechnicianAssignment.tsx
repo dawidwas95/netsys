@@ -152,18 +152,7 @@ export function TechnicianAssignment({ orderId, orderNumber }: TechnicianAssignm
 
   const { data: assigned = [] } = useQuery({
     queryKey: ["order-technicians", orderId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("order_technicians")
-        .select("id, user_id, is_primary, profiles(first_name, last_name, email)")
-        .eq("order_id", orderId) as any;
-      return (data ?? []).map((t: any) => ({
-        id: t.id,
-        userId: t.user_id,
-        isPrimary: Boolean(t.is_primary),
-        name: [t.profiles?.first_name, t.profiles?.last_name].filter(Boolean).join(" ") || t.profiles?.email || "Użytkownik",
-      }));
-    },
+    queryFn: () => fetchOrderTechnicians(orderId),
   });
 
   const assignedIds = new Set(assigned.map((a: any) => a.userId));
