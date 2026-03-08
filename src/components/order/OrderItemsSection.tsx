@@ -73,7 +73,7 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
     queryFn: async () => {
       const { data, error } = await supabase
         .from("inventory_items")
-        .select("id, name, sku, manufacturer, model, stock_quantity, minimum_quantity, purchase_net, sale_net, unit, is_active")
+        .select("id, name, sku, manufacturer, model, stock_quantity, minimum_quantity, purchase_net, sale_net, unit, is_active, inventory_number, compatible_models, category")
         .eq("is_active", true)
         .eq("is_archived", false)
         .is("deleted_at", null)
@@ -86,11 +86,14 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
   const filteredInventory = useMemo(() => {
     if (!inventorySearch) return inventoryItems;
     const q = inventorySearch.toLowerCase();
-    return inventoryItems.filter(i =>
+    return inventoryItems.filter((i: any) =>
       i.name.toLowerCase().includes(q) ||
       i.sku?.toLowerCase().includes(q) ||
+      i.inventory_number?.toLowerCase().includes(q) ||
       i.manufacturer?.toLowerCase().includes(q) ||
-      i.model?.toLowerCase().includes(q)
+      i.model?.toLowerCase().includes(q) ||
+      i.category?.toLowerCase().includes(q) ||
+      (i.compatible_models || []).some((m: string) => m.toLowerCase().includes(q))
     );
   }, [inventoryItems, inventorySearch]);
 
@@ -274,7 +277,7 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                          placeholder="Szukaj po nazwie, SKU, producencie..."
+                          placeholder="Szukaj: ID, nazwa, producent, model kompatybilny..."
                           value={inventorySearch}
                           onChange={(e) => setInventorySearch(e.target.value)}
                           className="pl-9"
@@ -284,9 +287,8 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                       <div className="flex-1 overflow-auto border rounded-md">
                         <Table>
                           <TableHeader>
-                            <TableRow>
-                              <TableHead>Nazwa</TableHead>
-                              <TableHead>SKU</TableHead>
+                             <TableRow>
+                              <TableHead>ID / Nazwa</TableHead>
                               <TableHead className="text-right">Stan</TableHead>
                               <TableHead className="text-right">Zakup</TableHead>
                               <TableHead className="text-right">Sprzedaż</TableHead>
@@ -296,12 +298,12 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                           <TableBody>
                             {filteredInventory.length === 0 ? (
                               <TableRow>
-                                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                                   {inventorySearch ? "Brak wyników" : "Brak pozycji magazynowych"}
                                 </TableCell>
                               </TableRow>
                             ) : (
-                              filteredInventory.map((item) => {
+                              filteredInventory.map((item: any) => {
                                 const isLow = item.stock_quantity <= item.minimum_quantity;
                                 const noStock = item.stock_quantity <= 0;
                                 return (
@@ -315,14 +317,15 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                                     onClick={() => !noStock && selectInventoryItem(item)}
                                   >
                                     <TableCell>
+                                      {item.inventory_number && <div className="font-mono text-[10px] text-primary">{item.inventory_number}</div>}
                                       <div className="font-medium text-sm">{item.name}</div>
-                                      {(item.manufacturer || item.model) && (
-                                        <div className="text-xs text-muted-foreground">
-                                          {[item.manufacturer, item.model].filter(Boolean).join(" ")}
-                                        </div>
-                                      )}
+                                      <div className="text-xs text-muted-foreground">
+                                        {[item.manufacturer, item.model].filter(Boolean).join(" ")}
+                                        {(item.compatible_models || []).length > 0 && (
+                                          <span className="ml-1">· {item.compatible_models.slice(0, 2).join(", ")}{item.compatible_models.length > 2 ? "..." : ""}</span>
+                                        )}
+                                      </div>
                                     </TableCell>
-                                    <TableCell className="font-mono text-xs">{item.sku || "—"}</TableCell>
                                     <TableCell className="text-right tabular-nums">
                                       <div className="flex items-center justify-end gap-1">
                                         {isLow && <AlertTriangle className="h-3 w-3 text-amber-400" />}

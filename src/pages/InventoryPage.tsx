@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,8 +27,9 @@ import {
 import { toast } from "sonner";
 import {
   Plus, Package, ArrowDownToLine, ArrowUpFromLine, AlertTriangle,
-  History, Pencil, Trash2, Archive, MinusCircle,
+  History, Pencil, Trash2, Archive, MinusCircle, QrCode, Printer, X,
 } from "lucide-react";
+import QRCode from "qrcode";
 
 type MovementType = "IN" | "OUT" | "ADJUSTMENT" | "DAMAGE" | "INTERNAL_USE";
 
@@ -50,11 +51,13 @@ export default function InventoryPage() {
   const queryClient = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
+  const [detailItem, setDetailItem] = useState<any>(null);
   const [moveOpen, setMoveOpen] = useState<{ itemId: string; itemName: string; type: "IN" | "OUT" } | null>(null);
-  const [adjustOpen, setAdjustOpen] = useState<{ itemId: string; itemName: string; action: "increase" | "decrease" | "damage" | "internal" } | null>(null);
+  const [adjustOpen, setAdjustOpen] = useState<{ itemId: string; itemName: string } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<any>(null);
   const [archiveConfirm, setArchiveConfirm] = useState<any>(null);
   const [search, setSearch] = useState("");
+  const [filterCategory, setFilterCategory] = useState("ALL");
   const [showArchived, setShowArchived] = useState(false);
 
   const { data: items = [], isLoading } = useQuery({
@@ -83,6 +86,19 @@ export default function InventoryPage() {
     },
   });
 
+  const { data: categories = [] } = useQuery({
+    queryKey: ["inventory_categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("inventory_categories" as any)
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order");
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
   const { data: profiles = [] } = useQuery({
     queryKey: ["profiles-inv"],
     queryFn: async () => {
@@ -99,17 +115,29 @@ export default function InventoryPage() {
     return map;
   }, [profiles]);
 
+  const categoryMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    categories.forEach((c: any) => { map[c.name] = c.label; });
+    return map;
+  }, [categories]);
+
   const displayItems = useMemo(() => {
     let list = showArchived ? items : items.filter((i: any) => !i.is_archived);
+    if (filterCategory !== "ALL") {
+      list = list.filter((i: any) => i.category === filterCategory);
+    }
     if (!search) return list;
     const q = search.toLowerCase();
     return list.filter((i: any) =>
       i.name?.toLowerCase().includes(q) ||
       i.sku?.toLowerCase().includes(q) ||
+      (i as any).inventory_number?.toLowerCase().includes(q) ||
       i.manufacturer?.toLowerCase().includes(q) ||
-      i.model?.toLowerCase().includes(q)
+      i.model?.toLowerCase().includes(q) ||
+      i.category?.toLowerCase().includes(q) ||
+      ((i as any).compatible_models || []).some((m: string) => m.toLowerCase().includes(q))
     );
-  }, [items, search, showArchived]);
+  }, [items, search, showArchived, filterCategory]);
 
   const activeItems = useMemo(() => items.filter((i: any) => !i.is_archived), [items]);
   const lowStock = useMemo(() =>
@@ -124,17 +152,15 @@ export default function InventoryPage() {
     queryClient.invalidateQueries({ queryKey: ["inventory_movements"] });
   };
 
-  // ── Add item ──
   const addItem = useMutation({
     mutationFn: async (data: any) => {
       const { error } = await supabase.from("inventory_items").insert(data);
       if (error) throw error;
     },
     onSuccess: () => { invalidateAll(); setAddOpen(false); toast.success("Dodano pozycję magazynową"); },
-    onError: () => toast.error("Błąd dodawania pozycji"),
+    onError: (e: any) => toast.error(e.message || "Błąd dodawania pozycji"),
   });
 
-  // ── Edit item ──
   const updateItem = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
       const { error } = await supabase.from("inventory_items").update(data).eq("id", id);
@@ -144,10 +170,8 @@ export default function InventoryPage() {
     onError: () => toast.error("Błąd aktualizacji"),
   });
 
-  // ── Delete item ──
   const deleteItem = useMutation({
     mutationFn: async (item: any) => {
-      // Check for movements
       const { count } = await supabase
         .from("inventory_movements")
         .select("id", { count: "exact", head: true })
@@ -163,7 +187,6 @@ export default function InventoryPage() {
     onError: (err: any) => { toast.error(err.message); setDeleteConfirm(null); },
   });
 
-  // ── Archive item ──
   const archiveItem = useMutation({
     mutationFn: async (item: any) => {
       const { error } = await supabase.from("inventory_items")
@@ -172,47 +195,29 @@ export default function InventoryPage() {
       if (error) throw error;
     },
     onSuccess: (_, item) => {
-      invalidateAll();
-      setArchiveConfirm(null);
+      invalidateAll(); setArchiveConfirm(null);
       toast.success(item.is_archived ? "Przywrócono pozycję" : "Zarchiwizowano pozycję");
     },
   });
 
-  // ── Movement (IN/OUT from old flow) ──
   const addMovement = useMutation({
     mutationFn: async (data: any) => {
-      const { error } = await supabase.from("inventory_movements").insert({
-        ...data,
-        created_by: user?.id,
-      });
+      const { error } = await supabase.from("inventory_movements").insert({ ...data, created_by: user?.id });
       if (error) throw error;
     },
-    onSuccess: () => {
-      invalidateAll();
-      setMoveOpen(null);
-      toast.success("Zapisano ruch magazynowy");
-    },
+    onSuccess: () => { invalidateAll(); setMoveOpen(null); toast.success("Zapisano ruch magazynowy"); },
     onError: () => toast.error("Błąd zapisu ruchu"),
   });
 
-  // ── Stock adjustment ──
   const addAdjustment = useMutation({
     mutationFn: async (data: { item_id: string; quantity: number; movement_type: MovementType; notes: string }) => {
       const { error } = await supabase.from("inventory_movements").insert({
-        item_id: data.item_id,
-        movement_type: data.movement_type,
-        quantity: data.quantity,
-        source_type: "MANUAL",
-        notes: data.notes,
-        created_by: user?.id,
+        item_id: data.item_id, movement_type: data.movement_type, quantity: data.quantity,
+        source_type: "MANUAL", notes: data.notes, created_by: user?.id,
       });
       if (error) throw error;
     },
-    onSuccess: () => {
-      invalidateAll();
-      setAdjustOpen(null);
-      toast.success("Zapisano korektę stanu");
-    },
+    onSuccess: () => { invalidateAll(); setAdjustOpen(null); toast.success("Zapisano korektę stanu"); },
     onError: () => toast.error("Błąd zapisu korekty"),
   });
 
@@ -221,15 +226,19 @@ export default function InventoryPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Magazyn</h1>
-          <p className="text-sm text-muted-foreground">Części, towary i materiały</p>
+          <p className="text-sm text-muted-foreground">Części, towary i materiały serwisowe</p>
         </div>
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
             <Button><Plus className="mr-2 h-4 w-4" />Dodaj pozycję</Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Nowa pozycja magazynowa</DialogTitle></DialogHeader>
-            <ItemForm onSubmit={(d) => addItem.mutate(d)} loading={addItem.isPending} />
+            <ItemForm
+              categories={categories}
+              onSubmit={(d) => addItem.mutate(d)}
+              loading={addItem.isPending}
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -263,98 +272,119 @@ export default function InventoryPage() {
         </TabsList>
 
         <TabsContent value="items" className="space-y-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             <Input
-              placeholder="Szukaj po nazwie, SKU, producencie..."
+              placeholder="Szukaj: ID, nazwa, producent, model kompatybilny..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="max-w-md"
             />
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Kategoria" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Wszystkie kategorie</SelectItem>
+                {categories.map((c: any) => (
+                  <SelectItem key={c.name} value={c.name}>{c.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
               <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} className="rounded" />
-              Pokaż archiwalne
+              Archiwalne
             </label>
           </div>
           <Card>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>SKU</TableHead>
-                    <TableHead>Nazwa</TableHead>
-                    <TableHead>Producent / Model</TableHead>
-                    <TableHead>Kategoria</TableHead>
-                    <TableHead className="text-right">Stan</TableHead>
-                    <TableHead className="text-right">Min.</TableHead>
-                    <TableHead className="text-right">Zakup netto</TableHead>
-                    <TableHead className="text-right">Sprzedaż netto</TableHead>
-                    <TableHead>Akcje</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Ładowanie...</TableCell></TableRow>
-                  ) : displayItems.length === 0 ? (
-                    <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Brak pozycji</TableCell></TableRow>
-                  ) : (
-                    displayItems.map((item: any) => {
-                      const isLow = item.stock_quantity <= item.minimum_quantity && item.is_active && !item.is_archived;
-                      return (
-                        <TableRow key={item.id} className={`${isLow ? "bg-amber-500/5" : ""} ${item.is_archived ? "opacity-50" : ""}`}>
-                          <TableCell className="font-mono text-xs">{item.sku || "—"}</TableCell>
-                          <TableCell className="font-medium">
-                            {item.name}
-                            {item.is_archived && <Badge variant="outline" className="ml-2 text-xs">Archiwum</Badge>}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {[item.manufacturer, item.model].filter(Boolean).join(" ") || "—"}
-                          </TableCell>
-                          <TableCell>
-                            {item.category && <Badge variant="outline" className="text-xs">{item.category}</Badge>}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums font-medium">
-                            {isLow && <AlertTriangle className="inline h-3 w-3 text-amber-400 mr-1" />}
-                            {Number(item.stock_quantity)} {item.unit}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums text-muted-foreground">{Number(item.minimum_quantity)}</TableCell>
-                          <TableCell className="text-right tabular-nums">{Number(item.purchase_net).toFixed(2)} zł</TableCell>
-                          <TableCell className="text-right tabular-nums">{Number(item.sale_net).toFixed(2)} zł</TableCell>
-                          <TableCell>
-                            <div className="flex gap-1 flex-wrap">
-                              <Button size="sm" variant="ghost" className="h-7 px-2" title="Przyjęcie"
-                                onClick={() => setMoveOpen({ itemId: item.id, itemName: item.name, type: "IN" })}>
-                                <ArrowDownToLine className="h-3 w-3 text-emerald-400" />
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-7 px-2" title="Wydanie"
-                                onClick={() => setMoveOpen({ itemId: item.id, itemName: item.name, type: "OUT" })}>
-                                <ArrowUpFromLine className="h-3 w-3 text-red-400" />
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-7 px-2" title="Korekta/Ubytek"
-                                onClick={() => setAdjustOpen({ itemId: item.id, itemName: item.name, action: "decrease" })}>
-                                <MinusCircle className="h-3 w-3 text-amber-400" />
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-7 px-2" title="Edytuj"
-                                onClick={() => setEditItem(item)}>
-                                <Pencil className="h-3 w-3" />
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-7 px-2" title={item.is_archived ? "Przywróć" : "Archiwizuj"}
-                                onClick={() => setArchiveConfirm(item)}>
-                                <Archive className="h-3 w-3" />
-                              </Button>
-                              {Number(item.stock_quantity) === 0 && (
-                                <Button size="sm" variant="ghost" className="h-7 px-2" title="Usuń"
-                                  onClick={() => setDeleteConfirm(item)}>
-                                  <Trash2 className="h-3 w-3 text-destructive" />
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[130px]">ID</TableHead>
+                      <TableHead>Nazwa</TableHead>
+                      <TableHead>Producent</TableHead>
+                      <TableHead>Kategoria</TableHead>
+                      <TableHead>Kompatybilność</TableHead>
+                      <TableHead className="text-right">Stan</TableHead>
+                      <TableHead className="text-right">Min.</TableHead>
+                      <TableHead className="text-right">Zakup</TableHead>
+                      <TableHead className="text-right">Sprzedaż</TableHead>
+                      <TableHead>Akcje</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">Ładowanie...</TableCell></TableRow>
+                    ) : displayItems.length === 0 ? (
+                      <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">Brak pozycji</TableCell></TableRow>
+                    ) : (
+                      displayItems.map((item: any) => {
+                        const isLow = item.stock_quantity <= item.minimum_quantity && item.is_active && !item.is_archived;
+                        return (
+                          <TableRow key={item.id} className={`${isLow ? "bg-amber-500/5" : ""} ${item.is_archived ? "opacity-50" : ""} cursor-pointer hover:bg-muted/50`}
+                            onClick={() => setDetailItem(item)}>
+                            <TableCell className="font-mono text-xs font-medium text-primary">{item.inventory_number || "—"}</TableCell>
+                            <TableCell className="font-medium">
+                              {item.name}
+                              {item.is_archived && <Badge variant="outline" className="ml-2 text-xs">Archiwum</Badge>}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{item.manufacturer || "—"}</TableCell>
+                            <TableCell>
+                              {item.category && <Badge variant="outline" className="text-xs">{categoryMap[item.category] || item.category}</Badge>}
+                            </TableCell>
+                            <TableCell className="max-w-[200px]">
+                              <div className="flex gap-1 flex-wrap">
+                                {(item.compatible_models || []).slice(0, 3).map((m: string, idx: number) => (
+                                  <Badge key={idx} variant="secondary" className="text-[10px] px-1.5 py-0">{m}</Badge>
+                                ))}
+                                {(item.compatible_models || []).length > 3 && (
+                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">+{item.compatible_models.length - 3}</Badge>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums font-medium">
+                              {isLow && <AlertTriangle className="inline h-3 w-3 text-amber-400 mr-1" />}
+                              {Number(item.stock_quantity)} {item.unit}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums text-muted-foreground">{Number(item.minimum_quantity)}</TableCell>
+                            <TableCell className="text-right tabular-nums text-xs">{Number(item.purchase_net).toFixed(2)} zł</TableCell>
+                            <TableCell className="text-right tabular-nums text-xs">{Number(item.sale_net).toFixed(2)} zł</TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <div className="flex gap-1 flex-wrap">
+                                <Button size="sm" variant="ghost" className="h-7 px-2" title="Przyjęcie"
+                                  onClick={() => setMoveOpen({ itemId: item.id, itemName: item.name, type: "IN" })}>
+                                  <ArrowDownToLine className="h-3 w-3 text-emerald-400" />
                                 </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
+                                <Button size="sm" variant="ghost" className="h-7 px-2" title="Wydanie"
+                                  onClick={() => setMoveOpen({ itemId: item.id, itemName: item.name, type: "OUT" })}>
+                                  <ArrowUpFromLine className="h-3 w-3 text-red-400" />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-7 px-2" title="Korekta"
+                                  onClick={() => setAdjustOpen({ itemId: item.id, itemName: item.name })}>
+                                  <MinusCircle className="h-3 w-3 text-amber-400" />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-7 px-2" title="Edytuj"
+                                  onClick={() => setEditItem(item)}>
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-7 px-2" title={item.is_archived ? "Przywróć" : "Archiwizuj"}
+                                  onClick={() => setArchiveConfirm(item)}>
+                                  <Archive className="h-3 w-3" />
+                                </Button>
+                                {Number(item.stock_quantity) === 0 && (
+                                  <Button size="sm" variant="ghost" className="h-7 px-2" title="Usuń"
+                                    onClick={() => setDeleteConfirm(item)}>
+                                    <Trash2 className="h-3 w-3 text-destructive" />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -404,13 +434,11 @@ export default function InventoryPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Movement Dialog (IN/OUT) */}
+      {/* Movement Dialog */}
       <Dialog open={!!moveOpen} onOpenChange={() => setMoveOpen(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {moveOpen?.type === "IN" ? "Przyjęcie towaru" : "Wydanie towaru"}: {moveOpen?.itemName}
-            </DialogTitle>
+            <DialogTitle>{moveOpen?.type === "IN" ? "Przyjęcie towaru" : "Wydanie towaru"}: {moveOpen?.itemName}</DialogTitle>
           </DialogHeader>
           <MovementForm
             type={moveOpen?.type || "IN"}
@@ -422,10 +450,11 @@ export default function InventoryPage() {
 
       {/* Edit Item Dialog */}
       <Dialog open={!!editItem} onOpenChange={() => setEditItem(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Edycja pozycji: {editItem?.name}</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Edycja: {editItem?.name}</DialogTitle></DialogHeader>
           {editItem && (
             <ItemForm
+              categories={categories}
               initialData={editItem}
               isEdit
               onSubmit={(d) => updateItem.mutate({ id: editItem.id, data: d })}
@@ -435,12 +464,18 @@ export default function InventoryPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Stock Adjustment Dialog */}
+      {/* Item Detail / QR Dialog */}
+      <Dialog open={!!detailItem} onOpenChange={() => setDetailItem(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Szczegóły pozycji</DialogTitle></DialogHeader>
+          {detailItem && <ItemDetailView item={detailItem} categoryLabel={categoryMap[detailItem.category] || detailItem.category} />}
+        </DialogContent>
+      </Dialog>
+
+      {/* Adjustment Dialog */}
       <Dialog open={!!adjustOpen} onOpenChange={() => setAdjustOpen(null)}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Korekta stanu: {adjustOpen?.itemName}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Korekta stanu: {adjustOpen?.itemName}</DialogTitle></DialogHeader>
           {adjustOpen && (
             <AdjustmentForm
               onSubmit={(d) => addAdjustment.mutate({ item_id: adjustOpen.itemId, ...d })}
@@ -450,34 +485,30 @@ export default function InventoryPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
+      {/* Delete / Archive Dialogs */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Usunąć pozycję?</AlertDialogTitle>
             <AlertDialogDescription>
-              Pozycja "{deleteConfirm?.name}" zostanie trwale usunięta. Operacja jest nieodwracalna.
-              Usunięcie jest możliwe tylko gdy stan = 0 i brak powiązanych ruchów.
+              Pozycja "{deleteConfirm?.name}" zostanie trwale usunięta. Możliwe tylko gdy stan = 0 i brak ruchów.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Anuluj</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteItem.mutate(deleteConfirm)} className="bg-destructive text-destructive-foreground">
-              Usuń
-            </AlertDialogAction>
+            <AlertDialogAction onClick={() => deleteItem.mutate(deleteConfirm)} className="bg-destructive text-destructive-foreground">Usuń</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Archive Confirmation */}
       <AlertDialog open={!!archiveConfirm} onOpenChange={() => setArchiveConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{archiveConfirm?.is_archived ? "Przywrócić pozycję?" : "Zarchiwizować pozycję?"}</AlertDialogTitle>
+            <AlertDialogTitle>{archiveConfirm?.is_archived ? "Przywrócić?" : "Zarchiwizować?"}</AlertDialogTitle>
             <AlertDialogDescription>
               {archiveConfirm?.is_archived
-                ? `Pozycja "${archiveConfirm?.name}" zostanie przywrócona do aktywnych.`
-                : `Pozycja "${archiveConfirm?.name}" zostanie zarchiwizowana i nie będzie widoczna na liście.`}
+                ? `Pozycja "${archiveConfirm?.name}" zostanie przywrócona.`
+                : `Pozycja "${archiveConfirm?.name}" zostanie zarchiwizowana.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -492,12 +523,93 @@ export default function InventoryPage() {
   );
 }
 
-// ── Item Form (Add / Edit) ──
-function ItemForm({ onSubmit, loading, initialData, isEdit }: {
+// ── Item Detail with QR ──
+function ItemDetailView({ item, categoryLabel }: { item: any; categoryLabel: string }) {
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
+  const invNumber = item.inventory_number || "—";
+
+  useState(() => {
+    const url = `${window.location.origin}/inventory?id=${item.id}`;
+    QRCode.toDataURL(url, { width: 200, margin: 1 }).then(setQrUrl);
+  });
+
+  function handlePrintLabel() {
+    const w = window.open("", "_blank", "width=400,height=500");
+    if (!w) return;
+    w.document.write(`
+      <html><head><title>Etykieta ${invNumber}</title>
+      <style>
+        @page { size: 62mm 100mm; margin: 3mm; }
+        body { font-family: Arial, sans-serif; text-align: center; padding: 4mm; }
+        .qr { width: 40mm; height: 40mm; }
+        .inv-id { font-size: 14pt; font-weight: bold; margin: 3mm 0 1mm; font-family: monospace; }
+        .name { font-size: 10pt; margin: 1mm 0; }
+        .cat { font-size: 8pt; color: #666; }
+        .mfr { font-size: 8pt; color: #666; }
+      </style></head><body>
+        ${qrUrl ? `<img src="${qrUrl}" class="qr" />` : ""}
+        <div class="inv-id">${invNumber}</div>
+        <div class="name">${item.name}</div>
+        ${item.manufacturer ? `<div class="mfr">${item.manufacturer}</div>` : ""}
+        ${categoryLabel ? `<div class="cat">${categoryLabel}</div>` : ""}
+      </body></html>
+    `);
+    w.document.close();
+    w.onload = () => { w.print(); };
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start gap-4">
+        {qrUrl && <img src={qrUrl} alt="QR" className="w-24 h-24 rounded border" />}
+        <div className="flex-1 space-y-1">
+          <div className="font-mono text-lg font-bold text-primary">{invNumber}</div>
+          <div className="font-medium text-lg">{item.name}</div>
+          {item.manufacturer && <div className="text-sm text-muted-foreground">{item.manufacturer}</div>}
+          {categoryLabel && <Badge variant="outline">{categoryLabel}</Badge>}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div><span className="text-muted-foreground">Stan:</span> <span className="font-medium">{Number(item.stock_quantity)} {item.unit}</span></div>
+        <div><span className="text-muted-foreground">Minimum:</span> <span>{Number(item.minimum_quantity)}</span></div>
+        <div><span className="text-muted-foreground">Zakup netto:</span> <span className="tabular-nums">{Number(item.purchase_net).toFixed(2)} zł</span></div>
+        <div><span className="text-muted-foreground">Sprzedaż netto:</span> <span className="tabular-nums">{Number(item.sale_net).toFixed(2)} zł</span></div>
+        {item.sku && <div className="col-span-2"><span className="text-muted-foreground">SKU:</span> <span className="font-mono text-xs">{item.sku}</span></div>}
+      </div>
+
+      {(item.compatible_models || []).length > 0 && (
+        <div>
+          <div className="text-xs text-muted-foreground mb-1">Kompatybilne modele:</div>
+          <div className="flex gap-1 flex-wrap">
+            {item.compatible_models.map((m: string, i: number) => (
+              <Badge key={i} variant="secondary" className="text-xs">{m}</Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {item.notes && (
+        <div>
+          <div className="text-xs text-muted-foreground mb-1">Notatki:</div>
+          <p className="text-sm">{item.notes}</p>
+        </div>
+      )}
+
+      <Button onClick={handlePrintLabel} variant="outline" className="w-full">
+        <Printer className="mr-2 h-4 w-4" /> Drukuj etykietę
+      </Button>
+    </div>
+  );
+}
+
+// ── Item Form ──
+function ItemForm({ onSubmit, loading, initialData, isEdit, categories }: {
   onSubmit: (d: any) => void;
   loading: boolean;
   initialData?: any;
   isEdit?: boolean;
+  categories: any[];
 }) {
   const [form, setForm] = useState({
     name: initialData?.name || "",
@@ -513,6 +625,16 @@ function ItemForm({ onSubmit, loading, initialData, isEdit }: {
     stock_quantity: initialData?.stock_quantity?.toString() || "0",
     notes: initialData?.notes || "",
   });
+  const [compatModels, setCompatModels] = useState<string[]>(initialData?.compatible_models || []);
+  const [newModel, setNewModel] = useState("");
+
+  function addModel() {
+    const m = newModel.trim();
+    if (m && !compatModels.includes(m)) {
+      setCompatModels([...compatModels, m]);
+    }
+    setNewModel("");
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -529,8 +651,8 @@ function ItemForm({ onSubmit, loading, initialData, isEdit }: {
       vat_rate: parseFloat(form.vat_rate) || 23,
       minimum_quantity: parseFloat(form.minimum_quantity) || 0,
       notes: form.notes || null,
+      compatible_models: compatModels,
     };
-    // Only include stock_quantity for new items
     if (!isEdit) {
       data.stock_quantity = parseFloat(form.stock_quantity) || 0;
     }
@@ -543,13 +665,49 @@ function ItemForm({ onSubmit, loading, initialData, isEdit }: {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1"><Label>Nazwa *</Label><Input value={form.name} onChange={u("name")} /></div>
-        <div className="space-y-1"><Label>SKU</Label><Input value={form.sku} onChange={u("sku")} placeholder="np. RAM-DDR4-16" /></div>
+        <div className="space-y-1">
+          <Label>Kategoria</Label>
+          <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+            <SelectTrigger><SelectValue placeholder="Wybierz kategorię" /></SelectTrigger>
+            <SelectContent>
+              {categories.map((c: any) => (
+                <SelectItem key={c.name} value={c.name}>{c.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-      <div className="grid grid-cols-3 gap-4">
-        <div className="space-y-1"><Label>Kategoria</Label><Input value={form.category} onChange={u("category")} /></div>
-        <div className="space-y-1"><Label>Producent</Label><Input value={form.manufacturer} onChange={u("manufacturer")} /></div>
-        <div className="space-y-1"><Label>Model</Label><Input value={form.model} onChange={u("model")} /></div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1"><Label>Producent</Label><Input value={form.manufacturer} onChange={u("manufacturer")} placeholder="np. Samsung, Apple" /></div>
+        <div className="space-y-1"><Label>SKU (opcjonalne)</Label><Input value={form.sku} onChange={u("sku")} placeholder="np. BAT-IP12" /></div>
       </div>
+
+      {/* Compatible models */}
+      <div className="space-y-2">
+        <Label>Kompatybilne modele</Label>
+        <div className="flex gap-2">
+          <Input
+            value={newModel}
+            onChange={(e) => setNewModel(e.target.value)}
+            placeholder="np. iPhone 12, Dell Latitude 5420"
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addModel(); } }}
+          />
+          <Button type="button" variant="outline" size="sm" onClick={addModel}>Dodaj</Button>
+        </div>
+        {compatModels.length > 0 && (
+          <div className="flex gap-1 flex-wrap">
+            {compatModels.map((m, i) => (
+              <Badge key={i} variant="secondary" className="text-xs gap-1">
+                {m}
+                <button type="button" onClick={() => setCompatModels(compatModels.filter((_, idx) => idx !== i))} className="ml-1 hover:text-destructive">
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-4 gap-4">
         <div className="space-y-1"><Label>Jednostka</Label><Input value={form.unit} onChange={u("unit")} /></div>
         {!isEdit && (
@@ -570,16 +728,11 @@ function ItemForm({ onSubmit, loading, initialData, isEdit }: {
   );
 }
 
-// ── Movement Form (IN/OUT) ──
-function MovementForm({ type, onSubmit, loading }: {
-  type: "IN" | "OUT";
-  onSubmit: (d: any) => void;
-  loading: boolean;
-}) {
+// ── Movement Form ──
+function MovementForm({ type, onSubmit, loading }: { type: "IN" | "OUT"; onSubmit: (d: any) => void; loading: boolean }) {
   const [quantity, setQuantity] = useState("1");
   const [sourceType, setSourceType] = useState("MANUAL");
   const [notes, setNotes] = useState("");
-
   return (
     <div className="space-y-4">
       <div className="space-y-1">
@@ -597,14 +750,9 @@ function MovementForm({ type, onSubmit, loading }: {
           </SelectContent>
         </Select>
       </div>
-      <div className="space-y-1">
-        <Label>Notatki</Label>
-        <Input value={notes} onChange={(e) => setNotes(e.target.value)} />
-      </div>
+      <div className="space-y-1"><Label>Notatki</Label><Input value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
       <Button className="w-full" disabled={loading} onClick={() => onSubmit({
-        quantity: parseFloat(quantity) || 0,
-        source_type: sourceType,
-        notes: notes || null,
+        quantity: parseFloat(quantity) || 0, source_type: sourceType, notes: notes || null,
       })}>
         {loading ? "Zapisywanie..." : type === "IN" ? "Przyjmij towar" : "Wydaj towar"}
       </Button>
@@ -612,7 +760,7 @@ function MovementForm({ type, onSubmit, loading }: {
   );
 }
 
-// ── Adjustment Form (manual increase/decrease/damage/internal) ──
+// ── Adjustment Form ──
 function AdjustmentForm({ onSubmit, loading }: {
   onSubmit: (d: { quantity: number; movement_type: MovementType; notes: string }) => void;
   loading: boolean;
@@ -620,7 +768,6 @@ function AdjustmentForm({ onSubmit, loading }: {
   const [quantity, setQuantity] = useState("1");
   const [reason, setReason] = useState<MovementType>("ADJUSTMENT");
   const [notes, setNotes] = useState("");
-
   return (
     <div className="space-y-4">
       <div className="space-y-1">
@@ -628,9 +775,9 @@ function AdjustmentForm({ onSubmit, loading }: {
         <Select value={reason} onValueChange={(v) => setReason(v as MovementType)}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="IN">Zwiększenie stanu (korekta +)</SelectItem>
-            <SelectItem value="ADJUSTMENT">Korekta ręczna (ustawienie stanu)</SelectItem>
-            <SelectItem value="OUT">Zmniejszenie stanu (korekta −)</SelectItem>
+            <SelectItem value="IN">Zwiększenie stanu (+)</SelectItem>
+            <SelectItem value="ADJUSTMENT">Korekta (ustawienie stanu)</SelectItem>
+            <SelectItem value="OUT">Zmniejszenie stanu (−)</SelectItem>
             <SelectItem value="DAMAGE">Uszkodzenie / utrata</SelectItem>
             <SelectItem value="INTERNAL_USE">Użycie wewnętrzne</SelectItem>
           </SelectContent>
@@ -645,9 +792,7 @@ function AdjustmentForm({ onSubmit, loading }: {
         <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Opisz powód korekty..." rows={3} />
       </div>
       <Button className="w-full" disabled={loading || !notes.trim()} onClick={() => onSubmit({
-        quantity: parseFloat(quantity) || 0,
-        movement_type: reason,
-        notes: notes.trim(),
+        quantity: parseFloat(quantity) || 0, movement_type: reason, notes: notes.trim(),
       })}>
         {loading ? "Zapisywanie..." : "Zapisz korektę"}
       </Button>
