@@ -144,7 +144,12 @@ export default function InventoryPage() {
     activeItems.filter((i: any) => i.stock_quantity <= i.minimum_quantity && i.is_active), [activeItems]
   );
   const totalValue = useMemo(() =>
-    activeItems.reduce((sum: number, i: any) => sum + (Number(i.stock_quantity) * Number(i.purchase_net)), 0), [activeItems]
+    activeItems.reduce((sum: number, i: any) => {
+      const purchaseNet = Number(i.purchase_net);
+      const vatRate = Number(i.vat_rate) || 23;
+      const purchaseGross = purchaseNet * (1 + vatRate / 100);
+      return sum + (Number(i.stock_quantity) * purchaseGross);
+    }, 0), [activeItems]
   );
 
   const invalidateAll = () => {
@@ -250,7 +255,7 @@ export default function InventoryPage() {
           <div className="text-2xl font-bold">{activeItems.length}</div>
         </CardContent></Card>
         <Card><CardContent className="pt-4 pb-4">
-          <div className="text-xs text-muted-foreground">Wartość magazynu (netto)</div>
+          <div className="text-xs text-muted-foreground">Wartość magazynu (brutto)</div>
           <div className="text-2xl font-bold">{totalValue.toFixed(2)} zł</div>
         </CardContent></Card>
         <Card><CardContent className="pt-4 pb-4">
@@ -306,8 +311,8 @@ export default function InventoryPage() {
                       <TableHead>Kompatybilność</TableHead>
                       <TableHead className="text-right">Stan</TableHead>
                       <TableHead className="text-right">Min.</TableHead>
-                      <TableHead className="text-right">Zakup</TableHead>
-                      <TableHead className="text-right">Sprzedaż</TableHead>
+                      <TableHead className="text-right">Zakup brutto</TableHead>
+                      <TableHead className="text-right">Sprzedaż brutto</TableHead>
                       <TableHead>Akcje</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -346,8 +351,8 @@ export default function InventoryPage() {
                               {Number(item.stock_quantity)} {item.unit}
                             </TableCell>
                             <TableCell className="text-right tabular-nums text-muted-foreground">{Number(item.minimum_quantity)}</TableCell>
-                            <TableCell className="text-right tabular-nums text-xs">{Number(item.purchase_net).toFixed(2)} zł</TableCell>
-                            <TableCell className="text-right tabular-nums text-xs">{Number(item.sale_net).toFixed(2)} zł</TableCell>
+                            <TableCell className="text-right tabular-nums text-xs">{(Number(item.purchase_net) * (1 + (Number(item.vat_rate) || 23) / 100)).toFixed(2)} zł</TableCell>
+                            <TableCell className="text-right tabular-nums text-xs">{(Number(item.sale_net) * (1 + (Number(item.vat_rate) || 23) / 100)).toFixed(2)} zł</TableCell>
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <div className="flex gap-1 flex-wrap">
                                 <Button size="sm" variant="ghost" className="h-7 px-2" title="Przyjęcie"
@@ -575,8 +580,10 @@ function ItemDetailView({ item, categoryLabel }: { item: any; categoryLabel: str
       <div className="grid grid-cols-2 gap-3 text-sm">
         <div><span className="text-muted-foreground">Stan:</span> <span className="font-medium">{Number(item.stock_quantity)} {item.unit}</span></div>
         <div><span className="text-muted-foreground">Minimum:</span> <span>{Number(item.minimum_quantity)}</span></div>
-        <div><span className="text-muted-foreground">Zakup netto:</span> <span className="tabular-nums">{Number(item.purchase_net).toFixed(2)} zł</span></div>
-        <div><span className="text-muted-foreground">Sprzedaż netto:</span> <span className="tabular-nums">{Number(item.sale_net).toFixed(2)} zł</span></div>
+        <div><span className="text-muted-foreground">Zakup brutto:</span> <span className="tabular-nums">{(Number(item.purchase_net) * (1 + (Number(item.vat_rate) || 23) / 100)).toFixed(2)} zł</span></div>
+        <div><span className="text-muted-foreground">Sprzedaż brutto:</span> <span className="tabular-nums">{(Number(item.sale_net) * (1 + (Number(item.vat_rate) || 23) / 100)).toFixed(2)} zł</span></div>
+        <div><span className="text-muted-foreground">Zakup netto:</span> <span className="tabular-nums text-muted-foreground">{Number(item.purchase_net).toFixed(2)} zł</span></div>
+        <div><span className="text-muted-foreground">Sprzedaż netto:</span> <span className="tabular-nums text-muted-foreground">{Number(item.sale_net).toFixed(2)} zł</span></div>
         {item.sku && <div className="col-span-2"><span className="text-muted-foreground">SKU:</span> <span className="font-mono text-xs">{item.sku}</span></div>}
       </div>
 
@@ -719,8 +726,22 @@ function ItemForm({ onSubmit, loading, initialData, isEdit, categories }: {
         <div className="space-y-1"><Label>VAT %</Label><Input type="number" value={form.vat_rate} onChange={u("vat_rate")} /></div>
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1"><Label>Cena zakupu netto</Label><Input type="number" step="0.01" value={form.purchase_net} onChange={u("purchase_net")} /></div>
-        <div className="space-y-1"><Label>Cena sprzedaży netto</Label><Input type="number" step="0.01" value={form.sale_net} onChange={u("sale_net")} /></div>
+        <div className="space-y-1">
+          <Label>Cena zakupu brutto</Label>
+          <Input type="number" step="0.01"
+            value={(() => { const net = parseFloat(form.purchase_net) || 0; const vat = parseFloat(form.vat_rate) || 23; return net > 0 ? (net * (1 + vat / 100)).toFixed(2) : ""; })()}
+            onChange={(e) => { const gross = parseFloat(e.target.value) || 0; const vat = parseFloat(form.vat_rate) || 23; setForm({ ...form, purchase_net: (gross / (1 + vat / 100)).toFixed(2) }); }}
+          />
+          <p className="text-[10px] text-muted-foreground tabular-nums">netto: {(parseFloat(form.purchase_net) || 0).toFixed(2)} zł</p>
+        </div>
+        <div className="space-y-1">
+          <Label>Cena sprzedaży brutto</Label>
+          <Input type="number" step="0.01"
+            value={(() => { const net = parseFloat(form.sale_net) || 0; const vat = parseFloat(form.vat_rate) || 23; return net > 0 ? (net * (1 + vat / 100)).toFixed(2) : ""; })()}
+            onChange={(e) => { const gross = parseFloat(e.target.value) || 0; const vat = parseFloat(form.vat_rate) || 23; setForm({ ...form, sale_net: (gross / (1 + vat / 100)).toFixed(2) }); }}
+          />
+          <p className="text-[10px] text-muted-foreground tabular-nums">netto: {(parseFloat(form.sale_net) || 0).toFixed(2)} zł</p>
+        </div>
       </div>
       <div className="space-y-1"><Label>Notatki</Label><Input value={form.notes} onChange={u("notes")} /></div>
       <Button type="submit" className="w-full" disabled={loading}>

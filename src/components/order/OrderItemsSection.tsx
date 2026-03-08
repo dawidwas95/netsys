@@ -337,8 +337,8 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                                         <div className="text-[10px] text-amber-400">min: {item.minimum_quantity}</div>
                                       )}
                                     </TableCell>
-                                    <TableCell className="text-right tabular-nums text-xs">{formatCurrency(item.purchase_net)}</TableCell>
-                                    <TableCell className="text-right tabular-nums text-xs">{formatCurrency(item.sale_net)}</TableCell>
+                                    <TableCell className="text-right tabular-nums text-xs">{formatCurrency(item.purchase_net * 1.23)}</TableCell>
+                                    <TableCell className="text-right tabular-nums text-xs">{formatCurrency(item.sale_net * 1.23)}</TableCell>
                                     <TableCell>
                                       {noStock ? (
                                         <Badge variant="outline" className="text-[10px] text-destructive">Brak</Badge>
@@ -403,35 +403,36 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                           )}
                         </div>
                         <div className="space-y-1">
-                          <Label>Cena sprzedaży netto</Label>
+                          <Label>Cena sprzedaży brutto</Label>
                           <Input
                             type="number"
                             step="0.01"
-                            value={invSaleNet}
-                            onChange={(e) => setInvSaleNet(e.target.value)}
-                            placeholder={selectedInvItem.sale_net.toString()}
+                            value={(() => { const net = parseFloat(invSaleNet) || 0; return net > 0 ? (net * 1.23).toFixed(2) : ""; })()}
+                            onChange={(e) => { const gross = parseFloat(e.target.value) || 0; setInvSaleNet((gross / 1.23).toFixed(2)); }}
+                            placeholder={(selectedInvItem.sale_net * 1.23).toFixed(2)}
                           />
+                          <p className="text-[10px] text-muted-foreground tabular-nums">netto: {(parseFloat(invSaleNet) || 0).toFixed(2)} zł</p>
                         </div>
                       </div>
 
                       {/* Preview */}
                       <div className="rounded-lg bg-muted/30 p-3 text-sm space-y-1">
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Koszt zakupu:</span>
-                          <span className="font-mono">{formatCurrency((parseFloat(invQuantity) || 0) * selectedInvItem.purchase_net)}</span>
+                          <span className="text-muted-foreground">Koszt zakupu brutto:</span>
+                          <span className="font-mono">{formatCurrency((parseFloat(invQuantity) || 0) * selectedInvItem.purchase_net * 1.23)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Przychód sprzedaży:</span>
-                          <span className="font-mono">{formatCurrency((parseFloat(invQuantity) || 0) * (parseFloat(invSaleNet) || selectedInvItem.sale_net))}</span>
+                          <span className="text-muted-foreground">Przychód sprzedaży brutto:</span>
+                          <span className="font-mono">{formatCurrency((parseFloat(invQuantity) || 0) * (parseFloat(invSaleNet) || selectedInvItem.sale_net) * 1.23)}</span>
                         </div>
                         <div className="flex justify-between border-t pt-1">
-                          <span className="font-medium">Zysk:</span>
+                          <span className="font-medium">Zysk brutto:</span>
                           <span className={cn(
                             "font-mono font-medium",
                             ((parseFloat(invQuantity) || 0) * ((parseFloat(invSaleNet) || selectedInvItem.sale_net) - selectedInvItem.purchase_net)) >= 0
                               ? "text-primary" : "text-destructive"
                           )}>
-                            {formatCurrency((parseFloat(invQuantity) || 0) * ((parseFloat(invSaleNet) || selectedInvItem.sale_net) - selectedInvItem.purchase_net))}
+                            {formatCurrency((parseFloat(invQuantity) || 0) * ((parseFloat(invSaleNet) || selectedInvItem.sale_net) - selectedInvItem.purchase_net) * 1.23)}
                           </span>
                         </div>
                       </div>
@@ -463,14 +464,22 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                       <Label className="text-xs">Ilość</Label>
                       <Input type="number" min="1" value={customItem.quantity} onChange={(e) => setCustomItem({ ...customItem, quantity: e.target.value })} />
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Cena sprzedaży netto</Label>
-                      <Input type="number" step="0.01" value={customItem.sale_net} onChange={(e) => setCustomItem({ ...customItem, sale_net: e.target.value })} placeholder="0.00" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Cena zakupu netto</Label>
-                      <Input type="number" step="0.01" value={customItem.purchase_net} onChange={(e) => setCustomItem({ ...customItem, purchase_net: e.target.value })} placeholder="0.00" />
-                    </div>
+                     <div className="space-y-1">
+                       <Label className="text-xs">Cena sprzedaży brutto</Label>
+                       <Input type="number" step="0.01"
+                         value={(() => { const net = parseFloat(customItem.sale_net) || 0; return net > 0 ? (net * 1.23).toFixed(2) : ""; })()}
+                         onChange={(e) => { const gross = parseFloat(e.target.value) || 0; setCustomItem({ ...customItem, sale_net: (gross / 1.23).toFixed(2) }); }}
+                         placeholder="0.00" />
+                       <p className="text-[10px] text-muted-foreground tabular-nums">netto: {(parseFloat(customItem.sale_net) || 0).toFixed(2)} zł</p>
+                     </div>
+                     <div className="space-y-1">
+                       <Label className="text-xs">Cena zakupu brutto</Label>
+                       <Input type="number" step="0.01"
+                         value={(() => { const net = parseFloat(customItem.purchase_net) || 0; return net > 0 ? (net * 1.23).toFixed(2) : ""; })()}
+                         onChange={(e) => { const gross = parseFloat(e.target.value) || 0; setCustomItem({ ...customItem, purchase_net: (gross / 1.23).toFixed(2) }); }}
+                         placeholder="0.00" />
+                       <p className="text-[10px] text-muted-foreground tabular-nums">netto: {(parseFloat(customItem.purchase_net) || 0).toFixed(2)} zł</p>
+                     </div>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Notatka</Label>
@@ -500,24 +509,26 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
               <TableRow>
                 <TableHead>Nazwa</TableHead>
                 <TableHead className="text-center w-14">Ilość</TableHead>
-                <TableHead className="text-right">Zakup</TableHead>
-                <TableHead className="text-right">Sprzedaż</TableHead>
-                <TableHead className="text-right">Zysk</TableHead>
+                <TableHead className="text-right">Zakup brutto</TableHead>
+                <TableHead className="text-right">Sprzedaż brutto</TableHead>
+                <TableHead className="text-right">Zysk brutto</TableHead>
                 <TableHead className="text-center w-16">Źródło</TableHead>
                 {!isCompleted && <TableHead className="w-10"></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {orderItems.map((item) => {
-                const profit = item.total_sale_net - item.total_purchase_net;
+                const purchaseGross = item.total_purchase_net * 1.23;
+                const saleGross = item.total_sale_net * 1.23;
+                const profitGross = saleGross - purchaseGross;
                 return (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium text-sm">{item.item_name_snapshot}</TableCell>
                     <TableCell className="text-center tabular-nums">{item.quantity}</TableCell>
-                    <TableCell className="text-right tabular-nums text-xs">{formatCurrency(item.total_purchase_net)}</TableCell>
-                    <TableCell className="text-right tabular-nums text-xs">{formatCurrency(item.total_sale_net)}</TableCell>
-                    <TableCell className={cn("text-right tabular-nums text-xs font-medium", profit >= 0 ? "text-primary" : "text-destructive")}>
-                      {formatCurrency(profit)}
+                    <TableCell className="text-right tabular-nums text-xs">{formatCurrency(purchaseGross)}</TableCell>
+                    <TableCell className="text-right tabular-nums text-xs">{formatCurrency(saleGross)}</TableCell>
+                    <TableCell className={cn("text-right tabular-nums text-xs font-medium", profitGross >= 0 ? "text-primary" : "text-destructive")}>
+                      {formatCurrency(profitGross)}
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge variant="outline" className="text-[10px]">
@@ -544,13 +555,13 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
               <TableRow className="bg-muted/30 font-medium">
                 <TableCell>Razem</TableCell>
                 <TableCell className="text-center tabular-nums">{orderItems.reduce((s, i) => s + i.quantity, 0)}</TableCell>
-                <TableCell className="text-right tabular-nums text-xs">{formatCurrency(orderItems.reduce((s, i) => s + i.total_purchase_net, 0))}</TableCell>
-                <TableCell className="text-right tabular-nums text-xs">{formatCurrency(orderItems.reduce((s, i) => s + i.total_sale_net, 0))}</TableCell>
+                <TableCell className="text-right tabular-nums text-xs">{formatCurrency(orderItems.reduce((s, i) => s + i.total_purchase_net * 1.23, 0))}</TableCell>
+                <TableCell className="text-right tabular-nums text-xs">{formatCurrency(orderItems.reduce((s, i) => s + i.total_sale_net * 1.23, 0))}</TableCell>
                 <TableCell className={cn(
                   "text-right tabular-nums text-xs",
-                  orderItems.reduce((s, i) => s + i.total_sale_net - i.total_purchase_net, 0) >= 0 ? "text-primary" : "text-destructive"
+                  orderItems.reduce((s, i) => s + (i.total_sale_net - i.total_purchase_net) * 1.23, 0) >= 0 ? "text-primary" : "text-destructive"
                 )}>
-                  {formatCurrency(orderItems.reduce((s, i) => s + i.total_sale_net - i.total_purchase_net, 0))}
+                  {formatCurrency(orderItems.reduce((s, i) => s + (i.total_sale_net - i.total_purchase_net) * 1.23, 0))}
                 </TableCell>
                 <TableCell></TableCell>
                 {!isCompleted && <TableCell></TableCell>}

@@ -68,12 +68,12 @@ export default function DashboardPage() {
 
       const { data: completedOrders } = await supabase
         .from("service_orders")
-        .select("id, labor_net, parts_net, extra_cost_net, total_net, is_paid, payment_method, completed_at")
+        .select("id, labor_net, parts_net, extra_cost_net, total_net, total_gross, is_paid, payment_method, completed_at")
         .eq("status", "COMPLETED")
         .eq("is_paid", true)
         .gte("completed_at", monthStart.toISOString());
 
-      if (!completedOrders?.length) return { revenue: 0, cost: 0, profit: 0, margin: 0 };
+      if (!completedOrders?.length) return { revenue: 0, cost: 0, profit: 0, margin: 0, revenueGross: 0, costGross: 0, profitGross: 0 };
 
       const orderIds = completedOrders.map((o) => o.id);
 
@@ -100,19 +100,23 @@ export default function DashboardPage() {
 
       const profit = revenue - cost;
       const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
+      const revenueGross = revenue * 1.23;
+      const costGross = cost * 1.23;
+      const profitGross = revenueGross - costGross;
 
-      return { revenue, cost, profit, margin };
+      return { revenue, cost, profit, margin, revenueGross, costGross, profitGross };
     },
   });
 
   const { data: cashBalance } = useQuery({
     queryKey: ["dashboard-cash-balance"],
     queryFn: async () => {
-      const { data } = await supabase.from("cash_transactions").select("transaction_type, amount");
+      const { data } = await supabase.from("cash_transactions").select("transaction_type, amount, gross_amount");
       if (!data) return 0;
       return data.reduce((sum, t) => {
-        if (t.transaction_type === "IN") return sum + Number(t.amount);
-        if (t.transaction_type === "OUT") return sum - Number(t.amount);
+        const amt = Number(t.gross_amount) > 0 ? Number(t.gross_amount) : Number(t.amount);
+        if (t.transaction_type === "IN") return sum + amt;
+        if (t.transaction_type === "OUT") return sum - amt;
         return sum;
       }, 0);
     },
@@ -137,9 +141,9 @@ export default function DashboardPage() {
   ];
 
   const finKpis = [
-    { label: "Przychód (mies.)", value: formatCurrency(financialStats?.revenue ?? 0), icon: TrendingUp, color: "text-primary" },
-    { label: "Koszty (mies.)", value: formatCurrency(financialStats?.cost ?? 0), icon: TrendingDown, color: "text-destructive" },
-    { label: "Zysk (mies.)", value: formatCurrency(financialStats?.profit ?? 0), icon: DollarSign, color: (financialStats?.profit ?? 0) >= 0 ? "text-primary" : "text-destructive" },
+    { label: "Przychód brutto (mies.)", value: formatCurrency(financialStats?.revenueGross ?? 0), icon: TrendingUp, color: "text-primary" },
+    { label: "Koszty brutto (mies.)", value: formatCurrency(financialStats?.costGross ?? 0), icon: TrendingDown, color: "text-destructive" },
+    { label: "Zysk brutto (mies.)", value: formatCurrency(financialStats?.profitGross ?? 0), icon: DollarSign, color: (financialStats?.profitGross ?? 0) >= 0 ? "text-primary" : "text-destructive" },
     { label: "Marża", value: `${(financialStats?.margin ?? 0).toFixed(1)}%`, icon: Percent, color: "text-muted-foreground" },
     { label: "Stan kasy", value: formatCurrency(cashBalance ?? 0), icon: Wallet, color: "text-primary" },
   ];
@@ -199,7 +203,7 @@ function RecentOrders() {
     queryFn: async () => {
       const { data } = await supabase
         .from("service_orders")
-        .select("id, order_number, status, priority, total_net, is_paid, received_at, clients(display_name)")
+        .select("id, order_number, status, priority, total_gross, is_paid, received_at, clients(display_name)")
         .order("received_at", { ascending: false })
         .limit(5);
       return data ?? [];
@@ -218,9 +222,9 @@ function RecentOrders() {
             <span className="text-muted-foreground ml-2">{order.clients?.display_name}</span>
           </div>
           <div className="flex items-center gap-2">
-            {Number(order.total_net || 0) > 0 && (
+            {Number(order.total_gross || 0) > 0 && (
               <span className="font-mono text-xs text-muted-foreground">
-                {new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(Number(order.total_net))}
+                {new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(Number(order.total_gross))}
               </span>
             )}
             <OrderStatusBadge status={order.status} />
@@ -261,7 +265,7 @@ function RecentCashOps() {
           </div>
           <span className={`font-mono font-medium ${t.transaction_type === "IN" ? "text-primary" : "text-destructive"}`}>
             {t.transaction_type === "IN" ? "+" : "-"}
-            {new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(Number(t.amount))}
+            {new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(Number(t.gross_amount || t.amount))}
           </span>
         </div>
       ))}
