@@ -152,6 +152,8 @@ const emptyForm = {
   client_id: "",
   contractor_name: "",
   contractor_nip: "",
+  buyer_name: "",
+  buyer_nip: "",
   issue_date: new Date().toISOString().split("T")[0],
   sale_date: "",
   due_date: "",
