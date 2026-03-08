@@ -76,6 +76,45 @@ Deno.serve(async (req) => {
       return jsonResponse({ success: true });
     }
 
+    // ---- REPAIR APPROVAL (from customer) ----
+    if (action === "repair_approval") {
+      const { token, order_number, phone, decision, note } = body;
+      if (!decision || !["APPROVED_BY_CUSTOMER", "REJECTED_BY_CUSTOMER"].includes(decision)) {
+        return jsonResponse({ error: "Nieprawidłowa decyzja" }, 400);
+      }
+
+      const orderId = await resolveOrderId(supabase, { token, order_number, phone });
+      if (!orderId) {
+        return jsonResponse({ error: "Nie znaleziono zlecenia" }, 404);
+      }
+
+      // Verify the order is actually waiting for approval
+      const { data: orderCheck } = await supabase
+        .from("service_orders")
+        .select("repair_approval_status")
+        .eq("id", orderId)
+        .single();
+
+      if (!orderCheck || orderCheck.repair_approval_status !== "WAITING_FOR_CUSTOMER") {
+        return jsonResponse({ error: "Zlecenie nie oczekuje na decyzję klienta" }, 400);
+      }
+
+      const { error } = await supabase
+        .from("service_orders")
+        .update({
+          repair_approval_status: decision,
+          repair_approval_at: new Date().toISOString(),
+          repair_approval_note: note?.trim()?.substring(0, 500) || null,
+        })
+        .eq("id", orderId);
+
+      if (error) {
+        return jsonResponse({ error: "Błąd zapisu decyzji" }, 500);
+      }
+
+      return jsonResponse({ success: true });
+    }
+
     // ---- DEFAULT: GET ORDER STATUS ----
     const { order_number, phone, token } = body;
 
@@ -85,6 +124,7 @@ Deno.serve(async (req) => {
         id, order_number, status, received_at, problem_description, diagnosis,
         repair_description, total_gross, is_paid, estimated_completion_date,
         pickup_code, status_token,
+        estimated_repair_cost_gross, repair_approval_status, repair_approval_at, repair_approval_note,
         clients(display_name, phone),
         devices(manufacturer, model, device_category)
       `)
@@ -133,6 +173,10 @@ Deno.serve(async (req) => {
       is_paid: data.is_paid,
       estimated_completion_date: data.estimated_completion_date,
       unread_messages: unreadCount ?? 0,
+      estimated_repair_cost_gross: data.estimated_repair_cost_gross,
+      repair_approval_status: data.repair_approval_status,
+      repair_approval_at: data.repair_approval_at,
+      repair_approval_note: data.repair_approval_note,
       device: data.devices ? {
         manufacturer: (data.devices as any).manufacturer,
         model: (data.devices as any).model,

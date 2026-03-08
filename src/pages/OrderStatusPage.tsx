@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Wrench, Search, Monitor, Calendar, FileText, DollarSign, CheckCircle, Clock, AlertTriangle } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Wrench, Search, Monitor, Calendar, FileText, DollarSign, CheckCircle, Clock, AlertTriangle, ThumbsUp, ThumbsDown, Loader2 } from "lucide-react";
 import { ORDER_STATUS_LABELS, DEVICE_CATEGORY_LABELS, type OrderStatus, type DeviceCategory } from "@/types/database";
 
 import CustomerMessagesPublic from "@/components/CustomerMessagesPublic";
@@ -23,6 +24,10 @@ interface PublicOrderData {
   is_paid: boolean;
   estimated_completion_date: string | null;
   unread_messages: number;
+  estimated_repair_cost_gross: number | null;
+  repair_approval_status: string | null;
+  repair_approval_at: string | null;
+  repair_approval_note: string | null;
   device: { manufacturer: string; model: string; category: DeviceCategory } | null;
 }
 
@@ -156,6 +161,7 @@ export default function OrderStatusPage() {
             token={token}
             orderNumber={orderNumber}
             phone={phone}
+            onOrderUpdated={(updated) => setOrder(updated)}
           />
         )}
       </main>
@@ -163,12 +169,13 @@ export default function OrderStatusPage() {
   );
 }
 
-function OrderStatusView({ order, onBack, token, orderNumber, phone }: {
+function OrderStatusView({ order, onBack, token, orderNumber, phone, onOrderUpdated }: {
   order: PublicOrderData;
   onBack: () => void;
   token?: string | null;
   orderNumber?: string;
   phone?: string;
+  onOrderUpdated: (order: PublicOrderData) => void;
 }) {
   const statusLabel = ORDER_STATUS_LABELS[order.status] || order.status;
   const statusColor = STATUS_COLORS[order.status] || "bg-muted text-foreground";
@@ -261,6 +268,15 @@ function OrderStatusView({ order, onBack, token, orderNumber, phone }: {
         </CardContent>
       </Card>
 
+      {/* Repair Approval Section */}
+      <RepairApprovalSection
+        order={order}
+        token={token}
+        orderNumber={orderNumber}
+        phone={phone}
+        onOrderUpdated={onOrderUpdated}
+      />
+
       {/* Cost */}
       <Card>
         <CardHeader className="pb-2">
@@ -303,5 +319,165 @@ function OrderStatusView({ order, onBack, token, orderNumber, phone }: {
         W razie pytań skontaktuj się z serwisem telefonicznie lub wyślij wiadomość powyżej.
       </p>
     </div>
+  );
+}
+
+// ═══ REPAIR APPROVAL SECTION ═══
+function RepairApprovalSection({ order, token, orderNumber, phone, onOrderUpdated }: {
+  order: PublicOrderData;
+  token?: string | null;
+  orderNumber?: string;
+  phone?: string;
+  onOrderUpdated: (order: PublicOrderData) => void;
+}) {
+  const [submitting, setSubmitting] = useState(false);
+  const [note, setNote] = useState("");
+  const [error, setError] = useState("");
+
+  const isWaiting = order.repair_approval_status === "WAITING_FOR_CUSTOMER";
+  const isApproved = order.repair_approval_status === "APPROVED_BY_CUSTOMER";
+  const isRejected = order.repair_approval_status === "REJECTED_BY_CUSTOMER";
+  const hasDecision = isApproved || isRejected;
+
+  // Don't show if no approval needed
+  if (order.repair_approval_status === "NONE" || !order.repair_approval_status) {
+    return null;
+  }
+
+  async function handleDecision(decision: "APPROVED_BY_CUSTOMER" | "REJECTED_BY_CUSTOMER") {
+    setSubmitting(true);
+    setError("");
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("order-status", {
+        body: {
+          action: "repair_approval",
+          token: token || undefined,
+          order_number: orderNumber || undefined,
+          phone: phone || undefined,
+          decision,
+          note: note.trim() || undefined,
+        },
+      });
+      if (fnError || data?.error) throw new Error(data?.error || "Błąd");
+      // Update local state
+      onOrderUpdated({
+        ...order,
+        repair_approval_status: decision,
+        repair_approval_at: new Date().toISOString(),
+        repair_approval_note: note.trim() || null,
+      });
+    } catch (e: any) {
+      setError(e.message || "Błąd zapisu decyzji");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const formatCurrency = (v: number) =>
+    new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(v);
+
+  return (
+    <Card className={isWaiting ? "border-amber-300 bg-amber-50/50" : isApproved ? "border-green-300 bg-green-50/50" : isRejected ? "border-red-300 bg-red-50/50" : ""}>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2">
+          {isWaiting && <AlertTriangle className="h-4 w-4 text-amber-600" />}
+          {isApproved && <ThumbsUp className="h-4 w-4 text-green-600" />}
+          {isRejected && <ThumbsDown className="h-4 w-4 text-red-600" />}
+          Decyzja o naprawie
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Show diagnosis if available */}
+        {order.diagnosis && isWaiting && (
+          <div className="text-sm">
+            <p className="text-xs text-muted-foreground font-medium mb-1">Wynik diagnostyki</p>
+            <p className="bg-background rounded-md p-2 border border-border">{order.diagnosis}</p>
+          </div>
+        )}
+
+        {/* Show estimated cost */}
+        {order.estimated_repair_cost_gross != null && order.estimated_repair_cost_gross > 0 && (
+          <div className="text-sm">
+            <p className="text-xs text-muted-foreground font-medium mb-1">Szacunkowy koszt naprawy</p>
+            <p className="text-xl font-bold font-mono text-foreground">
+              {formatCurrency(order.estimated_repair_cost_gross)}
+            </p>
+          </div>
+        )}
+
+        {/* Waiting: show action buttons */}
+        {isWaiting && (
+          <>
+            <p className="text-sm text-amber-800 font-medium">
+              Prosimy o potwierdzenie, czy akceptują Państwo koszt naprawy.
+            </p>
+
+            <div className="space-y-2">
+              <Label className="text-xs">Uwagi (opcjonalnie)</Label>
+              <Textarea
+                rows={2}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Dodatkowe uwagi..."
+                className="text-sm"
+                maxLength={500}
+              />
+            </div>
+
+            {error && (
+              <div className="flex items-center gap-2 text-sm text-destructive">
+                <AlertTriangle className="h-4 w-4" /> {error}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <Button
+                className="flex-1"
+                onClick={() => handleDecision("APPROVED_BY_CUSTOMER")}
+                disabled={submitting}
+              >
+                {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ThumbsUp className="mr-2 h-4 w-4" />}
+                Akceptuję naprawę
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={() => handleDecision("REJECTED_BY_CUSTOMER")}
+                disabled={submitting}
+              >
+                {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ThumbsDown className="mr-2 h-4 w-4" />}
+                Odrzucam
+              </Button>
+            </div>
+          </>
+        )}
+
+        {/* Decision made */}
+        {hasDecision && (
+          <div className="space-y-2">
+            {isApproved && (
+              <Badge className="bg-green-100 text-green-800 border-green-300">
+                <ThumbsUp className="mr-1 h-3 w-3" /> Naprawa zaakceptowana
+              </Badge>
+            )}
+            {isRejected && (
+              <Badge className="bg-red-100 text-red-800 border-red-300">
+                <ThumbsDown className="mr-1 h-3 w-3" /> Naprawa odrzucona
+              </Badge>
+            )}
+            {order.repair_approval_at && (
+              <p className="text-xs text-muted-foreground">
+                Decyzja z dnia: {new Date(order.repair_approval_at).toLocaleString("pl-PL")}
+              </p>
+            )}
+            {order.repair_approval_note && (
+              <p className="text-sm text-muted-foreground">
+                Uwagi: {order.repair_approval_note}
+              </p>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
