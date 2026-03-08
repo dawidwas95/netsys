@@ -50,6 +50,7 @@ import { OrderPhotoGallery } from "@/components/OrderPhotoGallery";
 import { cn } from "@/lib/utils";
 import { OrderItemsSection } from "@/components/order/OrderItemsSection";
 import CustomerMessagesStaff from "@/components/CustomerMessagesStaff";
+import { TechnicianAssignment } from "@/components/TechnicianAssignment";
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(v);
@@ -837,6 +838,7 @@ export default function OrderDetailPage() {
             deviceName={order.devices ? `${(order.devices as any).manufacturer || ""} ${(order.devices as any).model || ""}`.trim() || null : null}
             statusToken={(order as any).status_token}
           />
+          <TechnicianAssignment orderId={id!} orderNumber={order.order_number} />
           <FinanceSection formData={currentForm} onChange={handleFieldChange} orderItems={orderItems} />
           <PaymentSection formData={currentForm} onChange={handleFieldChange} />
 

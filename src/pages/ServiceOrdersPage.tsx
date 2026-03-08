@@ -13,9 +13,10 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, KanbanSquare } from "lucide-react";
+import { Plus, Search, KanbanSquare, User } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { TechnicianBadges, QuickAssignButton } from "@/components/TechnicianAssignment";
 import {
   ORDER_STATUS_LABELS, ORDER_PRIORITY_LABELS, SERVICE_TYPE_LABELS,
   type OrderStatus, type OrderPriority, type ServiceType,
@@ -29,9 +30,24 @@ import {
 export default function ServiceOrdersPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [techFilter, setTechFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const queryClient = useQueryClient();
   const { user } = useAuth();
+
+  const { data: staffUsers = [] } = useQuery({
+    queryKey: ["all-staff-users"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, first_name, last_name, email")
+        .eq("is_active", true);
+      return (data ?? []).map((p: any) => ({
+        id: p.user_id,
+        name: [p.first_name, p.last_name].filter(Boolean).join(" ") || p.email || "Użytkownik",
+      }));
+    },
+  });
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["service-orders", search, statusFilter],
@@ -105,8 +121,18 @@ export default function ServiceOrdersPage() {
               <SelectItem key={key} value={key}>{label}</SelectItem>
             ))}
           </SelectContent>
-        </Select>
-      </div>
+         </Select>
+         <Select value={techFilter} onValueChange={setTechFilter}>
+           <SelectTrigger className="w-48"><SelectValue placeholder="Technik" /></SelectTrigger>
+           <SelectContent>
+             <SelectItem value="all">Wszyscy technicy</SelectItem>
+             <SelectItem value="unassigned">Nieprzypisane</SelectItem>
+             {staffUsers.map((u) => (
+               <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+             ))}
+           </SelectContent>
+         </Select>
+       </div>
 
       <div className="data-table-wrapper">
         <Table>
@@ -116,6 +142,7 @@ export default function ServiceOrdersPage() {
               <TableHead>Typ</TableHead>
               <TableHead>Klient</TableHead>
               <TableHead>Urządzenie</TableHead>
+              <TableHead>Technik</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Priorytet</TableHead>
               <TableHead>Data przyjęcia</TableHead>
@@ -123,9 +150,9 @@ export default function ServiceOrdersPage() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Ładowanie...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Ładowanie...</TableCell></TableRow>
             ) : !orders?.length ? (
-              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Brak zleceń</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Brak zleceń</TableCell></TableRow>
             ) : (
               orders.map((order: any) => (
                 <TableRow key={order.id} className="hover:bg-muted/50">
@@ -138,6 +165,12 @@ export default function ServiceOrdersPage() {
                   <TableCell>{order.clients?.display_name}</TableCell>
                   <TableCell className="text-sm">
                     {order.devices ? `${order.devices.manufacturer} ${order.devices.model}` : "—"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <TechnicianBadges orderId={order.id} compact />
+                      <QuickAssignButton orderId={order.id} orderNumber={order.order_number} />
+                    </div>
                   </TableCell>
                   <TableCell><OrderStatusBadge status={order.status} /></TableCell>
                   <TableCell className="text-sm">{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
