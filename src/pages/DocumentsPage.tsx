@@ -406,6 +406,15 @@ export default function DocumentsPage() {
         }
       }
 
+      // Auto-attach OCR source file
+      if (docId && ocrSourceFile) {
+        uploadPendingFiles(docId, [ocrSourceFile], user?.id).then(() => {
+          qc.invalidateQueries({ queryKey: ["document-attachments", docId] });
+          qc.invalidateQueries({ queryKey: ["document-attachment-counts"] });
+        }).catch(() => {});
+        setOcrSourceFile(null);
+      }
+
       resetForm();
     },
     onError: (err: any) => toast.error(err?.message || "Błąd zapisu"),
