@@ -492,14 +492,29 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                 </TabsContent>
 
                 <TabsContent value="custom" className="space-y-4 mt-3">
-                  <div className="space-y-1">
-                    <Label>Nazwa *</Label>
-                    <Input
-                      value={customItem.name}
-                      onChange={(e) => setCustomItem({ ...customItem, name: e.target.value })}
-                      placeholder="np. Adapter USB-C"
-                    />
+                  <div className="grid grid-cols-[1fr_140px] gap-3">
+                    <div className="space-y-1">
+                      <Label>Nazwa *</Label>
+                      <Input
+                        value={customItem.name}
+                        onChange={(e) => setCustomItem({ ...customItem, name: e.target.value })}
+                        placeholder="np. Adapter USB-C, Bolt kurier, parking"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Typ pozycji</Label>
+                      <Select value={customItem.item_type} onValueChange={(v) => setCustomItem({ ...customItem, item_type: v as OrderItemType })}>
+                        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="SERVICE">Usługa</SelectItem>
+                          <SelectItem value="INTERNAL_COST">Koszt wewnętrzny</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
+                  {customItem.item_type === "INTERNAL_COST" && (
+                    <p className="text-xs text-muted-foreground">Koszt wewnętrzny: Bolt, paliwo, parking, transport — nie wpływa na magazyn.</p>
+                  )}
                   <div className="grid grid-cols-3 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs">Ilość</Label>
