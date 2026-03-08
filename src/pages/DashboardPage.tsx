@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table";
 import {
   Wrench, CheckCircle, AlertCircle, Users, TrendingUp, TrendingDown,
-  Clock, DollarSign, Wallet, Percent,
+  Clock, DollarSign, Wallet, Percent, AlertTriangle, Package,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -177,6 +177,8 @@ export default function DashboardPage() {
         ))}
       </div>
 
+      <LowStockAlerts />
+
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
         <Card>
           <CardHeader><CardTitle className="text-lg">Ostatnie zlecenia</CardTitle></CardHeader>
@@ -264,6 +266,59 @@ function RecentCashOps() {
         </div>
       ))}
     </div>
+  );
+}
+
+function LowStockAlerts() {
+  const { data: lowStockItems = [] } = useQuery({
+    queryKey: ["dashboard-low-stock"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("inventory_items")
+        .select("id, name, sku, stock_quantity, minimum_quantity, unit")
+        .eq("is_active", true)
+        .is("deleted_at", null)
+        .order("name");
+      if (error) throw error;
+      return (data ?? []).filter((i) => Number(i.stock_quantity) <= Number(i.minimum_quantity) && Number(i.minimum_quantity) > 0);
+    },
+  });
+
+  if (lowStockItems.length === 0) return null;
+
+  return (
+    <Card className="mb-6 border-amber-500/30 bg-amber-500/5">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5 text-amber-500" />
+          Niski stan magazynowy
+          <Badge variant="secondary" className="ml-auto bg-amber-500/20 text-amber-600 border-amber-500/30">
+            {lowStockItems.length}
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {lowStockItems.map((item: any) => (
+            <div key={item.id} className="flex items-center justify-between text-sm border-b border-amber-500/10 pb-2 last:border-0">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">{item.name}</span>
+                {item.sku && <span className="text-xs text-muted-foreground font-mono">({item.sku})</span>}
+              </div>
+              <div className="flex items-center gap-3 text-xs">
+                <span className="text-amber-600 font-medium">
+                  Stan: {Number(item.stock_quantity)} {item.unit}
+                </span>
+                <span className="text-muted-foreground">
+                  Min: {Number(item.minimum_quantity)} {item.unit}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
