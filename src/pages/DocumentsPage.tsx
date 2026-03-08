@@ -32,7 +32,7 @@ import { toast } from "sonner";
 import { SearchableSelect } from "@/components/SearchableSelect";
 import { ClientFormDialog } from "@/components/ClientFormDialog";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/types/database";
-import { DocumentAttachments, useDocumentAttachmentCounts } from "@/components/DocumentAttachments";
+import { DocumentAttachments, useDocumentAttachmentCounts, uploadPendingFiles, type DocumentAttachmentsHandle } from "@/components/DocumentAttachments";
 import { createWarehouseDocument } from "@/lib/warehouseDocuments";
 
 type DocType = "PURCHASE_INVOICE" | "SALES_INVOICE" | "RECEIPT" | "PROFORMA" | "CORRECTION" | "OTHER";
