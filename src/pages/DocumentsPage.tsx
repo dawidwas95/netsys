@@ -399,68 +399,6 @@ export default function DocumentsPage() {
             if (editId) {
               await supabase.from("inventory_movements").delete().eq("source_id", docId!).eq("source_type", "PURCHASE");
             }
-
-            // Auto-create/recreate PZ warehouse document
-            const productItems = items.filter(it => it.item_type === "PRODUCT");
-            if (productItems.length > 0) {
-              // Delete old linked PZ if editing
-              if (editId) {
-                const { data: oldPz } = await (supabase.from("warehouse_documents") as any)
-                  .select("id")
-                  .eq("linked_invoice_id", docId);
-                if (oldPz?.length) {
-                  for (const pz of oldPz) {
-                    // Delete movements linked to warehouse doc items
-                    const { data: pzItems } = await (supabase.from("warehouse_document_items") as any)
-                      .select("id")
-                      .eq("warehouse_document_id", pz.id);
-                    if (pzItems?.length) {
-                      for (const pi of pzItems) {
-                        await supabase.from("inventory_movements").delete().eq("source_id", pi.id).eq("source_type", "DOCUMENT");
-                      }
-                    }
-                    await (supabase.from("warehouse_document_items") as any).delete().eq("warehouse_document_id", pz.id);
-                    await (supabase.from("warehouse_documents") as any).delete().eq("id", pz.id);
-                  }
-                }
-              }
-
-              // Ensure each product item has an inventory_item_id
-              const pzItems = [];
-              for (const pi of productItems) {
-                let invItemId = pi.inventory_item_id;
-                if (!invItemId) {
-                  const { data: existing } = await supabase.from("inventory_items").select("id").eq("name", pi.name).maybeSingle();
-                  if (existing) { invItemId = existing.id; }
-                  else {
-                    const { data: created } = await supabase.from("inventory_items").insert({ name: pi.name, purchase_net: pi.unit_net, unit: pi.unit, vat_rate: pi.vat_rate }).select("id").single();
-                    if (created) invItemId = created.id;
-                  }
-                }
-                if (invItemId) {
-                  // Update purchase price
-                  await supabase.from("inventory_items").update({ purchase_net: pi.unit_net }).eq("id", invItemId);
-                  pzItems.push({
-                    inventory_item_id: invItemId,
-                    quantity: pi.quantity,
-                    price_net: pi.unit_net,
-                    notes: pi.name,
-                  });
-                }
-              }
-
-              if (pzItems.length > 0) {
-                await createWarehouseDocument({
-                  document_type: "PZ",
-                  document_date: values.issue_date,
-                  client_id: values.client_id || null,
-                  linked_invoice_id: docId!,
-                  notes: `Auto z faktury ${values.document_number || "auto"}`,
-                  created_by: user?.id || null,
-                  items: pzItems,
-                });
-              }
-            }
           }
         }
       }
