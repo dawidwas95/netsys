@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import {
   User, Monitor, ClipboardList, Wrench, DollarSign, CreditCard,
-  Phone, Mail, MapPin, Info, TrendingUp, TrendingDown, Percent,
+  Phone, Mail, MapPin, Info, TrendingUp, TrendingDown, Percent, Plus, X,
 } from "lucide-react";
 import { SearchableSelect } from "@/components/SearchableSelect";
 import { ClientFormDialog } from "@/components/ClientFormDialog";
