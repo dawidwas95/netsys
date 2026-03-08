@@ -19,6 +19,7 @@ import OffersPage from "@/pages/OffersPage";
 import CashRegisterPage from "@/pages/CashRegisterPage";
 import ITDocsPage from "@/pages/ITDocsPage";
 import DocumentsPage from "@/pages/DocumentsPage";
+import SystemLogsPage from "@/pages/SystemLogsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
