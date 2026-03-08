@@ -32,6 +32,7 @@ import { SearchableSelect } from "@/components/SearchableSelect";
 import { ClientFormDialog } from "@/components/ClientFormDialog";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/types/database";
 import { DocumentAttachments } from "@/components/DocumentAttachments";
+import { createWarehouseDocument } from "@/lib/warehouseDocuments";
 
 type DocType = "PURCHASE_INVOICE" | "SALES_INVOICE" | "RECEIPT" | "PROFORMA" | "CORRECTION" | "OTHER";
 type DocDirection = "INCOME" | "EXPENSE";
