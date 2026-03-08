@@ -83,7 +83,7 @@ export default function PurchaseRequestsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("purchase_requests")
-        .select("*, service_orders!inner(order_number, clients(display_name))")
+        .select("*, service_orders!inner(order_number, service_type, clients(display_name))")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;

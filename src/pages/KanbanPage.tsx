@@ -270,8 +270,13 @@ function KanbanCardContent({
         </span>
       </div>
 
-      <div className="text-sm font-medium mb-1 truncate">
-        {(order as any).clients?.display_name ?? "—"}
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-sm font-medium truncate">
+          {(order as any).clients?.display_name ?? "—"}
+        </span>
+        <span className="text-[10px] text-muted-foreground shrink-0 ml-1">
+          {DEPARTMENT_ICONS[order.service_type]}
+        </span>
       </div>
 
       {(order as any).devices && (
