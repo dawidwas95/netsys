@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,7 +32,7 @@ import { toast } from "sonner";
 import { SearchableSelect } from "@/components/SearchableSelect";
 import { ClientFormDialog } from "@/components/ClientFormDialog";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/types/database";
-import { DocumentAttachments, useDocumentAttachmentCounts } from "@/components/DocumentAttachments";
+import { DocumentAttachments, useDocumentAttachmentCounts, uploadPendingFiles, type DocumentAttachmentsHandle } from "@/components/DocumentAttachments";
 import { createWarehouseDocument } from "@/lib/warehouseDocuments";
 
 type DocType = "PURCHASE_INVOICE" | "SALES_INVOICE" | "RECEIPT" | "PROFORMA" | "CORRECTION" | "OTHER";
@@ -192,6 +192,7 @@ export default function DocumentsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
   const [pzPromptData, setPzPromptData] = useState<{ docId: string; docNumber: string; clientId: string | null; items: any[] } | null>(null);
+  const attachmentsRef = useRef<DocumentAttachmentsHandle>(null);
 
   const { data: docs = [], isLoading } = useQuery({
     queryKey: ["documents"],
@@ -351,8 +352,9 @@ export default function DocumentsPage() {
           }
         }
       }
+      return docId;
     },
-    onSuccess: (_data, values) => {
+    onSuccess: (docId, values) => {
       qc.invalidateQueries({ queryKey: ["documents"] });
       qc.invalidateQueries({ queryKey: ["inventory-items"] });
       const docNum = form.document_number || "auto";
@@ -383,6 +385,21 @@ export default function DocumentsPage() {
               });
             }
           });
+        }
+      }
+
+      // Upload pending attachment files
+      if (docId && attachmentsRef.current) {
+        const pending = attachmentsRef.current.getPendingFiles();
+        if (pending.length > 0) {
+          uploadPendingFiles(docId, pending, user?.id).then(() => {
+            qc.invalidateQueries({ queryKey: ["document-attachments", docId] });
+            qc.invalidateQueries({ queryKey: ["document-attachment-counts"] });
+            toast.success(`Przesłano ${pending.length} załącznik(ów)`);
+          }).catch(() => {
+            toast.error("Błąd przesyłania załączników");
+          });
+          attachmentsRef.current.clearPending();
         }
       }
 
@@ -1174,7 +1191,7 @@ export default function DocumentsPage() {
                         <Paperclip className="h-4 w-4 text-muted-foreground" />
                         Załączniki
                       </h3>
-                      <DocumentAttachments documentId={editId} />
+                      <DocumentAttachments ref={attachmentsRef} documentId={editId} />
                     </div>
                   </>
                 </div>
