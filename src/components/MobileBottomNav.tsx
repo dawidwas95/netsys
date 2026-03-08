@@ -44,7 +44,7 @@ export function MobileBottomNav() {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const { signOut } = useAuth();
-  const { canAccessFinance, canAccessSystemLogs, canAccessDataManagement, canAccessSettings } = useUserRole();
+  const { canAccessFinance, canAccessSystemLogs, canAccessDataManagement, canAccessSettings, canAccessDocuments, canAccessOffers, canAccessITWork } = useUserRole();
 
   const isActive = (href: string) => {
     if (href === "/") return location.pathname === "/";
