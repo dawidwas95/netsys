@@ -584,6 +584,7 @@ export default function DocumentsPage() {
     setPreviewLinkedPz(pzDocs ?? []);
   }
 
+  function resetForm() {
     setForm(emptyForm);
     setEditId(null);
     setFormOpen(false);
