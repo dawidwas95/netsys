@@ -86,11 +86,14 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
   const filteredInventory = useMemo(() => {
     if (!inventorySearch) return inventoryItems;
     const q = inventorySearch.toLowerCase();
-    return inventoryItems.filter(i =>
+    return inventoryItems.filter((i: any) =>
       i.name.toLowerCase().includes(q) ||
       i.sku?.toLowerCase().includes(q) ||
+      i.inventory_number?.toLowerCase().includes(q) ||
       i.manufacturer?.toLowerCase().includes(q) ||
-      i.model?.toLowerCase().includes(q)
+      i.model?.toLowerCase().includes(q) ||
+      i.category?.toLowerCase().includes(q) ||
+      (i.compatible_models || []).some((m: string) => m.toLowerCase().includes(q))
     );
   }, [inventoryItems, inventorySearch]);
 
