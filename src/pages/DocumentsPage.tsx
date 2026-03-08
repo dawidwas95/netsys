@@ -471,7 +471,7 @@ export default function DocumentsPage() {
     setForm({
       document_number: doc.document_number, document_type: doc.document_type, direction: doc.direction,
       client_id: doc.client_id ?? "", contractor_name: doc.contractor_name ?? "", contractor_nip: doc.contractor_nip ?? "",
-      buyer_name: (doc as any).buyer_name ?? "", buyer_nip: (doc as any).buyer_nip ?? "",
+      buyer_name: doc.buyer_name ?? "", buyer_nip: doc.buyer_nip ?? "",
       issue_date: doc.issue_date, sale_date: doc.sale_date ?? "", due_date: doc.due_date ?? "",
       received_date: doc.received_date ?? "", net_amount: doc.net_amount.toString(), vat_rate: doc.vat_rate.toString(),
       payment_status: doc.payment_status, payment_method: doc.payment_method ?? "", paid_amount: doc.paid_amount.toString(),
