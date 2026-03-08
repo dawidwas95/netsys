@@ -32,6 +32,7 @@ import { generateOrderPDF } from "@/lib/generateOrderPDF";
 import { generateIntakePDF, generatePickupPDF } from "@/lib/pdfProtocols";
 import { sendOrderNotification } from "@/lib/notifications";
 import { toast } from "sonner";
+import SignatureCanvas from "@/components/SignatureCanvas";
 import { useState, useMemo, useCallback } from "react";
 import {
   ORDER_STATUS_LABELS, ORDER_PRIORITY_LABELS, SERVICE_TYPE_LABELS,
