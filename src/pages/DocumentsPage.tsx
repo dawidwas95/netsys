@@ -1716,41 +1716,6 @@ export default function DocumentsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* PZ auto-create prompt */}
-      <AlertDialog open={!!pzPromptData} onOpenChange={v => { if (!v) setPzPromptData(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Utworzyć dokument PZ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Faktura zakupowa {pzPromptData?.docNumber} zawiera {pzPromptData?.items?.length} pozycji magazynowych.
-              Czy chcesz automatycznie utworzyć dokument PZ (Przyjęcie Zewnętrzne) dla tych pozycji?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPzPromptData(null)}>Nie, pomiń</AlertDialogCancel>
-            <AlertDialogAction onClick={async () => {
-              if (!pzPromptData) return;
-              try {
-                await createWarehouseDocument({
-                  document_type: "PZ",
-                  client_id: pzPromptData.clientId,
-                  linked_invoice_id: pzPromptData.docId,
-                  notes: `Auto z faktury ${pzPromptData.docNumber}`,
-                  created_by: user?.id || null,
-                  items: pzPromptData.items,
-                });
-                qc.invalidateQueries({ queryKey: ["warehouse-documents"] });
-                toast.success("Utworzono dokument PZ");
-              } catch (e) {
-                toast.error("Nie udało się utworzyć PZ");
-              }
-              setPzPromptData(null);
-            }}>
-              Tak, utwórz PZ
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* OCR Import Dialog */}
       <OcrImportDialog open={ocrOpen} onOpenChange={setOcrOpen} onDataExtracted={handleOcrData} />
