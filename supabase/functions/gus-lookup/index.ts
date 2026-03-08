@@ -5,8 +5,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-/** Parse Polish "White List" address like "RONDO IGNACEGO DASZYŃSKIEGO 2C, 00-843 WARSZAWA" */
-function parseAddress(raw: string | null): { street: string; building: string; local: string; postal_code: string; city: string } {
+type Address = { street: string; building: string; local: string; postal_code: string; city: string };
+
+type NameCandidate = {
+  source: string;
+  value: string;
+};
+
+function parseAddress(raw: string | null): Address {
   const result = { street: "", building: "", local: "", postal_code: "", city: "" };
   if (!raw) return result;
 
@@ -40,38 +46,46 @@ function parseAddress(raw: string | null): { street: string; building: string; l
   return result;
 }
 
-/** Try CEIDG API to get JDG business name */
-async function lookupCeidg(nip: string): Promise<{ name: string; firstName: string; lastName: string } | null> {
-  try {
-    const url = `https://dane.biznes.gov.pl/api/ceidg/v2/firma?nip=${nip}`;
-    const resp = await fetch(url, {
-      headers: { "Accept": "application/json" },
-    });
-    if (!resp.ok) {
-      await resp.text();
-      return null;
-    }
-    const data = await resp.json();
-    console.log("CEIDG raw response:", JSON.stringify(data).substring(0, 2000));
-    
-    // CEIDG v2 returns { firpimy: [...] } or { firma: [...] }
-    const firms = data?.firmy || data?.firma || [];
-    const firm = Array.isArray(firms) ? firms[0] : firms;
-    if (!firm) return null;
+function asCleanString(v: unknown): string {
+  return typeof v === "string" ? v.trim() : "";
+}
 
-    // CEIDG fields: nazwa (full business name), imie, nazwisko
-    const name = firm.nazwa || firm.name || null;
-    const firstName = firm.imie || firm.wlasciciel?.imie || null;
-    const lastName = firm.nazwisko || firm.wlasciciel?.nazwisko || null;
+function hasBusinessMarker(name: string): boolean {
+  return /(SP\.?\s*Z\s*O\.?\s*O\.?|SPÓŁKA|FIRMA|USŁUGI|PRZEDSIĘBIORSTWO|BIURO|SERWIS|STUDIO|SKLEP|TECH|SYSTEM|CONSULTING|GROUP|TEAM|SOLUTIONS|\-|_)/i.test(name);
+}
 
-    if (name) {
-      return { name, firstName: firstName || "", lastName: lastName || "" };
-    }
-    return null;
-  } catch (e) {
-    console.log("CEIDG lookup failed:", e);
-    return null;
+function isLikelyPersonalName(name: string): boolean {
+  const n = name.trim();
+  if (!n) return false;
+  const words = n.split(/\s+/);
+  if (words.length < 2 || words.length > 3) return false;
+  if (hasBusinessMarker(n)) return false;
+  return words.every((w) => /^[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+$/.test(w));
+}
+
+function pickFirstNonEmpty(subject: Record<string, unknown>, fields: string[]): NameCandidate[] {
+  return fields
+    .map((field) => ({ source: field, value: asCleanString(subject[field]) }))
+    .filter((c) => c.value.length > 0);
+}
+
+function parseOwnerFromRepresentatives(representatives: unknown): { first_name: string | null; last_name: string | null } {
+  if (!representatives) return { first_name: null, last_name: null };
+
+  let ownerFull = "";
+  if (Array.isArray(representatives) && representatives.length > 0) {
+    const rep = representatives[0] as Record<string, unknown> | string;
+    if (typeof rep === "string") ownerFull = rep.trim();
+    else ownerFull = (asCleanString(rep.name) || `${asCleanString(rep.firstName)} ${asCleanString(rep.lastName)}`.trim()).trim();
+  } else if (typeof representatives === "string") {
+    ownerFull = representatives.split(",")[0].trim();
   }
+
+  const parts = ownerFull.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return { first_name: parts[0], last_name: parts.slice(1).join(" ") };
+  }
+  return { first_name: null, last_name: null };
 }
 
 serve(async (req) => {
@@ -81,7 +95,7 @@ serve(async (req) => {
     const { nip } = await req.json();
     if (!nip) throw new Error("NIP jest wymagany");
 
-    const cleanNip = nip.replace(/^PL/i, "").replace(/[\s\-]/g, "");
+    const cleanNip = String(nip).replace(/^PL/i, "").replace(/[\s\-]/g, "");
     if (!/^\d{10}$/.test(cleanNip)) {
       return new Response(JSON.stringify({ error: "Nieprawidłowy format NIP (wymagane 10 cyfr)" }), {
         status: 400,
@@ -91,8 +105,8 @@ serve(async (req) => {
 
     const today = new Date().toISOString().split("T")[0];
     const url = `https://wl-api.mf.gov.pl/api/search/nip/${cleanNip}?date=${today}`;
-
     const response = await fetch(url);
+
     if (!response.ok) {
       if (response.status === 400) {
         return new Response(JSON.stringify({ error: "Nieprawidłowy NIP" }), {
@@ -100,11 +114,11 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error(`White List API error: ${response.status}`);
+      throw new Error(`GUS API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const subject = data?.result?.subject;
+    const subject = (data?.result?.subject ?? null) as Record<string, unknown> | null;
 
     if (!subject) {
       return new Response(JSON.stringify({ error: "Nie znaleziono podmiotu o podanym NIP" }), {
@@ -113,94 +127,89 @@ serve(async (req) => {
       });
     }
 
-    // Debug: log all subject fields to identify what the API returns
-    console.log("White List subject keys:", Object.keys(subject));
-    console.log("White List subject.name:", subject.name);
-    console.log("White List subject.tradeName:", subject.tradeName);
-    console.log("White List subject.krs:", subject.krs);
-    console.log("White List subject.residenceAddress:", subject.residenceAddress);
-    console.log("White List subject.workingAddress:", subject.workingAddress);
-    console.log("White List subject.representatives type:", typeof subject.representatives, 
-      Array.isArray(subject.representatives) ? `(array, len=${subject.representatives.length})` : "");
+    const isJdg = !asCleanString(subject.krs);
+    const address = parseAddress(asCleanString(subject.workingAddress) || asCleanString(subject.residenceAddress) || null);
 
-    const address = parseAddress(subject.workingAddress || subject.residenceAddress);
+    const owner = parseOwnerFromRepresentatives(subject.representatives);
 
-    // Determine the best company name.
-    // White List `subject.name` is the full registered name for both sp. z o.o. and JDG.
-    // For JDG it should be e.g. "DW-TECH DAWID WAŚ", not just "DAWID WAŚ".
-    // However, some results might only have owner name. We check multiple fields.
-    let companyName = subject.name || null;
-    let firstName: string | null = null;
-    let lastName: string | null = null;
-    const isJdg = !subject.krs;
+    const nameCandidates = pickFirstNonEmpty(subject, [
+      "name",
+      "tradeName",
+      "businessName",
+      "firmName",
+      "fullName",
+      "companyName",
+      "entityName",
+    ]);
 
-    // Extract first/last name from representatives
-    const reps = subject.representatives;
-    if (reps) {
-      let repName = "";
-      if (Array.isArray(reps) && reps.length > 0) {
-        const rep = reps[0];
-        repName = typeof rep === "string" ? rep : (rep.name || `${rep.firstName || ""} ${rep.lastName || ""}`.trim());
-      } else if (typeof reps === "string") {
-        repName = reps.split(",")[0].trim();
+    const primaryBusiness = nameCandidates.find((c) => hasBusinessMarker(c.value) || (c.value.split(/\s+/).length >= 3 && !isLikelyPersonalName(c.value)));
+    const alternativeBusiness = nameCandidates[0] ?? null;
+    const fallbackOwnerName = [owner.first_name, owner.last_name].filter(Boolean).join(" ") || null;
+
+    let chosenCompanyName = "";
+    let chosenSource = "";
+
+    if (isJdg) {
+      if (primaryBusiness?.value) {
+        chosenCompanyName = primaryBusiness.value;
+        chosenSource = primaryBusiness.source;
+      } else if (alternativeBusiness?.value) {
+        chosenCompanyName = alternativeBusiness.value;
+        chosenSource = alternativeBusiness.source;
+      } else if (fallbackOwnerName) {
+        chosenCompanyName = fallbackOwnerName;
+        chosenSource = "owner(first_name+last_name)";
       }
-      if (repName) {
-        const parts = repName.trim().split(/\s+/);
-        if (parts.length >= 2) {
-          firstName = parts[0];
-          lastName = parts.slice(1).join(" ");
-        }
+    } else {
+      chosenCompanyName = alternativeBusiness?.value || fallbackOwnerName || "";
+      chosenSource = alternativeBusiness?.source || "owner(first_name+last_name)";
+    }
+
+    // Last-resort owner split for JDG when representatives are empty
+    let firstName = owner.first_name;
+    let lastName = owner.last_name;
+    if (!firstName && isJdg && chosenCompanyName) {
+      const parts = chosenCompanyName.split(/\s+/).filter(Boolean);
+      if (parts.length >= 2) {
+        firstName = parts[parts.length - 2];
+        lastName = parts[parts.length - 1];
       }
     }
 
-    // For JDG: if companyName looks like just "FIRST LAST" (2 words, no business prefix),
-    // try CEIDG to get the real business name
-    if (isJdg && companyName) {
-      const nameWords = companyName.trim().split(/\s+/);
-      const looksLikePersonalNameOnly = nameWords.length === 2 && 
-        nameWords.every(w => /^[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+$/.test(w));
-      
-      if (looksLikePersonalNameOnly) {
-        console.log("Company name looks like personal name only, trying CEIDG...");
-        const ceidgData = await lookupCeidg(cleanNip);
-        if (ceidgData && ceidgData.name && ceidgData.name.trim().split(/\s+/).length > 2) {
-          console.log("CEIDG returned better business name:", ceidgData.name);
-          companyName = ceidgData.name;
-          if (ceidgData.firstName) firstName = ceidgData.firstName;
-          if (ceidgData.lastName) lastName = ceidgData.lastName;
-        }
-      }
-    }
+    const candidateLog = nameCandidates.reduce<Record<string, string>>((acc, c) => {
+      acc[c.source] = c.value;
+      return acc;
+    }, {});
 
-    // If no first/last extracted yet, try parsing from name for JDG
-    if (!firstName && isJdg && companyName) {
-      const nameParts = companyName.trim().split(/\s+/);
-      if (nameParts.length >= 2) {
-        lastName = nameParts[nameParts.length - 1];
-        firstName = nameParts[nameParts.length - 2];
-      }
-    }
+    console.log("JDG mapping debug:", JSON.stringify({
+      nip: cleanNip,
+      entity_type: isJdg ? "JDG" : "OTHER",
+      raw_subject_name: asCleanString(subject.name),
+      raw_subject_keys: Object.keys(subject),
+      company_name_candidates: candidateLog,
+      chosen_company_name: chosenCompanyName || null,
+      chosen_company_name_source: chosenSource || null,
+    }));
 
     const result = {
-      company_name: companyName,
+      company_name: chosenCompanyName || null,
+      company_name_source: chosenSource || null,
       first_name: firstName,
       last_name: lastName,
       nip: cleanNip,
-      regon: subject.regon || null,
-      krs: subject.krs || null,
+      regon: asCleanString(subject.regon) || null,
+      krs: asCleanString(subject.krs) || null,
       street: address.street,
       building: address.building,
       local: address.local,
       postal_code: address.postal_code,
       city: address.city,
       country: "Polska",
-      vat_status: subject.statusVat || null,
+      vat_status: asCleanString(subject.statusVat) || null,
       is_jdg: isJdg,
-      _debug_raw_name: subject.name,
-      _debug_trade_name: subject.tradeName || null,
+      is_person_name_only: isLikelyPersonalName(chosenCompanyName),
+      debug_company_name_candidates: candidateLog,
     };
-
-    console.log("Final result:", JSON.stringify(result));
 
     return new Response(JSON.stringify({ data: result }), {
       status: 200,

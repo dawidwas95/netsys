@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 export interface GusCompanyData {
   company_name: string | null;
+  company_name_source: string | null;
   first_name: string | null;
   last_name: string | null;
   nip: string;
@@ -17,6 +18,8 @@ export interface GusCompanyData {
   country: string;
   vat_status: string | null;
   is_jdg: boolean;
+  is_person_name_only: boolean;
+  debug_company_name_candidates?: Record<string, string>;
 }
 
 export function useGusLookup() {

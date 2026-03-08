@@ -250,7 +250,7 @@ export function ClientFormDialog({ onCreated, onUpdated, trigger, externalOpen, 
                             const data = await lookupNip(form.nip);
                             if (data) setForm(prev => ({
                               ...prev,
-                              company_name: data.company_name || prev.company_name,
+                              company_name: preferExistingBusinessName(prev.company_name, data.company_name, data.is_person_name_only),
                               first_name: data.first_name || prev.first_name,
                               last_name: data.last_name || prev.last_name,
                               nip: data.nip,
