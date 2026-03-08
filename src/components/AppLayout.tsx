@@ -4,6 +4,7 @@ import { Outlet } from "react-router-dom";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { RedirectMobile } from "@/components/RedirectMobile";
+import { NotificationBell } from "@/components/NotificationBell";
 
 export default function AppLayout() {
   return (
@@ -15,6 +16,9 @@ export default function AppLayout() {
           <header className="flex items-center border-b bg-card px-4 gap-4 shrink-0 pt-[env(safe-area-inset-top)] md:pt-0 h-[calc(3.5rem+env(safe-area-inset-top,0px))] md:h-14">
             <SidebarTrigger />
             <GlobalSearch />
+            <div className="ml-auto">
+              <NotificationBell />
+            </div>
           </header>
           <main className="flex-1 overflow-auto p-4 md:p-6">
             <Outlet />
