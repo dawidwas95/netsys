@@ -177,7 +177,7 @@ export default function PurchaseRequestsPage() {
   };
 
   const filtered = requests.filter((r: any) => {
-    if (statusFilter === "ACTIVE" && ["DELIVERED", "CANCELLED"].includes(r.status)) return false;
+    if (statusFilter === "ACTIVE" && ["DELIVERED", "INSTALLED", "CANCELLED"].includes(r.status)) return false;
     if (statusFilter !== "ACTIVE" && statusFilter !== "ALL" && r.status !== statusFilter) return false;
     if (urgencyFilter !== "ALL" && r.urgency !== urgencyFilter) return false;
     if (categoryFilter !== "ALL" && r.category !== categoryFilter) return false;
