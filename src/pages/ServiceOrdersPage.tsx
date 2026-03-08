@@ -112,6 +112,7 @@ export default function ServiceOrdersPage() {
         .order("received_at", { ascending: false });
 
       if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
+      if (deptFilter !== "all") query = query.eq("service_type", deptFilter as any);
       if (search) query = query.or(`order_number.ilike.%${search}%,problem_description.ilike.%${search}%`);
       if (techOrderIds) query = query.in("id", techOrderIds);
 
