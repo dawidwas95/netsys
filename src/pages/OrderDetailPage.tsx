@@ -688,6 +688,7 @@ export default function OrderDetailPage() {
               <TabsTrigger value="comments">Komentarze ({comments?.length ?? 0})</TabsTrigger>
               <TabsTrigger value="history">Historia</TabsTrigger>
               <TabsTrigger value="documents">Dokumenty</TabsTrigger>
+              <TabsTrigger value="signatures"><PenLine className="mr-1 h-3 w-3" />Podpisy</TabsTrigger>
             </TabsList>
 
             <TabsContent value="edit" className="mt-4 space-y-5">
