@@ -14,6 +14,7 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Phone, Mail, Archive, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { CLIENT_TYPE_LABELS, BUSINESS_ROLE_LABELS, type Client, type ClientType, type BusinessRole } from "@/types/database";
