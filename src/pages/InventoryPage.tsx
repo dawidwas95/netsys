@@ -144,7 +144,12 @@ export default function InventoryPage() {
     activeItems.filter((i: any) => i.stock_quantity <= i.minimum_quantity && i.is_active), [activeItems]
   );
   const totalValue = useMemo(() =>
-    activeItems.reduce((sum: number, i: any) => sum + (Number(i.stock_quantity) * Number(i.purchase_net)), 0), [activeItems]
+    activeItems.reduce((sum: number, i: any) => {
+      const purchaseNet = Number(i.purchase_net);
+      const vatRate = Number(i.vat_rate) || 23;
+      const purchaseGross = purchaseNet * (1 + vatRate / 100);
+      return sum + (Number(i.stock_quantity) * purchaseGross);
+    }, 0), [activeItems]
   );
 
   const invalidateAll = () => {
