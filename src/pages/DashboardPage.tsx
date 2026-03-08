@@ -140,9 +140,9 @@ export default function DashboardPage() {
   ];
 
   const finKpis = [
-    { label: "Przychód (mies.)", value: formatCurrency(financialStats?.revenue ?? 0), icon: TrendingUp, color: "text-primary" },
-    { label: "Koszty (mies.)", value: formatCurrency(financialStats?.cost ?? 0), icon: TrendingDown, color: "text-destructive" },
-    { label: "Zysk (mies.)", value: formatCurrency(financialStats?.profit ?? 0), icon: DollarSign, color: (financialStats?.profit ?? 0) >= 0 ? "text-primary" : "text-destructive" },
+    { label: "Przychód brutto (mies.)", value: formatCurrency(financialStats?.revenueGross ?? 0), icon: TrendingUp, color: "text-primary" },
+    { label: "Koszty brutto (mies.)", value: formatCurrency(financialStats?.costGross ?? 0), icon: TrendingDown, color: "text-destructive" },
+    { label: "Zysk brutto (mies.)", value: formatCurrency(financialStats?.profitGross ?? 0), icon: DollarSign, color: (financialStats?.profitGross ?? 0) >= 0 ? "text-primary" : "text-destructive" },
     { label: "Marża", value: `${(financialStats?.margin ?? 0).toFixed(1)}%`, icon: Percent, color: "text-muted-foreground" },
     { label: "Stan kasy", value: formatCurrency(cashBalance ?? 0), icon: Wallet, color: "text-primary" },
   ];
