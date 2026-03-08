@@ -93,7 +93,7 @@ export default function CashRegisterPage() {
     enabled: !!user?.id,
   });
 
-  const canCorrectCash = myRoles.some((r: any) => r.role === "ADMIN" || r.role === "MANAGER");
+  const canCorrectCash = myRoles.some((r: any) => r.role === "ADMIN" || r.role === "KIEROWNIK");
 
   const addTransaction = useMutation({
     mutationFn: async (data: any) => {
