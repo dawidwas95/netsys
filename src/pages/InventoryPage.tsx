@@ -228,14 +228,14 @@ export default function InventoryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="page-header">
         <div>
           <h1 className="text-2xl font-bold">Magazyn</h1>
           <p className="text-sm text-muted-foreground">Części, towary i materiały serwisowe</p>
         </div>
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="mr-2 h-4 w-4" />Dodaj pozycję</Button>
+            <Button className="w-full sm:w-auto min-h-[44px]"><Plus className="mr-2 h-4 w-4" />Dodaj pozycję</Button>
           </DialogTrigger>
           <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Nowa pozycja magazynowa</DialogTitle></DialogHeader>
@@ -249,7 +249,7 @@ export default function InventoryPage() {
       </div>
 
       {/* KPI */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <Card><CardContent className="pt-4 pb-4">
           <div className="text-xs text-muted-foreground">Pozycji w magazynie</div>
           <div className="text-2xl font-bold">{activeItems.length}</div>
@@ -277,15 +277,15 @@ export default function InventoryPage() {
         </TabsList>
 
         <TabsContent value="items" className="space-y-4">
-          <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-wrap">
             <Input
               placeholder="Szukaj: ID, nazwa, producent, model kompatybilny..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="max-w-md"
+              className="flex-1 min-h-[44px]"
             />
             <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Kategoria" /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-[180px] min-h-[44px]"><SelectValue placeholder="Kategoria" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">Wszystkie kategorie</SelectItem>
                 {categories.map((c: any) => (

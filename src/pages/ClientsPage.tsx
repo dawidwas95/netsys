@@ -73,17 +73,72 @@ export default function ClientsPage() {
         <ClientFormDialog />
       </div>
 
-      <div className="mb-4 relative max-w-sm">
+      <div className="mb-4 relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Szukaj po nazwie, telefonie, NIP..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
+          className="pl-9 min-h-[44px] max-w-full sm:max-w-sm"
         />
       </div>
 
-      <div className="data-table-wrapper">
+      {/* Mobile card view */}
+      <div className="space-y-3 md:hidden">
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Ładowanie...</div>
+        ) : !clients?.length ? (
+          <div className="text-center py-8 text-muted-foreground">Brak klientów</div>
+        ) : (
+          clients.map((client) => (
+            <div key={client.id} className="mobile-data-card">
+              <div className="mobile-card-header">
+                <Link to={`/clients/${client.id}`} className="font-medium text-primary hover:underline">
+                  {client.display_name}
+                </Link>
+                <span className="status-badge bg-secondary text-secondary-foreground">
+                  {CLIENT_TYPE_LABELS[client.client_type as ClientType]}
+                </span>
+              </div>
+              {client.phone && (
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">Telefon</span>
+                  <span className="flex items-center gap-1 text-sm"><Phone className="h-3 w-3" />{client.phone}</span>
+                </div>
+              )}
+              {client.email && (
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">E-mail</span>
+                  <span className="flex items-center gap-1 text-sm"><Mail className="h-3 w-3" />{client.email}</span>
+                </div>
+              )}
+              {client.address_city && (
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">Miasto</span>
+                  <span className="text-sm">{client.address_city}</span>
+                </div>
+              )}
+              {client.nip && (
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">NIP</span>
+                  <span className="text-sm font-mono">{client.nip}</span>
+                </div>
+              )}
+              <div className="mobile-card-actions">
+                <Button variant="ghost" size="sm" className="min-h-[44px]" onClick={() => { setEditClient(client); setEditDialogOpen(true); }}>
+                  <Pencil className="h-3.5 w-3.5 mr-1" />Edytuj
+                </Button>
+                <Button variant="ghost" size="sm" className="min-h-[44px] text-destructive" onClick={() => setArchiveClient(client)}>
+                  <Archive className="h-3.5 w-3.5 mr-1" />Archiwizuj
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <div className="data-table-wrapper hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>

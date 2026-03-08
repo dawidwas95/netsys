@@ -138,15 +138,15 @@ export default function ServiceOrdersPage() {
           <h1 className="text-2xl font-bold tracking-tight">Zlecenia serwisowe</h1>
           <p className="text-muted-foreground text-sm">{orders?.length ?? 0} zleceń</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <Link to="/orders/kanban">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="min-h-[44px]">
               <KanbanSquare className="h-4 w-4 mr-1" /> Tablica
             </Button>
           </Link>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button><Plus className="h-4 w-4 mr-1" /> Nowe zlecenie</Button>
+              <Button className="min-h-[44px] flex-1 sm:flex-initial"><Plus className="h-4 w-4 mr-1" /> Nowe zlecenie</Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto p-0">
               <DialogHeader className="p-6 pb-0"><DialogTitle>Nowe zlecenie serwisowe</DialogTitle></DialogHeader>
@@ -159,13 +159,13 @@ export default function ServiceOrdersPage() {
         </div>
       </div>
 
-      <div className="mb-4 flex gap-3 flex-wrap">
-        <div className="relative flex-1 max-w-sm">
+      <div className="mb-4 flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Szukaj po numerze, opisie..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <Input placeholder="Szukaj po numerze, opisie..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 min-h-[44px]" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-48"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-48 min-h-[44px]"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Wszystkie statusy</SelectItem>
             {Object.entries(ORDER_STATUS_LABELS).map(([key, label]) => (
@@ -174,7 +174,7 @@ export default function ServiceOrdersPage() {
           </SelectContent>
          </Select>
          <Select value={techFilter} onValueChange={setTechFilter}>
-           <SelectTrigger className="w-48"><SelectValue placeholder="Technik" /></SelectTrigger>
+           <SelectTrigger className="w-full sm:w-48 min-h-[44px]"><SelectValue placeholder="Technik" /></SelectTrigger>
            <SelectContent>
              <SelectItem value="all">Wszyscy technicy</SelectItem>
              <SelectItem value="unassigned">Nieprzypisane</SelectItem>
@@ -185,7 +185,46 @@ export default function ServiceOrdersPage() {
          </Select>
        </div>
 
-      <div className="data-table-wrapper">
+      {/* Mobile card view */}
+      <div className="space-y-3 md:hidden">
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Ładowanie...</div>
+        ) : !orders?.length ? (
+          <div className="text-center py-8 text-muted-foreground">Brak zleceń</div>
+        ) : (
+          orders.map((order: any) => (
+            <Link key={order.id} to={`/orders/${order.id}`} className="mobile-data-card block">
+              <div className="mobile-card-header">
+                <span className="font-medium font-mono text-primary">{order.order_number}</span>
+                <OrderStatusBadge status={order.status} />
+              </div>
+              <div className="mobile-card-row">
+                <span className="mobile-card-label">Klient</span>
+                <span className="text-sm">{order.clients?.display_name || "—"}</span>
+              </div>
+              <div className="mobile-card-row">
+                <span className="mobile-card-label">Urządzenie</span>
+                <span className="text-sm">{order.devices ? `${order.devices.manufacturer} ${order.devices.model}` : "—"}</span>
+              </div>
+              <div className="mobile-card-row">
+                <span className="mobile-card-label">Technik</span>
+                <TechnicianBadges orderId={order.id} compact />
+              </div>
+              <div className="mobile-card-row">
+                <span className="mobile-card-label">Priorytet</span>
+                <span className="text-sm">{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</span>
+              </div>
+              <div className="mobile-card-row">
+                <span className="mobile-card-label">Data</span>
+                <span className="text-sm">{new Date(order.received_at).toLocaleDateString("pl-PL")}</span>
+              </div>
+            </Link>
+          ))
+        )}
+      </div>
+
+      {/* Desktop table view */}
+      <div className="data-table-wrapper hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>

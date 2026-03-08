@@ -473,46 +473,46 @@ export default function DocumentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="page-header">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Rejestr dokumentów</h1>
-          <p className="text-muted-foreground">Ewidencja faktur zakupowych i sprzedażowych</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Rejestr dokumentów</h1>
+          <p className="text-muted-foreground text-sm">Ewidencja faktur zakupowych i sprzedażowych</p>
         </div>
-        <Button onClick={() => { resetForm(); setFormOpen(true); }}>
+        <Button onClick={() => { resetForm(); setFormOpen(true); }} className="w-full sm:w-auto min-h-[44px]">
           <Plus className="mr-2 h-4 w-4" />Dodaj dokument
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardContent className="flex items-center gap-3 p-4">
             <div className="rounded-lg p-2 bg-primary/10 text-primary"><ArrowDownCircle className="h-5 w-5" /></div>
-            <div><p className="text-2xl font-bold tabular-nums">{formatCurrency(totalIncome)}</p><p className="text-sm text-muted-foreground">Przychody (brutto)</p></div>
+            <div><p className="text-xl sm:text-2xl font-bold tabular-nums">{formatCurrency(totalIncome)}</p><p className="text-sm text-muted-foreground">Przychody (brutto)</p></div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 p-4">
             <div className="rounded-lg p-2 bg-destructive/10 text-destructive"><ArrowUpCircle className="h-5 w-5" /></div>
-            <div><p className="text-2xl font-bold tabular-nums">{formatCurrency(totalExpense)}</p><p className="text-sm text-muted-foreground">Wydatki (brutto)</p></div>
+            <div><p className="text-xl sm:text-2xl font-bold tabular-nums">{formatCurrency(totalExpense)}</p><p className="text-sm text-muted-foreground">Wydatki (brutto)</p></div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 p-4">
             <div className="rounded-lg p-2 bg-accent text-accent-foreground"><DollarSign className="h-5 w-5" /></div>
-            <div><p className="text-2xl font-bold tabular-nums">{formatCurrency(totalUnpaid)}</p><p className="text-sm text-muted-foreground">Do zapłaty</p></div>
+            <div><p className="text-xl sm:text-2xl font-bold tabular-nums">{formatCurrency(totalUnpaid)}</p><p className="text-sm text-muted-foreground">Do zapłaty</p></div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4">
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Szukaj po numerze, kontrahencie, kwocie..." value={search} onChange={e => setSearch(e.target.value)} />
+          <Input className="pl-9 min-h-[44px]" placeholder="Szukaj po numerze, kontrahencie..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <Select value={filterDirection} onValueChange={setFilterDirection}>
-          <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[180px] min-h-[44px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">Wszystkie kierunki</SelectItem>
             <SelectItem value="INCOME">Przychody</SelectItem>
@@ -520,7 +520,7 @@ export default function DocumentsPage() {
           </SelectContent>
         </Select>
         <Select value={filterPayment} onValueChange={setFilterPayment}>
-          <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[180px] min-h-[44px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">Wszystkie statusy</SelectItem>
             {(Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).map(k => (
@@ -530,66 +530,112 @@ export default function DocumentsPage() {
         </Select>
       </div>
 
-      {/* Table */}
+      {/* Table (desktop) / Cards (mobile) */}
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground">Ładowanie...</div>
       ) : filtered.length === 0 ? (
         <Card><CardContent className="py-8 text-center text-muted-foreground">Brak dokumentów</CardContent></Card>
       ) : (
-        <Card>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Numer</TableHead>
-                <TableHead>Typ</TableHead>
-                <TableHead>Kontrahent</TableHead>
-                <TableHead>Data wyst.</TableHead>
-                <TableHead>Termin</TableHead>
-                <TableHead className="text-right w-[120px]">Netto</TableHead>
-                <TableHead className="text-right w-[120px]">Brutto</TableHead>
-                <TableHead>Płatność</TableHead>
-                <TableHead className="w-[110px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map(doc => (
-                <TableRow key={doc.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openPreview(doc)}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {doc.direction === "INCOME" ? <ArrowDownCircle className="h-4 w-4 text-primary shrink-0" /> : <ArrowUpCircle className="h-4 w-4 text-destructive shrink-0" />}
-                      <span className="font-medium font-mono text-sm">{doc.document_number}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell><span className="text-sm">{DOC_TYPE_LABELS[doc.document_type]}</span></TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="text-sm font-medium">{doc.contractor_name || getClientName(doc.clients)}</p>
-                      {doc.contractor_nip && <p className="text-xs text-muted-foreground">NIP: {doc.contractor_nip}</p>}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm">{doc.issue_date}</TableCell>
-                  <TableCell className="text-sm">{doc.due_date || "—"}</TableCell>
-                  <TableCell className="text-right font-mono text-sm tabular-nums">{formatCurrency(doc.net_amount)}</TableCell>
-                  <TableCell className="text-right font-mono text-sm font-medium tabular-nums">{formatCurrency(doc.gross_amount)}</TableCell>
-                  <TableCell>
-                    <Badge className={PAYMENT_STATUS_COLORS[doc.payment_status]} variant="secondary">
-                      {PAYMENT_STATUS_LABELS[doc.payment_status]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openPreview(doc)} title="Podgląd"><Eye className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(doc)} title="Edytuj"><Pencil className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteConfirm(doc.id)} title="Usuń"><Trash2 className="h-4 w-4" /></Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
-      )}
+        <>
+          {/* Mobile card view */}
+          <div className="space-y-3 md:hidden">
+            {filtered.map(doc => (
+              <div key={doc.id} className="mobile-data-card" onClick={() => openPreview(doc)}>
+                <div className="mobile-card-header">
+                  <div className="flex items-center gap-2">
+                    {doc.direction === "INCOME" ? <ArrowDownCircle className="h-4 w-4 text-primary shrink-0" /> : <ArrowUpCircle className="h-4 w-4 text-destructive shrink-0" />}
+                    <span className="font-medium font-mono text-sm">{doc.document_number}</span>
+                  </div>
+                  <Badge className={PAYMENT_STATUS_COLORS[doc.payment_status]} variant="secondary">
+                    {PAYMENT_STATUS_LABELS[doc.payment_status]}
+                  </Badge>
+                </div>
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">Typ</span>
+                  <span className="text-sm">{DOC_TYPE_LABELS[doc.document_type]}</span>
+                </div>
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">Kontrahent</span>
+                  <span className="text-sm font-medium">{doc.contractor_name || getClientName(doc.clients)}</span>
+                </div>
+                {doc.contractor_nip && (
+                  <div className="mobile-card-row">
+                    <span className="mobile-card-label">NIP</span>
+                    <span className="text-sm font-mono">{doc.contractor_nip}</span>
+                  </div>
+                )}
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">Brutto</span>
+                  <span className="text-sm font-medium font-mono">{formatCurrency(doc.gross_amount)}</span>
+                </div>
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">Data</span>
+                  <span className="text-sm">{doc.issue_date}</span>
+                </div>
+                <div className="mobile-card-actions" onClick={e => e.stopPropagation()}>
+                  <Button variant="ghost" size="sm" className="min-h-[44px]" onClick={() => openPreview(doc)}><Eye className="h-4 w-4 mr-1" />Podgląd</Button>
+                  <Button variant="ghost" size="sm" className="min-h-[44px]" onClick={() => openEdit(doc)}><Pencil className="h-4 w-4 mr-1" />Edytuj</Button>
+                  <Button variant="ghost" size="sm" className="min-h-[44px] text-destructive" onClick={() => setDeleteConfirm(doc.id)}><Trash2 className="h-4 w-4" /></Button>
+                </div>
+              </div>
+            ))}
+          </div>
 
+          {/* Desktop table view */}
+          <Card className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Numer</TableHead>
+                  <TableHead>Typ</TableHead>
+                  <TableHead>Kontrahent</TableHead>
+                  <TableHead>Data wyst.</TableHead>
+                  <TableHead>Termin</TableHead>
+                  <TableHead className="text-right w-[120px]">Netto</TableHead>
+                  <TableHead className="text-right w-[120px]">Brutto</TableHead>
+                  <TableHead>Płatność</TableHead>
+                  <TableHead className="w-[110px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map(doc => (
+                  <TableRow key={doc.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openPreview(doc)}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {doc.direction === "INCOME" ? <ArrowDownCircle className="h-4 w-4 text-primary shrink-0" /> : <ArrowUpCircle className="h-4 w-4 text-destructive shrink-0" />}
+                        <span className="font-medium font-mono text-sm">{doc.document_number}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell><span className="text-sm">{DOC_TYPE_LABELS[doc.document_type]}</span></TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="text-sm font-medium">{doc.contractor_name || getClientName(doc.clients)}</p>
+                        {doc.contractor_nip && <p className="text-xs text-muted-foreground">NIP: {doc.contractor_nip}</p>}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm">{doc.issue_date}</TableCell>
+                    <TableCell className="text-sm">{doc.due_date || "—"}</TableCell>
+                    <TableCell className="text-right font-mono text-sm tabular-nums">{formatCurrency(doc.net_amount)}</TableCell>
+                    <TableCell className="text-right font-mono text-sm font-medium tabular-nums">{formatCurrency(doc.gross_amount)}</TableCell>
+                    <TableCell>
+                      <Badge className={PAYMENT_STATUS_COLORS[doc.payment_status]} variant="secondary">
+                        {PAYMENT_STATUS_LABELS[doc.payment_status]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openPreview(doc)} title="Podgląd"><Eye className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(doc)} title="Edytuj"><Pencil className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteConfirm(doc.id)} title="Usuń"><Trash2 className="h-4 w-4" /></Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </>
+      )}
       {/* ── Preview Dialog ── */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">

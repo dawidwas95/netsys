@@ -157,7 +157,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-6">
         {kpis.map((kpi) => (
           <Card key={kpi.label}>
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
@@ -169,7 +169,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-5 mb-6">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 mb-6">
         {finKpis.map((kpi) => (
           <Card key={kpi.label} className="border-primary/10">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
@@ -183,7 +183,7 @@ export default function DashboardPage() {
 
       <LowStockAlerts />
 
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 mb-6">
         <Card>
           <CardHeader><CardTitle className="text-lg">Ostatnie zlecenia</CardTitle></CardHeader>
           <CardContent><RecentOrders /></CardContent>

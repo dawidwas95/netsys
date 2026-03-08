@@ -119,14 +119,14 @@ export default function OffersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="page-header">
         <div>
           <h1 className="text-2xl font-bold">Oferty handlowe</h1>
           <p className="text-sm text-muted-foreground">Tworzenie i zarządzanie ofertami</p>
         </div>
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="mr-2 h-4 w-4" />Nowa oferta</Button>
+            <Button className="w-full sm:w-auto min-h-[44px]"><Plus className="mr-2 h-4 w-4" />Nowa oferta</Button>
           </DialogTrigger>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Nowa oferta handlowa</DialogTitle></DialogHeader>
