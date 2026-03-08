@@ -520,8 +520,8 @@ function OfferDetailDialog({ offerId, onClose, onStatusChange }: {
                   <TableCell className="font-medium">{item.name}</TableCell>
                   <TableCell><Badge variant="outline" className="text-xs">{ITEM_TYPE_LABELS[item.item_type]}</Badge></TableCell>
                   <TableCell className="text-right tabular-nums">{Number(item.quantity)} {item.unit}</TableCell>
-                  <TableCell className="text-right tabular-nums">{Number(item.unit_net).toFixed(2)} zł</TableCell>
-                  <TableCell className="text-right tabular-nums font-medium">{Number(item.total_net).toFixed(2)} zł</TableCell>
+                  <TableCell className="text-right tabular-nums">{(Number(item.unit_net) * (1 + Number(item.vat_rate) / 100)).toFixed(2)} zł</TableCell>
+                  <TableCell className="text-right tabular-nums font-medium">{Number(item.total_gross).toFixed(2)} zł</TableCell>
                 </TableRow>
               ))}
             </TableBody>

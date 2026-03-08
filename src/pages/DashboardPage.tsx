@@ -264,7 +264,7 @@ function RecentCashOps() {
           </div>
           <span className={`font-mono font-medium ${t.transaction_type === "IN" ? "text-primary" : "text-destructive"}`}>
             {t.transaction_type === "IN" ? "+" : "-"}
-            {new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(Number(t.amount))}
+            {new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(Number(t.gross_amount || t.amount))}
           </span>
         </div>
       ))}
