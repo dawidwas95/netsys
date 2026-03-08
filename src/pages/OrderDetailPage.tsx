@@ -661,6 +661,17 @@ export default function OrderDetailPage() {
               />
             </TabsContent>
 
+            <TabsContent value="photos" className="mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Zdjęcia urządzenia</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <OrderPhotoGallery orderId={id!} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             <TabsContent value="comments" className="mt-4">
               <Card>
                 <CardContent className="pt-4 space-y-4">
