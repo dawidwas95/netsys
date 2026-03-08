@@ -198,6 +198,15 @@ export default function ServiceOrdersPage() {
             ))}
           </SelectContent>
          </Select>
+         <Select value={deptFilter} onValueChange={setDeptFilter}>
+           <SelectTrigger className="w-full sm:w-52 min-h-[44px]"><SelectValue placeholder="Dział serwisu" /></SelectTrigger>
+           <SelectContent>
+             <SelectItem value="all">Wszystkie działy</SelectItem>
+             {Object.entries(DEPARTMENT_LABELS).map(([k, v]) => (
+               <SelectItem key={k} value={k}>{DEPARTMENT_ICONS[k]} {v}</SelectItem>
+             ))}
+           </SelectContent>
+         </Select>
          <Select value={techFilter} onValueChange={setTechFilter}>
            <SelectTrigger className="w-full sm:w-48 min-h-[44px]"><SelectValue placeholder="Technik" /></SelectTrigger>
            <SelectContent>
