@@ -403,14 +403,15 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                           )}
                         </div>
                         <div className="space-y-1">
-                          <Label>Cena sprzedaży netto</Label>
+                          <Label>Cena sprzedaży brutto</Label>
                           <Input
                             type="number"
                             step="0.01"
-                            value={invSaleNet}
-                            onChange={(e) => setInvSaleNet(e.target.value)}
-                            placeholder={selectedInvItem.sale_net.toString()}
+                            value={(() => { const net = parseFloat(invSaleNet) || 0; return net > 0 ? (net * 1.23).toFixed(2) : ""; })()}
+                            onChange={(e) => { const gross = parseFloat(e.target.value) || 0; setInvSaleNet((gross / 1.23).toFixed(2)); }}
+                            placeholder={(selectedInvItem.sale_net * 1.23).toFixed(2)}
                           />
+                          <p className="text-[10px] text-muted-foreground tabular-nums">netto: {(parseFloat(invSaleNet) || 0).toFixed(2)} zł</p>
                         </div>
                       </div>
 
