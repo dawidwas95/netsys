@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Plus, Search, FileText, ArrowDownCircle, ArrowUpCircle, Pencil, Trash2, Eye,
-  DollarSign, ShoppingCart, Receipt, FileCheck, FileMinus2,
+  DollarSign, ShoppingCart, Receipt, FileCheck, FileMinus2, CalendarDays,
 } from "lucide-react";
 import { toast } from "sonner";
 import { SearchableSelect } from "@/components/SearchableSelect";
@@ -767,7 +767,7 @@ export default function DocumentsPage() {
                       {previewItems.map((pi: any) => (
                         <TableRow key={pi.id}>
                           <TableCell className="text-sm">{pi.name}</TableCell>
-                          <TableCell className="text-xs text-center"><Badge variant="outline" className="text-xs">{pi.description === "PRODUCT" ? "Produkt" : "Usługa"}</Badge></TableCell>
+                          <TableCell className="text-xs text-center"><Badge variant="outline" className="text-xs">{(pi.item_type || pi.description) === "PRODUCT" ? "Produkt" : (pi.item_type || pi.description) === "INTERNAL_COST" ? "Koszt" : "Usługa"}</Badge></TableCell>
                           <TableCell className="text-right text-sm tabular-nums">{pi.quantity}</TableCell>
                           <TableCell className="text-right text-sm tabular-nums">{formatCurrency(pi.unit_net)}</TableCell>
                           <TableCell className="text-right text-sm tabular-nums">{pi.vat_rate}%</TableCell>
@@ -810,25 +810,23 @@ export default function DocumentsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Form Dialog (Create / Edit) ── */}
+      {/* ── Form Dialog (Create / Edit) — Wide Professional Layout ── */}
       <Dialog open={formOpen} onOpenChange={v => { if (!v) resetForm(); else setFormOpen(true); }}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {editId ? "Edytuj dokument" : "Nowy dokument"}
-              <Badge className={DOC_TYPE_COLORS[form.document_type]} variant="secondary">{DOC_TYPE_LABELS[form.document_type]}</Badge>
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-5">
-            {/* Top row */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <Label>Typ dokumentu</Label>
+        <DialogContent className="max-w-[95vw] w-[1280px] max-h-[95vh] overflow-hidden p-0">
+          <div className="flex flex-col h-full max-h-[95vh]">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card">
+              <div className="flex items-center gap-3">
+                <FileText className="h-5 w-5 text-muted-foreground" />
+                <h2 className="text-lg font-semibold">{editId ? "Edytuj dokument" : "Nowy dokument"}</h2>
+                <Badge className={DOC_TYPE_COLORS[form.document_type]} variant="secondary">{DOC_TYPE_LABELS[form.document_type]}</Badge>
+              </div>
+              <div className="flex items-center gap-2">
                 <Select value={form.document_type} onValueChange={v => {
                   const cfg = TYPE_CONFIG[v] || TYPE_CONFIG.OTHER;
                   setForm({ ...form, document_type: v as DocType, direction: cfg.direction });
                 }}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-[200px] h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {(Object.keys(DOC_TYPE_LABELS) as DocType[]).map(k => (
                       <SelectItem key={k} value={k}>{DOC_TYPE_LABELS[k]}</SelectItem>
@@ -836,225 +834,420 @@ export default function DocumentsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              {/* Direction auto-derived from document type */}
-              <div>
-                <Label>Numer dokumentu</Label>
-                <Input value={form.document_number} onChange={e => setForm({ ...form, document_number: e.target.value })} placeholder="np. FV/12/03/2026" />
-                <p className="text-xs text-muted-foreground mt-1">Puste = autonumeracja</p>
-              </div>
             </div>
 
-            {/* Correction-specific: linked document + reason */}
-            {form.document_type === "CORRECTION" && (
-              <div className="rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-900/10 p-4 space-y-3">
-                <p className="text-sm font-medium text-orange-700 dark:text-orange-400">Dane korekty</p>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Body: 2-column layout */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-0">
+
+                {/* LEFT: Main form content */}
+                <div className="p-6 space-y-6 border-r border-border">
+
+                  {/* Section: Document Number */}
                   <div>
-                    <Label>Dokument korygowany</Label>
-                    <SearchableSelect
-                      options={correctionDocOptions}
-                      value={form.related_document_id}
-                      onChange={v => {
-                        const rd = docs.find(d => d.id === v);
-                        setForm({
-                          ...form, related_document_id: v,
-                          client_id: rd?.client_id ?? form.client_id,
-                          contractor_name: rd?.contractor_name ?? form.contractor_name,
-                          contractor_nip: rd?.contractor_nip ?? form.contractor_nip,
-                          direction: rd?.direction ?? form.direction,
-                        });
-                      }}
-                      placeholder="Wybierz dokument..."
-                    />
-                    {relatedDoc && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {DOC_TYPE_SHORT[relatedDoc.document_type]} · {relatedDoc.contractor_name} · {formatCurrency(relatedDoc.gross_amount)}
-                      </p>
+                    <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      Numer dokumentu
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Numer zewnętrzny / wewnętrzny</Label>
+                        <Input value={form.document_number} onChange={e => setForm({ ...form, document_number: e.target.value })} placeholder="np. FV/12/03/2026 lub puste = auto" className="h-10" />
+                        <p className="text-[11px] text-muted-foreground">Pozostaw puste dla automatycznej numeracji</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Correction-specific */}
+                  {form.document_type === "CORRECTION" && (
+                    <>
+                      <div className="rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-900/10 p-5 space-y-4">
+                        <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: "hsl(var(--warning))" }}>
+                          <FileMinus2 className="h-4 w-4" />
+                          Dane korekty
+                        </h3>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Dokument korygowany</Label>
+                            <SearchableSelect
+                              options={correctionDocOptions}
+                              value={form.related_document_id}
+                              onChange={v => {
+                                const rd = docs.find(d => d.id === v);
+                                setForm({
+                                  ...form, related_document_id: v,
+                                  client_id: rd?.client_id ?? form.client_id,
+                                  contractor_name: rd?.contractor_name ?? form.contractor_name,
+                                  contractor_nip: rd?.contractor_nip ?? form.contractor_nip,
+                                  direction: rd?.direction ?? form.direction,
+                                });
+                              }}
+                              placeholder="Wybierz dokument..."
+                            />
+                            {relatedDoc && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {DOC_TYPE_SHORT[relatedDoc.document_type]} · {relatedDoc.contractor_name} · {formatCurrency(relatedDoc.gross_amount)}
+                              </p>
+                            )}
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Powód korekty</Label>
+                            <Textarea value={form.correction_reason} onChange={e => setForm({ ...form, correction_reason: e.target.value })} rows={3} placeholder="Np. błąd w cenie, zwrot towaru..." />
+                          </div>
+                        </div>
+                      </div>
+                      <Separator />
+                    </>
+                  )}
+
+                  {/* Section: Contractor */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                      <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                      {typeConfig.contractorLabel}
+                    </h3>
+                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-5">
+                      <div className="space-y-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">{typeConfig.contractorLabel} z bazy</Label>
+                          <SearchableSelect
+                            options={clientOptions}
+                            value={form.client_id}
+                            onChange={onClientSelect}
+                            placeholder={`Szukaj ${derivedDirection === "EXPENSE" ? "dostawcy" : "klienta"}...`}
+                            onAddNew={() => setClientDialogOpen(true)}
+                            addNewLabel={`+ Dodaj kontrahenta`}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Nazwa kontrahenta</Label>
+                            <Input value={form.contractor_name} onChange={e => setForm({ ...form, contractor_name: e.target.value })} className="h-10" />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">NIP</Label>
+                            <Input value={form.contractor_nip} onChange={e => setForm({ ...form, contractor_nip: e.target.value })} placeholder="000-000-00-00" className="h-10 font-mono" />
+                          </div>
+                        </div>
+                      </div>
+                      {/* Client detail card */}
+                      {selectedClient ? (
+                        <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
+                          <p className="font-semibold text-sm">{selectedClient.display_name || selectedClient.company_name || [selectedClient.first_name, selectedClient.last_name].filter(Boolean).join(" ")}</p>
+                          {selectedClient.nip && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="text-muted-foreground text-xs">NIP</span>
+                              <span className="font-mono text-sm">{selectedClient.nip}</span>
+                            </div>
+                          )}
+                          {getClientAddress(selectedClient) && (
+                            <p className="text-sm text-muted-foreground">{getClientAddress(selectedClient)}</p>
+                          )}
+                          <div className="flex gap-4 text-xs text-muted-foreground pt-1">
+                            {selectedClient.email && <span>{selectedClient.email}</span>}
+                            {selectedClient.phone && <span>{selectedClient.phone}</span>}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border border-dashed border-border p-4 flex items-center justify-center text-sm text-muted-foreground">
+                          Wybierz kontrahenta z bazy lub wpisz dane ręcznie
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Section: Dates & Payment */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                      Data i forma zapłaty
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">{typeConfig.dateLabel} *</Label>
+                        <Input type="date" value={form.issue_date} onChange={e => setForm({ ...form, issue_date: e.target.value })} className="h-10" />
+                      </div>
+                      {form.document_type !== "PROFORMA" && (
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Data sprzedaży</Label>
+                          <Input type="date" value={form.sale_date} onChange={e => setForm({ ...form, sale_date: e.target.value })} className="h-10" />
+                        </div>
+                      )}
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">{typeConfig.dueDateLabel}</Label>
+                        <Input type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} className="h-10" />
+                      </div>
+                      {form.document_type === "PURCHASE_INVOICE" && (
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Data otrzymania</Label>
+                          <Input type="date" value={form.received_date} onChange={e => setForm({ ...form, received_date: e.target.value })} className="h-10" />
+                        </div>
+                      )}
+                    </div>
+                    {/* Payment row */}
+                    {typeConfig.showPayment && (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Metoda płatności</Label>
+                          <Select value={form.payment_method} onValueChange={v => setForm({ ...form, payment_method: v })}>
+                            <SelectTrigger className="h-10"><SelectValue placeholder="Wybierz..." /></SelectTrigger>
+                            <SelectContent>
+                              {(Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[]).map(k => (
+                                <SelectItem key={k} value={k}>{PAYMENT_METHOD_LABELS[k]}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Status płatności</Label>
+                          <Select value={form.payment_status} onValueChange={v => onPaymentStatusChange(v as PaymentStatus)}>
+                            <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {(Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).map(k => (
+                                <SelectItem key={k} value={k}>{PAYMENT_STATUS_LABELS[k]}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Kwota opłacona</Label>
+                          <Input type="number" step="0.01" value={form.paid_amount}
+                            onChange={e => setForm({ ...form, paid_amount: e.target.value })}
+                            disabled={form.payment_status === "PAID" || form.payment_status === "UNPAID"}
+                            className={`h-10 font-mono tabular-nums ${form.payment_status === "PAID" || form.payment_status === "UNPAID" ? "bg-muted" : ""}`}
+                          />
+                          {(() => {
+                            const grossTotal = hasLineItems ? computedFromItems.gross : ((parseFloat(form.net_amount) || 0) * (1 + (parseFloat(form.vat_rate) || 23) / 100));
+                            const paid = parseFloat(form.paid_amount) || 0;
+                            const remaining = Math.max(0, grossTotal - paid);
+                            return remaining > 0 ? (
+                              <p className="text-[11px] text-muted-foreground mt-0.5 tabular-nums">Pozostało: <span className="font-medium text-destructive">{formatCurrency(remaining)}</span></p>
+                            ) : null;
+                          })()}
+                        </div>
+                      </div>
                     )}
                   </div>
+
+                  <Separator />
+
+                  {/* Section: Line Items */}
                   <div>
-                    <Label>Powód korekty</Label>
-                    <Textarea value={form.correction_reason} onChange={e => setForm({ ...form, correction_reason: e.target.value })} rows={2} placeholder="Np. błąd w cenie, zwrot towaru..." />
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        <Receipt className="h-4 w-4 text-muted-foreground" />
+                        {typeConfig.itemsLabel}
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        <Button type="button" variant="outline" size="sm" className="h-8" onClick={() => setLineItems([...lineItems, { ...emptyLineItem, item_type: "SERVICE" }])}>
+                          <Plus className="h-3 w-3 mr-1" /> Usługa
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" className="h-8" onClick={() => setLineItems([...lineItems, { ...emptyLineItem, item_type: "PRODUCT" }])}>
+                          <Plus className="h-3 w-3 mr-1" /> Towar
+                        </Button>
+                      </div>
+                    </div>
+                    {/* Items header */}
+                    <div className="hidden sm:grid grid-cols-[1fr_100px_70px_110px_60px_110px_36px] gap-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2 px-1">
+                      <span>Nazwa pozycji</span>
+                      <span>Typ</span>
+                      <span>Ilość</span>
+                      <span>Cena brutto</span>
+                      <span>VAT%</span>
+                      <span>Wartość brutto</span>
+                      <span></span>
+                    </div>
+                    <div className="space-y-2">
+                      {lineItems.map((item, idx) => (
+                        <div key={idx} className="grid grid-cols-1 sm:grid-cols-[1fr_100px_70px_110px_60px_110px_36px] gap-2 items-center rounded-md border border-border/50 p-2 sm:p-0 sm:border-0 hover:bg-muted/20 transition-colors">
+                          <Input value={item.name} onChange={e => updateLineItem(idx, "name", e.target.value)} placeholder="Nazwa pozycji" className="h-9 text-sm" />
+                          <Select value={item.item_type} onValueChange={v => updateLineItem(idx, "item_type", v)}>
+                            <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="PRODUCT">Produkt mag.</SelectItem>
+                              <SelectItem value="SERVICE">Usługa</SelectItem>
+                              <SelectItem value="INTERNAL_COST">Koszt wewn.</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Input type="number" min="0" step="1" value={item.quantity} placeholder="1" onChange={e => updateLineItem(idx, "quantity", e.target.value)} className="h-9 text-sm tabular-nums" />
+                          <Input type="number" step="0.01"
+                            value={(() => { const net = parseFloat(item.unit_net) || 0; const vat = parseFloat(item.vat_rate) || 23; return net > 0 ? (net * (1 + vat / 100)).toFixed(2) : ""; })()}
+                            onChange={e => { const gross = parseFloat(e.target.value) || 0; const vat = parseFloat(item.vat_rate) || 23; updateLineItem(idx, "unit_net", (gross / (1 + vat / 100)).toFixed(2)); }}
+                            placeholder="0.00" className="h-9 text-sm tabular-nums" />
+                          <Input type="number" min="0" max="100" value={item.vat_rate} placeholder="23" onChange={e => updateLineItem(idx, "vat_rate", e.target.value)} className="h-9 text-sm tabular-nums text-center" />
+                          <Input value={formatCurrency((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_net) || 0) * (1 + (parseFloat(item.vat_rate) || 23) / 100))} disabled className="h-9 text-sm bg-muted/50 tabular-nums font-medium" />
+                          {lineItems.length > 1 ? (
+                            <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive" onClick={() => setLineItems(lineItems.filter((_, i) => i !== idx))}><Trash2 className="h-3.5 w-3.5" /></Button>
+                          ) : <div />}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Fallback manual entry */}
+                  {!hasLineItems && (
+                    <>
+                      <Separator />
+                      <div className="rounded-lg border border-dashed border-border p-4 space-y-3">
+                        <p className="text-xs font-medium text-muted-foreground">Kwoty ręczne (jeśli brak pozycji)</p>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Brutto</Label>
+                            <Input type="number" step="0.01" className="h-10 font-mono tabular-nums"
+                              value={(() => { const net = parseFloat(form.net_amount) || 0; const vat = parseFloat(form.vat_rate) || 23; return net > 0 ? (net * (1 + vat / 100)).toFixed(2) : ""; })()}
+                              onChange={e => { const gross = parseFloat(e.target.value) || 0; const vat = parseFloat(form.vat_rate) || 23; setForm({ ...form, net_amount: (gross / (1 + vat / 100)).toFixed(2) }); }}
+                            />
+                            <p className="text-[11px] text-muted-foreground tabular-nums">netto: {(parseFloat(form.net_amount) || 0).toFixed(2)} zł</p>
+                          </div>
+                          <div className="space-y-1.5"><Label className="text-xs text-muted-foreground">Stawka VAT (%)</Label><Input type="number" value={form.vat_rate} onChange={e => setForm({ ...form, vat_rate: e.target.value })} className="h-10" /></div>
+                          <div className="space-y-1.5"><Label className="text-xs text-muted-foreground">Netto</Label><Input value={formatCurrency(parseFloat(form.net_amount) || 0)} disabled className="h-10 bg-muted font-mono" /></div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  <Separator />
+
+                  {/* Section: Description & Notes */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground mb-3">Opis i notatki</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Opis</Label>
+                        <Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Krótki opis dokumentu" className="h-10" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Notatki wewnętrzne</Label>
+                        <Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} placeholder="Notatki widoczne tylko dla pracowników" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section: Attachments */}
+                  {editId && (
+                    <>
+                      <Separator />
+                      <div>
+                        <h3 className="text-sm font-semibold text-foreground mb-3">Załączniki</h3>
+                        <DocumentAttachments documentId={editId} />
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* RIGHT: Summary Panel */}
+                <div className="p-6 bg-muted/20 space-y-5">
+                  {/* Summary totals */}
+                  <div className="rounded-lg border border-border bg-card p-5 space-y-3">
+                    <h3 className="text-sm font-semibold text-foreground">Podsumowanie</h3>
+                    <div className="space-y-2.5 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Netto</span>
+                        <span className="font-mono tabular-nums font-medium">{formatCurrency(hasLineItems ? computedFromItems.net : (parseFloat(form.net_amount) || 0))}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">VAT</span>
+                        <span className="font-mono tabular-nums">{formatCurrency(hasLineItems ? computedFromItems.vat : ((parseFloat(form.net_amount) || 0) * (parseFloat(form.vat_rate) || 23) / 100))}</span>
+                      </div>
+                      <Separator />
+                      <div className="flex justify-between items-center text-lg">
+                        <span className="font-semibold">Brutto</span>
+                        <span className="font-mono tabular-nums font-bold text-primary">{formatCurrency(hasLineItems ? computedFromItems.gross : ((parseFloat(form.net_amount) || 0) * (1 + (parseFloat(form.vat_rate) || 23) / 100)))}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payment status card */}
+                  {typeConfig.showPayment && (
+                    <div className="rounded-lg border border-border bg-card p-5 space-y-3">
+                      <h3 className="text-sm font-semibold text-foreground">Płatność</h3>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Status</span>
+                          <Badge className={PAYMENT_STATUS_COLORS[form.payment_status as PaymentStatus]} variant="secondary">{PAYMENT_STATUS_LABELS[form.payment_status as PaymentStatus]}</Badge>
+                        </div>
+                        {form.payment_method && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Metoda</span>
+                            <span className="text-sm">{PAYMENT_METHOD_LABELS[form.payment_method as PaymentMethod] || form.payment_method}</span>
+                          </div>
+                        )}
+                        {parseFloat(form.paid_amount) > 0 && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Zapłacono</span>
+                            <span className="font-mono tabular-nums font-medium">{formatCurrency(parseFloat(form.paid_amount))}</span>
+                          </div>
+                        )}
+                        {(() => {
+                          const grossTotal = hasLineItems ? computedFromItems.gross : ((parseFloat(form.net_amount) || 0) * (1 + (parseFloat(form.vat_rate) || 23) / 100));
+                          const paid = parseFloat(form.paid_amount) || 0;
+                          const remaining = Math.max(0, grossTotal - paid);
+                          return remaining > 0 ? (
+                            <div className="flex justify-between items-center pt-1 border-t border-border">
+                              <span className="text-muted-foreground">Pozostało</span>
+                              <span className="font-mono tabular-nums font-medium text-destructive">{formatCurrency(remaining)}</span>
+                            </div>
+                          ) : null;
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Items breakdown */}
+                  {hasLineItems && (
+                    <div className="rounded-lg border border-border bg-card p-5 space-y-3">
+                      <h3 className="text-sm font-semibold text-foreground">Pozycje ({lineItems.filter(i => i.name.trim()).length})</h3>
+                      <div className="space-y-1.5 text-xs">
+                        {lineItems.filter(i => i.name.trim()).map((item, idx) => {
+                          const gross = (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_net) || 0) * (1 + (parseFloat(item.vat_rate) || 23) / 100);
+                          return (
+                            <div key={idx} className="flex justify-between items-center py-1">
+                              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                <Badge variant="outline" className="text-[9px] shrink-0 px-1">
+                                  {item.item_type === "PRODUCT" ? "P" : item.item_type === "INTERNAL_COST" ? "K" : "U"}
+                                </Badge>
+                                <span className="truncate">{item.name}</span>
+                              </div>
+                              <span className="font-mono tabular-nums ml-2 shrink-0">{formatCurrency(gross)}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Direction info */}
+                  <div className="rounded-lg border border-border bg-card p-4">
+                    <div className="flex items-center gap-2 text-sm">
+                      {derivedDirection === "EXPENSE" ? (
+                        <ArrowUpCircle className="h-4 w-4 text-destructive" />
+                      ) : (
+                        <ArrowDownCircle className="h-4 w-4 text-primary" />
+                      )}
+                      <span className="font-medium">{DIRECTION_LABELS[derivedDirection]}</span>
+                      <span className="text-muted-foreground text-xs">(auto na podstawie typu)</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            )}
-
-            {/* Contractor section */}
-            <div className="rounded-lg border border-border p-4 space-y-3">
-              <p className="text-sm font-medium text-muted-foreground">{typeConfig.contractorLabel}</p>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <div>
-                    <Label>{typeConfig.contractorLabel} z bazy</Label>
-                    <SearchableSelect
-                      options={clientOptions}
-                      value={form.client_id}
-                      onChange={onClientSelect}
-                      placeholder={`Szukaj ${form.direction === "EXPENSE" ? "dostawcy" : "klienta"}...`}
-                      onAddNew={() => setClientDialogOpen(true)}
-                      addNewLabel={`Dodaj ${form.direction === "EXPENSE" ? "dostawcę" : "klienta"}`}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><Label>Nazwa</Label><Input value={form.contractor_name} onChange={e => setForm({ ...form, contractor_name: e.target.value })} /></div>
-                    <div><Label>NIP</Label><Input value={form.contractor_nip} onChange={e => setForm({ ...form, contractor_nip: e.target.value })} /></div>
-                  </div>
-                </div>
-                {selectedClient && (
-                  <div className="rounded-md bg-muted/50 p-3 text-sm space-y-1">
-                    <p className="font-medium">{selectedClient.display_name || selectedClient.company_name || [selectedClient.first_name, selectedClient.last_name].filter(Boolean).join(" ")}</p>
-                    {selectedClient.nip && <p className="text-muted-foreground">NIP: <span className="font-mono">{selectedClient.nip}</span></p>}
-                    {getClientAddress(selectedClient) && <p className="text-muted-foreground">{getClientAddress(selectedClient)}</p>}
-                    {selectedClient.email && <p className="text-muted-foreground">{selectedClient.email}</p>}
-                    {selectedClient.phone && <p className="text-muted-foreground">{selectedClient.phone}</p>}
-                  </div>
-                )}
-              </div>
             </div>
 
-            {/* Dates */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div><Label>{typeConfig.dateLabel} *</Label><Input type="date" value={form.issue_date} onChange={e => setForm({ ...form, issue_date: e.target.value })} /></div>
-              {form.document_type !== "PROFORMA" && (
-                <div><Label>Data sprzedaży</Label><Input type="date" value={form.sale_date} onChange={e => setForm({ ...form, sale_date: e.target.value })} /></div>
-              )}
-              <div><Label>{typeConfig.dueDateLabel}</Label><Input type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} /></div>
-              {form.document_type === "PURCHASE_INVOICE" && (
-                <div><Label>Data otrzymania</Label><Input type="date" value={form.received_date} onChange={e => setForm({ ...form, received_date: e.target.value })} /></div>
-              )}
-            </div>
-
-            {/* Line Items */}
-            <div className="rounded-lg border border-border p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-muted-foreground">{typeConfig.itemsLabel}</p>
-                <Button type="button" variant="outline" size="sm" onClick={() => setLineItems([...lineItems, { ...emptyLineItem }])}>
-                  <Plus className="h-3 w-3 mr-1" /> Dodaj pozycję
+            {/* Footer */}
+            <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-card">
+              <p className="text-xs text-muted-foreground">
+                {hasLineItems ? `${lineItems.filter(i => i.name.trim()).length} pozycji` : "Brak pozycji"}
+                {form.document_number && ` · ${form.document_number}`}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={resetForm} className="h-10 px-6">Anuluj</Button>
+                <Button onClick={() => saveMutation.mutate(form)} disabled={!form.issue_date || (!hasLineItems && !form.net_amount) || saveMutation.isPending} className="h-10 px-8">
+                  {saveMutation.isPending ? "Zapisywanie..." : editId ? "Zapisz zmiany" : "Dodaj dokument"}
                 </Button>
               </div>
-              <div className={`hidden sm:grid gap-2 text-xs font-medium text-muted-foreground ${typeConfig.showInventoryType ? "grid-cols-[1fr_100px_70px_120px_70px_120px_36px]" : "grid-cols-[1fr_70px_120px_70px_120px_36px]"}`}>
-                <span>Nazwa</span>
-                {typeConfig.showInventoryType && <span>Typ</span>}
-                <span>Ilość</span>
-                <span>Cena brutto</span>
-                <span>VAT%</span>
-                <span>Brutto</span>
-                <span></span>
-              </div>
-              {lineItems.map((item, idx) => (
-                <div key={idx} className={`grid grid-cols-1 gap-2 items-center ${typeConfig.showInventoryType ? "sm:grid-cols-[1fr_100px_70px_120px_70px_120px_36px]" : "sm:grid-cols-[1fr_70px_120px_70px_120px_36px]"}`}>
-                  <Input value={item.name} onChange={e => updateLineItem(idx, "name", e.target.value)} placeholder="Nazwa pozycji" className="h-9 text-sm" />
-                  {typeConfig.showInventoryType && (
-                    <Select value={item.item_type} onValueChange={v => updateLineItem(idx, "item_type", v)}>
-                      <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="PRODUCT">Produkt mag.</SelectItem>
-                        <SelectItem value="SERVICE">Usługa</SelectItem>
-                        <SelectItem value="INTERNAL_COST">Koszt wewn.</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                  <Input type="number" min="0" step="1" value={item.quantity} placeholder="1" onChange={e => updateLineItem(idx, "quantity", e.target.value)} className="h-9 text-sm tabular-nums" />
-                  <Input type="number" step="0.01"
-                    value={(() => { const net = parseFloat(item.unit_net) || 0; const vat = parseFloat(item.vat_rate) || 23; return net > 0 ? (net * (1 + vat / 100)).toFixed(2) : ""; })()}
-                    onChange={e => { const gross = parseFloat(e.target.value) || 0; const vat = parseFloat(item.vat_rate) || 23; updateLineItem(idx, "unit_net", (gross / (1 + vat / 100)).toFixed(2)); }}
-                    placeholder="0.00" className="h-9 text-sm tabular-nums" />
-                  <Input type="number" min="0" max="100" value={item.vat_rate} placeholder="23" onChange={e => updateLineItem(idx, "vat_rate", e.target.value)} className="h-9 text-sm tabular-nums" />
-                  <Input value={formatCurrency((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_net) || 0) * (1 + (parseFloat(item.vat_rate) || 23) / 100))} disabled className="h-9 text-sm bg-muted tabular-nums" />
-                  {lineItems.length > 1 ? (
-                    <Button type="button" variant="ghost" size="icon" className="h-9 w-9" onClick={() => setLineItems(lineItems.filter((_, i) => i !== idx))}><Trash2 className="h-3.5 w-3.5" /></Button>
-                  ) : <div />}
-                </div>
-              ))}
-              <div className="border-t border-border pt-3 space-y-1 text-sm max-w-xs ml-auto">
-                <div className="flex justify-between"><span className="text-muted-foreground">Suma netto</span><span className="font-mono font-medium tabular-nums">{formatCurrency(computedFromItems.net)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Suma VAT</span><span className="font-mono tabular-nums">{formatCurrency(computedFromItems.vat)}</span></div>
-                <div className="flex justify-between font-bold"><span>Suma brutto</span><span className="font-mono tabular-nums">{formatCurrency(computedFromItems.gross)}</span></div>
-              </div>
-            </div>
-
-            {/* Fallback manual entry */}
-            {!hasLineItems && (
-              <div className="rounded-lg border border-dashed border-border p-4 space-y-3">
-                <p className="text-sm font-medium text-muted-foreground">Kwoty ręczne (jeśli brak pozycji)</p>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label>Brutto</Label>
-                    <Input type="number" step="0.01"
-                      value={(() => { const net = parseFloat(form.net_amount) || 0; const vat = parseFloat(form.vat_rate) || 23; return net > 0 ? (net * (1 + vat / 100)).toFixed(2) : ""; })()}
-                      onChange={e => { const gross = parseFloat(e.target.value) || 0; const vat = parseFloat(form.vat_rate) || 23; setForm({ ...form, net_amount: (gross / (1 + vat / 100)).toFixed(2) }); }}
-                    />
-                    <p className="text-[10px] text-muted-foreground mt-1 tabular-nums">netto: {(parseFloat(form.net_amount) || 0).toFixed(2)} zł</p>
-                  </div>
-                  <div><Label>Stawka VAT (%)</Label><Input type="number" value={form.vat_rate} onChange={e => setForm({ ...form, vat_rate: e.target.value })} /></div>
-                  <div><Label>Netto</Label><Input value={formatCurrency(parseFloat(form.net_amount) || 0)} disabled className="bg-muted" /></div>
-                </div>
-              </div>
-            )}
-
-            {/* Payment section — hidden for proforma */}
-            {typeConfig.showPayment && (
-              <div className="rounded-lg border border-border p-4 space-y-3">
-                <p className="text-sm font-medium text-muted-foreground">Płatność</p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <Label>Status płatności</Label>
-                    <Select value={form.payment_status} onValueChange={v => onPaymentStatusChange(v as PaymentStatus)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {(Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).map(k => (
-                          <SelectItem key={k} value={k}>{PAYMENT_STATUS_LABELS[k]}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Metoda płatności</Label>
-                    <Select value={form.payment_method} onValueChange={v => setForm({ ...form, payment_method: v })}>
-                      <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                      <SelectContent>
-                        {(Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[]).map(k => (
-                          <SelectItem key={k} value={k}>{PAYMENT_METHOD_LABELS[k]}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Kwota opłacona</Label>
-                    <Input type="number" step="0.01" value={form.paid_amount}
-                      onChange={e => setForm({ ...form, paid_amount: e.target.value })}
-                      disabled={form.payment_status === "PAID" || form.payment_status === "UNPAID"}
-                      className={form.payment_status === "PAID" || form.payment_status === "UNPAID" ? "bg-muted" : ""}
-                    />
-                    {(() => {
-                      const grossTotal = hasLineItems ? computedFromItems.gross : ((parseFloat(form.net_amount) || 0) * (1 + (parseFloat(form.vat_rate) || 23) / 100));
-                      const paid = parseFloat(form.paid_amount) || 0;
-                      const remaining = Math.max(0, grossTotal - paid);
-                      return remaining > 0 ? (
-                        <p className="text-xs text-muted-foreground mt-1 tabular-nums">Pozostało: <span className="font-medium text-destructive">{formatCurrency(remaining)}</span></p>
-                      ) : null;
-                    })()}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div><Label>Opis</Label><Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
-              <div><Label>Notatki</Label><Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} /></div>
-            </div>
-
-            {/* Attachments */}
-            <div className="rounded-lg border border-border p-4">
-              <DocumentAttachments documentId={editId} />
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={resetForm}>Anuluj</Button>
-              <Button onClick={() => saveMutation.mutate(form)} disabled={!form.issue_date || (!hasLineItems && !form.net_amount) || saveMutation.isPending}>
-                {saveMutation.isPending ? "Zapisywanie..." : editId ? "Zapisz zmiany" : "Dodaj"}
-              </Button>
             </div>
           </div>
         </DialogContent>
