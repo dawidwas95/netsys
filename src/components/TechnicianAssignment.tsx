@@ -342,12 +342,15 @@ export function QuickAssignButton({ orderId, orderNumber }: { orderId: string; o
 
   const assignTech = useMutation({
     mutationFn: async (userId: string) => {
-      const { error } = await supabase.from("order_technicians").insert({
+      if (assigned.includes(userId)) {
+        throw new Error("Ten technik jest już przypisany do tego zlecenia");
+      }
+      const { error } = await supabase.from("order_technicians").upsert({
         order_id: orderId,
         user_id: userId,
         is_primary: true,
         assigned_by: user?.id,
-      } as any);
+      } as any, { onConflict: "order_id,user_id", ignoreDuplicates: true });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -355,7 +358,7 @@ export function QuickAssignButton({ orderId, orderNumber }: { orderId: string; o
       toast.success("Technik przypisany");
       setOpen(false);
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message || "Błąd przypisywania technika"),
   });
 
   return (
