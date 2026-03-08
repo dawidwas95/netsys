@@ -770,12 +770,22 @@ export default function OrderDetailPage() {
 
             <TabsContent value="documents" className="mt-4">
               <Card>
-                <CardContent className="pt-4 space-y-3">
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={handleDownloadPDF}><FileDown className="mr-1 h-4 w-4" /> Pobierz PDF</Button>
-                    <Button variant="outline" size="sm" onClick={handlePrintPDF}><Printer className="mr-1 h-4 w-4" /> Drukuj PDF</Button>
+                <CardContent className="pt-4 space-y-4">
+                  <div>
+                    <p className="text-sm font-medium mb-2">Zlecenie serwisowe</p>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={handleDownloadPDF}><FileDown className="mr-1 h-4 w-4" /> Pobierz PDF</Button>
+                      <Button variant="outline" size="sm" onClick={handlePrintPDF}><Printer className="mr-1 h-4 w-4" /> Drukuj</Button>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">PDF generowany na żywo z aktualnych danych zlecenia.</p>
+                  <div className="border-t pt-3">
+                    <p className="text-sm font-medium mb-2">Protokoły</p>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button variant="outline" size="sm" onClick={handleIntakePDF}><FileDown className="mr-1 h-4 w-4" /> Przyjęcie sprzętu</Button>
+                      <Button variant="outline" size="sm" onClick={handlePickupPDF}><FileDown className="mr-1 h-4 w-4" /> Odbiór sprzętu</Button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">PDF generowany na żywo z aktualnych danych zlecenia. Zawiera kod QR.</p>
                 </CardContent>
               </Card>
             </TabsContent>
