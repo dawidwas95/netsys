@@ -90,6 +90,35 @@ export default function OrderDetailPage() {
     enabled: !!id,
   });
 
+  const { data: myRoles = [] } = useQuery({
+    queryKey: ["my-roles"],
+    queryFn: async () => {
+      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user?.id);
+      return data ?? [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const isAdmin = myRoles.some((r: any) => r.role === "ADMIN" || r.role === "MANAGER");
+
+  const { data: linkedStats } = useQuery({
+    queryKey: ["order-linked-stats", id],
+    queryFn: async () => {
+      const [cashRes, docsRes] = await Promise.all([
+        supabase.from("cash_transactions").select("id, transaction_type, amount, gross_amount", { count: "exact" }).eq("related_order_id", id!),
+        supabase.from("documents").select("id", { count: "exact" }).eq("related_order_id", id!),
+      ]);
+      if (cashRes.error) throw cashRes.error;
+      if (docsRes.error) throw docsRes.error;
+      return {
+        cashCount: cashRes.count ?? 0,
+        docCount: docsRes.count ?? 0,
+        cashRows: cashRes.data ?? [],
+      };
+    },
+    enabled: !!id,
+  });
+
   // Profiles for comment authors
   const { data: profiles = [] } = useQuery({
     queryKey: ["profiles"],
