@@ -238,32 +238,16 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
     onError: (err: any) => toast.error(err.message || "Błąd dodawania"),
   });
 
-  // ── Delete item ──
+  // ── Delete item (release reservation) ──
   const deleteItem = useMutation({
     mutationFn: async (item: OrderItem) => {
-      // If linked to inventory, reverse the movement
+      // Release reservation if linked to inventory
       if (item.inventory_item_id) {
-        // Delete the OUT movement linked to this order + item
-        const { data: movements } = await supabase
-          .from("inventory_movements")
-          .select("id")
-          .eq("item_id", item.inventory_item_id)
-          .eq("source_id", orderId)
-          .eq("source_type", "SERVICE_ORDER")
-          .eq("movement_type", "OUT");
-
-        if (movements && movements.length > 0) {
-          // Create a reversal IN movement
-          await supabase.from("inventory_movements").insert({
-            item_id: item.inventory_item_id,
-            movement_type: "IN",
-            quantity: item.quantity,
-            source_type: "SERVICE_ORDER",
-            source_id: orderId,
-            notes: `Zwrot: usunięto z zlecenia`,
-            created_by: user?.id,
-          });
-        }
+        await supabase
+          .from("inventory_reservations" as any)
+          .update({ status: "RELEASED", released_at: new Date().toISOString() })
+          .eq("service_order_item_id", item.id)
+          .eq("status", "RESERVED");
       }
 
       const { error } = await supabase.from("service_order_items").delete().eq("id", item.id);
@@ -274,9 +258,9 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
       queryClient.invalidateQueries({ queryKey: ["inventory_items"] });
       queryClient.invalidateQueries({ queryKey: ["inventory-items-active"] });
-      queryClient.invalidateQueries({ queryKey: ["inventory_movements"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory-reservations-active"] });
       onItemsChanged();
-      toast.success("Usunięto pozycję (stan magazynowy przywrócony)");
+      toast.success("Usunięto pozycję (rezerwacja zwolniona)");
     },
   });
 
