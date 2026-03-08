@@ -336,6 +336,15 @@ export default function DocumentsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["documents"] });
       qc.invalidateQueries({ queryKey: ["inventory-items"] });
+      // Audit log for document save
+      const docNum = form.document_number || "auto";
+      supabase.from("activity_logs").insert({
+        entity_type: "document", entity_id: editId || "new", action_type: editId ? "UPDATE" : "CREATE",
+        user_id: user?.id,
+        // @ts-ignore
+        entity_name: docNum,
+        description: editId ? `Edycja dokumentu ${docNum}` : `Utworzono dokument ${docNum}`,
+      }).then();
       toast.success(editId ? "Zaktualizowano dokument" : "Dodano dokument");
       resetForm();
     },
@@ -348,8 +357,14 @@ export default function DocumentsPage() {
       const { error } = await supabase.from("documents").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, deletedId) => {
       qc.invalidateQueries({ queryKey: ["documents"] });
+      supabase.from("activity_logs").insert({
+        entity_type: "document", entity_id: deletedId, action_type: "DELETE",
+        user_id: user?.id,
+        // @ts-ignore
+        description: "Usunięto dokument",
+      }).then();
       toast.success("Usunięto dokument");
       setDeleteConfirm(null);
     },

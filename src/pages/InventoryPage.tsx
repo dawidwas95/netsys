@@ -84,6 +84,12 @@ export default function InventoryPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory_items"] });
       setAddOpen(false);
+      supabase.from("activity_logs").insert({
+        entity_type: "inventory_item", entity_id: "new", action_type: "CREATE",
+        user_id: user?.id,
+        // @ts-ignore
+        description: "Dodano pozycję magazynową",
+      }).then();
       toast.success("Dodano pozycję magazynową");
     },
     onError: () => toast.error("Błąd dodawania pozycji"),
@@ -100,6 +106,14 @@ export default function InventoryPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory_items"] });
       queryClient.invalidateQueries({ queryKey: ["inventory_movements"] });
+      const movType = moveOpen?.type === "IN" ? "INVENTORY_IN" : "INVENTORY_OUT";
+      supabase.from("activity_logs").insert({
+        entity_type: "inventory_movement", entity_id: moveOpen?.itemId || "unknown", action_type: movType,
+        user_id: user?.id,
+        // @ts-ignore
+        entity_name: moveOpen?.itemName || "",
+        description: `Ruch magazynowy: ${moveOpen?.type === "IN" ? "przyjęcie" : "wydanie"} - ${moveOpen?.itemName}`,
+      }).then();
       setMoveOpen(null);
       toast.success("Zapisano ruch magazynowy");
     },
