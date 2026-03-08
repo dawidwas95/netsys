@@ -29,6 +29,7 @@ export default function ClientDetailPage() {
   const [editDeviceDialogOpen, setEditDeviceDialogOpen] = useState(false);
   const [editDevice, setEditDevice] = useState<Device | null>(null);
   const [archiveDevice, setArchiveDevice] = useState<Device | null>(null);
+  const [historyDevice, setHistoryDevice] = useState<Device | null>(null);
 
   const { data: client, isLoading } = useQuery({
     queryKey: ["client", id],
