@@ -29,6 +29,7 @@ import {
   CheckCircle, AlertTriangle, Save, Archive, XCircle,
 } from "lucide-react";
 import { generateOrderPDF } from "@/lib/generateOrderPDF";
+import { generateIntakePDF, generatePickupPDF } from "@/lib/pdfProtocols";
 import { sendOrderNotification } from "@/lib/notifications";
 import { toast } from "sonner";
 import { useState, useMemo, useCallback } from "react";
@@ -517,6 +518,20 @@ export default function OrderDetailPage() {
     win?.addEventListener("load", () => win.print());
   }
 
+  async function handleIntakePDF() {
+    if (!order) return;
+    const doc = await generateIntakePDF({ order });
+    doc.save(`Przyjęcie-${order.order_number.replace(/\//g, "-")}.pdf`);
+    toast.success("Protokół przyjęcia pobrany");
+  }
+
+  async function handlePickupPDF() {
+    if (!order) return;
+    const doc = await generatePickupPDF({ order, orderItems, financials });
+    doc.save(`Odbiór-${order.order_number.replace(/\//g, "-")}.pdf`);
+    toast.success("Protokół odbioru pobrany");
+  }
+
   if (isLoading) return <p className="text-muted-foreground p-4">Ładowanie...</p>;
   if (!order) return <p className="text-muted-foreground p-4">Zlecenie nie znalezione</p>;
 
@@ -755,12 +770,22 @@ export default function OrderDetailPage() {
 
             <TabsContent value="documents" className="mt-4">
               <Card>
-                <CardContent className="pt-4 space-y-3">
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={handleDownloadPDF}><FileDown className="mr-1 h-4 w-4" /> Pobierz PDF</Button>
-                    <Button variant="outline" size="sm" onClick={handlePrintPDF}><Printer className="mr-1 h-4 w-4" /> Drukuj PDF</Button>
+                <CardContent className="pt-4 space-y-4">
+                  <div>
+                    <p className="text-sm font-medium mb-2">Zlecenie serwisowe</p>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={handleDownloadPDF}><FileDown className="mr-1 h-4 w-4" /> Pobierz PDF</Button>
+                      <Button variant="outline" size="sm" onClick={handlePrintPDF}><Printer className="mr-1 h-4 w-4" /> Drukuj</Button>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">PDF generowany na żywo z aktualnych danych zlecenia.</p>
+                  <div className="border-t pt-3">
+                    <p className="text-sm font-medium mb-2">Protokoły</p>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button variant="outline" size="sm" onClick={handleIntakePDF}><FileDown className="mr-1 h-4 w-4" /> Przyjęcie sprzętu</Button>
+                      <Button variant="outline" size="sm" onClick={handlePickupPDF}><FileDown className="mr-1 h-4 w-4" /> Odbiór sprzętu</Button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">PDF generowany na żywo z aktualnych danych zlecenia. Zawiera kod QR.</p>
                 </CardContent>
               </Card>
             </TabsContent>
