@@ -206,7 +206,7 @@ const emptyForm = {
 
 function getClientName(c: Document["clients"]) {
   if (!c) return "—";
-  return c.display_name || c.company_name || [c.first_name, c.last_name].filter(Boolean).join(" ") || "—";
+  return c.company_name || c.display_name || [c.first_name, c.last_name].filter(Boolean).join(" ") || "—";
 }
 
 function formatCurrency(v: number) {
