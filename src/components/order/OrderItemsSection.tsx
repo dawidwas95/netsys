@@ -229,13 +229,14 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
         order_id: orderId,
         inventory_item_id: null,
         item_name_snapshot: customItem.name.trim(),
+        item_type: customItem.item_type,
         quantity: qty,
         sale_net: saleNet,
         purchase_net: purchaseNet,
         total_sale_net: qty * saleNet,
         total_purchase_net: qty * purchaseNet,
         created_by: user?.id,
-      });
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
