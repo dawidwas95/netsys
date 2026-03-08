@@ -28,6 +28,7 @@ import SystemLogsPage from "@/pages/SystemLogsPage";
 import DataManagementPage from "@/pages/DataManagementPage";
 import SettingsPage from "@/pages/SettingsPage";
 import OrderStatusPage from "@/pages/OrderStatusPage";
+import ServiceBoardDisplay from "@/pages/ServiceBoardDisplay";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
