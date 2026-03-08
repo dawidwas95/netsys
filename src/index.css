@@ -132,10 +132,27 @@
   }
 
   .page-header {
-    @apply flex items-center justify-between pb-4 border-b mb-6;
+    @apply flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b mb-6;
   }
 
   .data-table-wrapper {
     @apply bg-card rounded-lg border overflow-hidden;
+  }
+
+  /* Mobile card view for tables */
+  .mobile-data-card {
+    @apply bg-card rounded-lg border p-4 space-y-2;
+  }
+  .mobile-data-card .mobile-card-header {
+    @apply flex items-center justify-between;
+  }
+  .mobile-data-card .mobile-card-row {
+    @apply flex items-center justify-between text-sm py-0.5;
+  }
+  .mobile-data-card .mobile-card-label {
+    @apply text-muted-foreground text-xs;
+  }
+  .mobile-data-card .mobile-card-actions {
+    @apply flex items-center gap-2 pt-2 border-t mt-2;
   }
 }
