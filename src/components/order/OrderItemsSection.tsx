@@ -561,9 +561,16 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                       {formatCurrency(profitGross)}
                     </TableCell>
                     <TableCell className="text-center">
-                      <Badge variant="outline" className="text-[10px]">
-                        {item.inventory_item_id ? "Magazyn" : "Własna"}
-                      </Badge>
+                      {item.inventory_item_id ? (
+                        <div className="flex flex-col items-center gap-0.5">
+                          <Badge variant="outline" className="text-[10px]">Magazyn</Badge>
+                          {!isCompleted && (
+                            <Badge variant="secondary" className="text-[9px] px-1 py-0">Rezerw.</Badge>
+                          )}
+                        </div>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px]">Własna</Badge>
+                      )}
                     </TableCell>
                     {!isCompleted && (
                       <TableCell>
