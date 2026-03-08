@@ -202,7 +202,7 @@ function RecentOrders() {
     queryFn: async () => {
       const { data } = await supabase
         .from("service_orders")
-        .select("id, order_number, status, priority, total_net, is_paid, received_at, clients(display_name)")
+        .select("id, order_number, status, priority, total_gross, is_paid, received_at, clients(display_name)")
         .order("received_at", { ascending: false })
         .limit(5);
       return data ?? [];
