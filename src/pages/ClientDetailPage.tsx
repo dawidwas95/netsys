@@ -248,6 +248,9 @@ export default function ClientDetailPage() {
                       </div>
                     )}
                     <div className="flex gap-1 pt-1">
+                      <Button variant="ghost" size="sm" onClick={() => setHistoryDevice(device)}>
+                        <History className="h-3.5 w-3.5 mr-1" />Historia
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={() => { setEditDevice(device); setEditDeviceDialogOpen(true); }}>
                         <Pencil className="h-3.5 w-3.5 mr-1" />Edytuj
                       </Button>
