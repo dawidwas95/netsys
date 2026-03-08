@@ -275,36 +275,36 @@ class PdfBuilder {
 
   // ── Bordered info card ──
   drawInfoCard(x: number, width: number, fields: Array<{ label: string; value: string | null | undefined }>, title?: string) {
-    const lineH = 4.5;
+    const lineH = 3.8;
     const visibleFields = fields.filter(f => f.value);
-    const cardH = (title ? lineH + 2 : 0) + visibleFields.length * lineH + 4;
+    const cardH = (title ? lineH + 1 : 0) + visibleFields.length * lineH + 3;
     this.checkPage(cardH + 2);
 
     // Card border
     this.doc.setDrawColor(...PdfBuilder.BORDER);
-    this.doc.setLineWidth(0.3);
-    this.doc.roundedRect(x, this.y - 2, width, cardH, 1.5, 1.5, "S");
+    this.doc.setLineWidth(0.2);
+    this.doc.roundedRect(x, this.y - 2, width, cardH, 1, 1, "S");
 
     const startY = this.y;
 
     if (title) {
-      this.setFont("bold", 8, PdfBuilder.PRIMARY);
-      this.doc.text(title, x + 4, this.y + 1);
-      this.y += lineH + 2;
+      this.setFont("bold", 7.5, PdfBuilder.PRIMARY);
+      this.doc.text(title, x + 3, this.y + 0.5);
+      this.y += lineH + 1;
     }
 
     for (const f of visibleFields) {
-      this.setFont("normal", 7, PdfBuilder.GRAY);
-      this.doc.text(f.label, x + 4, this.y);
-      this.setFont("normal", 8, PdfBuilder.DARK);
+      this.setFont("normal", 6.5, PdfBuilder.GRAY);
+      this.doc.text(f.label, x + 3, this.y);
+      this.setFont("normal", 7.5, PdfBuilder.DARK);
       const val = f.value || "—";
-      const maxW = width - 38;
+      const maxW = width - 34;
       const truncated = this.doc.splitTextToSize(val, maxW)[0] || val;
-      this.doc.text(truncated, x + 30, this.y);
+      this.doc.text(truncated, x + 28, this.y);
       this.y += lineH;
     }
 
-    this.y = startY + cardH + 2;
+    this.y = startY + cardH + 1;
     return cardH;
   }
 
