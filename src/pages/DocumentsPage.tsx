@@ -222,6 +222,8 @@ export default function DocumentsPage() {
   const supplierClients = clients.filter((c: any) => c.business_role === "SUPPLIER" || c.business_role === "CUSTOMER_AND_SUPPLIER");
   const customerClients = clients.filter((c: any) => c.business_role === "CUSTOMER" || c.business_role === "CUSTOMER_AND_SUPPLIER");
 
+  const { data: attachmentCounts = {} } = useDocumentAttachmentCounts();
+
   const { data: inventoryItems = [] } = useQuery({
     queryKey: ["inventory-items-select"],
     queryFn: async () => {
