@@ -537,10 +537,20 @@ export default function OrderDetailPage() {
   const addComment = useMutation({
     mutationFn: async () => {
       if (!comment.trim()) return;
-      const { error } = await supabase.from("service_order_comments").insert({
+      const { data: inserted, error } = await supabase.from("service_order_comments").insert({
         order_id: id!, user_id: user?.id, comment: comment.trim(),
-      });
+      }).select("id").single();
       if (error) throw error;
+
+      // Create notifications for mentions and assigned technicians
+      const authorName = profileMap[user?.id ?? ""] || "Użytkownik";
+      const orderNum = order?.order_number || "";
+      if (inserted?.id) {
+        await Promise.all([
+          createMentionNotifications(comment.trim(), id!, inserted.id, authorName, orderNum, mentionProfileMap),
+          createCommentNotification(id!, inserted.id, user?.id ?? "", authorName, orderNum),
+        ]);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-comments", id] });
