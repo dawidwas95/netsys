@@ -1,3 +1,4 @@
+import logoW3s from "@/assets/logo-w3s.png";
 import {
   LayoutDashboard,
   Users,
