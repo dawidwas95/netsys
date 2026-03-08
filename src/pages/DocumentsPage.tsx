@@ -784,7 +784,7 @@ export default function DocumentsPage() {
                 <span>Nazwa</span>
                 <span>Typ</span>
                 <span>Ilość</span>
-                <span>Cena netto</span>
+                <span>Cena brutto</span>
                 <span>VAT%</span>
                 <span>Brutto</span>
                 <span></span>
