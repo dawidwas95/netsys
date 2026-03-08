@@ -1,16 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -23,8 +24,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Plus, Search, FileText, ArrowDownCircle, ArrowUpCircle, Pencil, Trash2, Eye, X,
-  DollarSign, Paperclip,
+  Plus, Search, FileText, ArrowDownCircle, ArrowUpCircle, Pencil, Trash2, Eye,
+  DollarSign, ShoppingCart, Receipt, FileCheck, FileMinus2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { SearchableSelect } from "@/components/SearchableSelect";
@@ -46,6 +47,24 @@ const DOC_TYPE_LABELS: Record<DocType, string> = {
   OTHER: "Inny",
 };
 
+const DOC_TYPE_SHORT: Record<DocType, string> = {
+  PURCHASE_INVOICE: "Zakupowa",
+  SALES_INVOICE: "Sprzedażowa",
+  RECEIPT: "Paragon",
+  PROFORMA: "Proforma",
+  CORRECTION: "Korekta",
+  OTHER: "Inny",
+};
+
+const DOC_TYPE_COLORS: Record<DocType, string> = {
+  PURCHASE_INVOICE: "bg-destructive/10 text-destructive",
+  SALES_INVOICE: "bg-primary/10 text-primary",
+  RECEIPT: "bg-muted text-muted-foreground",
+  PROFORMA: "bg-accent text-accent-foreground",
+  CORRECTION: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+  OTHER: "bg-muted text-muted-foreground",
+};
+
 const DIRECTION_LABELS: Record<DocDirection, string> = {
   INCOME: "Przychód",
   EXPENSE: "Wydatek",
@@ -63,6 +82,24 @@ const PAYMENT_STATUS_COLORS: Record<PaymentStatus, string> = {
   PARTIALLY_PAID: "bg-accent text-accent-foreground",
   PAID: "bg-primary/10 text-primary",
   OVERDUE: "bg-destructive/10 text-destructive",
+};
+
+// Type-specific config
+const TYPE_CONFIG: Record<string, {
+  contractorLabel: string;
+  dateLabel: string;
+  dueDateLabel: string;
+  itemsLabel: string;
+  direction: DocDirection;
+  showInventoryType: boolean;
+  showPayment: boolean;
+}> = {
+  PURCHASE_INVOICE: { contractorLabel: "Dostawca", dateLabel: "Data zakupu", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje zakupu", direction: "EXPENSE", showInventoryType: true, showPayment: true },
+  SALES_INVOICE: { contractorLabel: "Klient", dateLabel: "Data sprzedaży", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje sprzedaży", direction: "INCOME", showInventoryType: false, showPayment: true },
+  PROFORMA: { contractorLabel: "Klient", dateLabel: "Data wystawienia", dueDateLabel: "Termin ważności", itemsLabel: "Pozycje", direction: "INCOME", showInventoryType: false, showPayment: false },
+  CORRECTION: { contractorLabel: "Kontrahent", dateLabel: "Data wystawienia", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje korekty", direction: "INCOME", showInventoryType: false, showPayment: true },
+  RECEIPT: { contractorLabel: "Kontrahent", dateLabel: "Data wystawienia", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje", direction: "INCOME", showInventoryType: false, showPayment: true },
+  OTHER: { contractorLabel: "Kontrahent", dateLabel: "Data wystawienia", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje", direction: "INCOME", showInventoryType: false, showPayment: true },
 };
 
 interface Document {
@@ -87,6 +124,8 @@ interface Document {
   description: string | null;
   notes: string | null;
   created_at: string;
+  related_document_id: string | null;
+  correction_reason: string | null;
   clients?: { display_name: string | null; company_name: string | null; first_name: string | null; last_name: string | null } | null;
 }
 
@@ -121,6 +160,8 @@ const emptyForm = {
   paid_amount: "",
   description: "",
   notes: "",
+  related_document_id: "",
+  correction_reason: "",
 };
 
 function getClientName(c: Document["clients"]) {
@@ -136,10 +177,11 @@ export default function DocumentsPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
+  const [typePickerOpen, setTypePickerOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [search, setSearch] = useState("");
-  const [filterDirection, setFilterDirection] = useState("ALL");
+  const [filterTab, setFilterTab] = useState("ALL");
   const [filterPayment, setFilterPayment] = useState("ALL");
   const [lineItems, setLineItems] = useState<DocumentLineItem[]>([{ ...emptyLineItem }]);
   const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
@@ -174,13 +216,8 @@ export default function DocumentsPage() {
     },
   });
 
-  // For purchase documents, filter to suppliers only
-  const supplierClients = clients.filter((c: any) =>
-    c.business_role === "SUPPLIER" || c.business_role === "CUSTOMER_AND_SUPPLIER"
-  );
-  const customerClients = clients.filter((c: any) =>
-    c.business_role === "CUSTOMER" || c.business_role === "CUSTOMER_AND_SUPPLIER"
-  );
+  const supplierClients = clients.filter((c: any) => c.business_role === "SUPPLIER" || c.business_role === "CUSTOMER_AND_SUPPLIER");
+  const customerClients = clients.filter((c: any) => c.business_role === "CUSTOMER" || c.business_role === "CUSTOMER_AND_SUPPLIER");
 
   const { data: inventoryItems = [] } = useQuery({
     queryKey: ["inventory-items-select"],
@@ -190,7 +227,6 @@ export default function DocumentsPage() {
     },
   });
 
-  // ── Computed totals from line items ──
   const computedFromItems = lineItems.reduce((acc, item) => {
     const qty = parseFloat(item.quantity) || 0;
     const unitNet = parseFloat(item.unit_net) || 0;
@@ -203,21 +239,14 @@ export default function DocumentsPage() {
 
   const hasLineItems = lineItems.some(i => i.name.trim() !== "");
 
-  // ── Load items when editing ──
+  const typeConfig = TYPE_CONFIG[form.document_type] || TYPE_CONFIG.OTHER;
+
   async function loadDocumentItems(docId: string) {
-    const { data } = await supabase
-      .from("document_items")
-      .select("*")
-      .eq("document_id", docId)
-      .order("sort_order");
+    const { data } = await supabase.from("document_items").select("*").eq("document_id", docId).order("sort_order");
     if (data && data.length > 0) {
       setLineItems(data.map((di: any) => ({
-        id: di.id,
-        name: di.name,
-        quantity: di.quantity.toString(),
-        unit: di.unit,
-        unit_net: di.unit_net.toString(),
-        vat_rate: di.vat_rate.toString(),
+        id: di.id, name: di.name, quantity: di.quantity.toString(), unit: di.unit,
+        unit_net: di.unit_net.toString(), vat_rate: di.vat_rate.toString(),
         item_type: (di.description === "PRODUCT" ? "PRODUCT" : "SERVICE") as DocItemType,
         inventory_item_id: di.inventory_item_id,
       })));
@@ -226,7 +255,6 @@ export default function DocumentsPage() {
     }
   }
 
-  // ── Save mutation ──
   const saveMutation = useMutation({
     mutationFn: async (values: typeof form) => {
       const netAmount = hasLineItems ? computedFromItems.net : (parseFloat(values.net_amount) || 0);
@@ -254,6 +282,8 @@ export default function DocumentsPage() {
         paid_amount: parseFloat(values.paid_amount) || 0,
         description: values.description || null,
         notes: values.notes || null,
+        related_document_id: values.related_document_id || null,
+        correction_reason: values.correction_reason || null,
       };
 
       let docId = editId;
@@ -268,7 +298,6 @@ export default function DocumentsPage() {
         docId = data.id;
       }
 
-      // Save line items
       if (docId) {
         await supabase.from("document_items").delete().eq("document_id", docId);
         const validItems = lineItems.filter(i => i.name.trim());
@@ -281,65 +310,35 @@ export default function DocumentsPage() {
             const totalVat = totalNet * (vatR / 100);
             const totalGross = totalNet + totalVat;
             return {
-              document_id: docId!,
-              name: item.name,
-              quantity: qty,
-              unit: item.unit || "szt.",
-              unit_net: unitNet,
-              vat_rate: vatR,
-              total_net: totalNet,
-              total_vat: totalVat,
-              total_gross: totalGross,
-              sort_order: idx,
-              description: item.item_type, // Store PRODUCT/SERVICE in description field
-              inventory_item_id: item.inventory_item_id || null,
+              document_id: docId!, name: item.name, quantity: qty, unit: item.unit || "szt.",
+              unit_net: unitNet, vat_rate: vatR, total_net: totalNet, total_vat: totalVat, total_gross: totalGross,
+              sort_order: idx, description: item.item_type, inventory_item_id: item.inventory_item_id || null,
             };
           });
           const { error: itemErr } = await supabase.from("document_items").insert(items);
           if (itemErr) throw itemErr;
 
-          // ── Inventory integration for purchase invoices ──
           if (values.document_type === "PURCHASE_INVOICE") {
-            // When editing, first reverse old movements linked to this document
             if (editId) {
-              // Delete old movements — the DELETE trigger on inventory_movements
-              // will automatically reverse the stock changes
               await supabase.from("inventory_movements").delete().eq("source_id", docId!).eq("source_type", "PURCHASE");
             }
-
             for (const item of items) {
               if (item.description === "PRODUCT") {
-                // Find or create inventory item
                 let invItemId = item.inventory_item_id;
                 if (!invItemId) {
-                  const { data: existing } = await supabase
-                    .from("inventory_items")
-                    .select("id")
-                    .eq("name", item.name)
-                    .maybeSingle();
-                  if (existing) {
-                    invItemId = existing.id;
-                  } else {
-                    const { data: created } = await supabase
-                      .from("inventory_items")
-                      .insert({ name: item.name, purchase_net: item.unit_net, unit: item.unit, vat_rate: item.vat_rate })
-                      .select("id")
-                      .single();
+                  const { data: existing } = await supabase.from("inventory_items").select("id").eq("name", item.name).maybeSingle();
+                  if (existing) { invItemId = existing.id; }
+                  else {
+                    const { data: created } = await supabase.from("inventory_items").insert({ name: item.name, purchase_net: item.unit_net, unit: item.unit, vat_rate: item.vat_rate }).select("id").single();
                     if (created) invItemId = created.id;
                   }
                 }
                 if (invItemId) {
                   await supabase.from("inventory_items").update({ purchase_net: item.unit_net }).eq("id", invItemId);
-                  // Create fresh IN movement (trigger will increase stock)
                   await supabase.from("inventory_movements").insert({
-                    item_id: invItemId,
-                    movement_type: "IN",
-                    quantity: item.quantity,
-                    source_type: "PURCHASE",
-                    source_id: docId,
-                    purchase_net: item.unit_net,
-                    notes: `Faktura: ${values.document_number || "auto"}`,
-                    created_by: user?.id,
+                    item_id: invItemId, movement_type: "IN", quantity: item.quantity,
+                    source_type: "PURCHASE", source_id: docId, purchase_net: item.unit_net,
+                    notes: `Faktura: ${values.document_number || "auto"}`, created_by: user?.id,
                   });
                 }
               }
@@ -351,15 +350,12 @@ export default function DocumentsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["documents"] });
       qc.invalidateQueries({ queryKey: ["inventory-items"] });
-      // Audit log for document save
       const docNum = form.document_number || "auto";
       supabase.from("activity_logs").insert({
         entity_type: "document", entity_id: editId || "new", action_type: editId ? "UPDATE" : "CREATE",
-        user_id: user?.id,
-        // @ts-ignore
-        entity_name: docNum,
+        user_id: user?.id, entity_name: docNum,
         description: editId ? `Edycja dokumentu ${docNum}` : `Utworzono dokument ${docNum}`,
-      }).then();
+      } as any).then();
       toast.success(editId ? "Zaktualizowano dokument" : "Dodano dokument");
       resetForm();
     },
@@ -368,20 +364,12 @@ export default function DocumentsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      // Soft delete instead of hard delete
-      const { error } = await supabase.from("documents")
-        .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id } as any)
-        .eq("id", id);
+      const { error } = await supabase.from("documents").update({ deleted_at: new Date().toISOString(), deleted_by: user?.id } as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_data, deletedId) => {
       qc.invalidateQueries({ queryKey: ["documents"] });
-      supabase.from("activity_logs").insert({
-        entity_type: "document", entity_id: deletedId, action_type: "DELETE",
-        user_id: user?.id,
-        // @ts-ignore
-        description: "Usunięto dokument",
-      }).then();
+      supabase.from("activity_logs").insert({ entity_type: "document", entity_id: deletedId, action_type: "DELETE", user_id: user?.id, description: "Usunięto dokument" } as any).then();
       toast.success("Usunięto dokument");
       setDeleteConfirm(null);
     },
@@ -394,26 +382,25 @@ export default function DocumentsPage() {
     setLineItems([{ ...emptyLineItem }]);
   }
 
+  function openNewDocument(docType: DocType) {
+    const cfg = TYPE_CONFIG[docType] || TYPE_CONFIG.OTHER;
+    setForm({ ...emptyForm, document_type: docType, direction: cfg.direction });
+    setEditId(null);
+    setLineItems([{ ...emptyLineItem }]);
+    setTypePickerOpen(false);
+    setFormOpen(true);
+  }
+
   async function openEdit(doc: Document) {
     setEditId(doc.id);
     setForm({
-      document_number: doc.document_number,
-      document_type: doc.document_type,
-      direction: doc.direction,
-      client_id: doc.client_id ?? "",
-      contractor_name: doc.contractor_name ?? "",
-      contractor_nip: doc.contractor_nip ?? "",
-      issue_date: doc.issue_date,
-      sale_date: doc.sale_date ?? "",
-      due_date: doc.due_date ?? "",
-      received_date: doc.received_date ?? "",
-      net_amount: doc.net_amount.toString(),
-      vat_rate: doc.vat_rate.toString(),
-      payment_status: doc.payment_status,
-      payment_method: doc.payment_method ?? "",
-      paid_amount: doc.paid_amount.toString(),
-      description: doc.description ?? "",
-      notes: doc.notes ?? "",
+      document_number: doc.document_number, document_type: doc.document_type, direction: doc.direction,
+      client_id: doc.client_id ?? "", contractor_name: doc.contractor_name ?? "", contractor_nip: doc.contractor_nip ?? "",
+      issue_date: doc.issue_date, sale_date: doc.sale_date ?? "", due_date: doc.due_date ?? "",
+      received_date: doc.received_date ?? "", net_amount: doc.net_amount.toString(), vat_rate: doc.vat_rate.toString(),
+      payment_status: doc.payment_status, payment_method: doc.payment_method ?? "", paid_amount: doc.paid_amount.toString(),
+      description: doc.description ?? "", notes: doc.notes ?? "",
+      related_document_id: doc.related_document_id ?? "", correction_reason: doc.correction_reason ?? "",
     });
     await loadDocumentItems(doc.id);
     setFormOpen(true);
@@ -421,11 +408,7 @@ export default function DocumentsPage() {
 
   async function openPreview(doc: Document) {
     setPreviewDoc(doc);
-    const { data } = await supabase
-      .from("document_items")
-      .select("*")
-      .eq("document_id", doc.id)
-      .order("sort_order");
+    const { data } = await supabase.from("document_items").select("*").eq("document_id", doc.id).order("sort_order");
     setPreviewItems(data ?? []);
     setPreviewOpen(true);
   }
@@ -433,8 +416,7 @@ export default function DocumentsPage() {
   function onClientSelect(clientId: string) {
     const client = clients.find((c) => c.id === clientId);
     setForm({
-      ...form,
-      client_id: clientId,
+      ...form, client_id: clientId,
       contractor_name: client ? (client.display_name || client.company_name || [client.first_name, client.last_name].filter(Boolean).join(" ")) : "",
       contractor_nip: client?.nip ?? "",
     });
@@ -450,18 +432,9 @@ export default function DocumentsPage() {
 
   function onPaymentStatusChange(status: PaymentStatus) {
     const grossTotal = hasLineItems ? computedFromItems.gross : ((parseFloat(form.net_amount) || 0) * (1 + (parseFloat(form.vat_rate) || 23) / 100));
-    if (status === "PAID") {
-      setForm({ ...form, payment_status: status, paid_amount: grossTotal.toFixed(2) });
-    } else if (status === "UNPAID") {
-      setForm({ ...form, payment_status: status, paid_amount: "0" });
-    } else {
-      setForm({ ...form, payment_status: status });
-    }
-  }
-
-  function onDocTypeChange(docType: DocType) {
-    const direction: DocDirection = docType === "PURCHASE_INVOICE" ? "EXPENSE" : "INCOME";
-    setForm({ ...form, document_type: docType, direction });
+    if (status === "PAID") setForm({ ...form, payment_status: status, paid_amount: grossTotal.toFixed(2) });
+    else if (status === "UNPAID") setForm({ ...form, payment_status: status, paid_amount: "0" });
+    else setForm({ ...form, payment_status: status });
   }
 
   function updateLineItem(idx: number, field: keyof DocumentLineItem, value: string) {
@@ -470,7 +443,6 @@ export default function DocumentsPage() {
     setLineItems(updated);
   }
 
-  // Use filtered client list based on document direction
   const relevantClients = form.direction === "EXPENSE" ? supplierClients : customerClients;
   const clientOptions = relevantClients.map((c: any) => {
     const name = c.display_name || c.company_name || [c.first_name, c.last_name].filter(Boolean).join(" ") || "—";
@@ -478,18 +450,25 @@ export default function DocumentsPage() {
     return { value: c.id, label: name, sublabel: details || undefined };
   });
 
+  // Document options for correction linking
+  const correctionDocOptions = docs
+    .filter(d => d.document_type !== "CORRECTION")
+    .map(d => ({ value: d.id, label: `${d.document_number} — ${d.contractor_name || ""}`, sublabel: `${DOC_TYPE_SHORT[d.document_type]} · ${formatCurrency(d.gross_amount)}` }));
+
+  const relatedDoc = form.related_document_id ? docs.find(d => d.id === form.related_document_id) : null;
+
+  // Filtering
   const filtered = docs.filter((d) => {
-    if (filterDirection !== "ALL" && d.direction !== filterDirection) return false;
+    if (filterTab === "PURCHASE" && d.document_type !== "PURCHASE_INVOICE") return false;
+    if (filterTab === "SALES" && d.document_type !== "SALES_INVOICE") return false;
+    if (filterTab === "PROFORMA" && d.document_type !== "PROFORMA") return false;
+    if (filterTab === "CORRECTION" && d.document_type !== "CORRECTION") return false;
     if (filterPayment !== "ALL" && d.payment_status !== filterPayment) return false;
     if (search) {
       const s = search.toLowerCase();
-      return (
-        d.document_number.toLowerCase().includes(s) ||
-        d.contractor_name?.toLowerCase().includes(s) ||
-        d.contractor_nip?.toLowerCase().includes(s) ||
-        d.description?.toLowerCase().includes(s) ||
-        getClientName(d.clients).toLowerCase().includes(s)
-      );
+      return d.document_number.toLowerCase().includes(s) || d.contractor_name?.toLowerCase().includes(s) ||
+        d.contractor_nip?.toLowerCase().includes(s) || d.description?.toLowerCase().includes(s) ||
+        getClientName(d.clients).toLowerCase().includes(s);
     }
     return true;
   });
@@ -498,17 +477,17 @@ export default function DocumentsPage() {
   const totalExpense = docs.filter(d => d.direction === "EXPENSE").reduce((s, d) => s + d.gross_amount, 0);
   const totalUnpaid = docs.filter(d => d.payment_status === "UNPAID" || d.payment_status === "OVERDUE").reduce((s, d) => s + (d.gross_amount - d.paid_amount), 0);
 
-  const computedVat = (parseFloat(form.net_amount) || 0) * ((parseFloat(form.vat_rate) || 23) / 100);
-  const computedGross = (parseFloat(form.net_amount) || 0) + computedVat;
+  // Preview: find related doc for correction
+  const previewRelatedDoc = previewDoc?.related_document_id ? docs.find(d => d.id === previewDoc.related_document_id) : null;
 
   return (
     <div className="space-y-6">
       <div className="page-header">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Rejestr dokumentów</h1>
-          <p className="text-muted-foreground text-sm">Ewidencja faktur zakupowych i sprzedażowych</p>
+          <p className="text-muted-foreground text-sm">Faktury zakupowe, sprzedażowe, proformy i korekty</p>
         </div>
-        <Button onClick={() => { resetForm(); setFormOpen(true); }} className="w-full sm:w-auto min-h-[44px]">
+        <Button onClick={() => setTypePickerOpen(true)} className="w-full sm:w-auto min-h-[44px]">
           <Plus className="mr-2 h-4 w-4" />Dodaj dokument
         </Button>
       </div>
@@ -535,65 +514,58 @@ export default function DocumentsPage() {
         </Card>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className="pl-9 min-h-[44px]" placeholder="Szukaj po numerze, kontrahencie..." value={search} onChange={e => setSearch(e.target.value)} />
+      {/* Tabs + Filters */}
+      <div className="space-y-3">
+        <Tabs value={filterTab} onValueChange={setFilterTab}>
+          <TabsList className="w-full sm:w-auto">
+            <TabsTrigger value="ALL">Wszystkie</TabsTrigger>
+            <TabsTrigger value="PURCHASE">Zakupowe</TabsTrigger>
+            <TabsTrigger value="SALES">Sprzedażowe</TabsTrigger>
+            <TabsTrigger value="PROFORMA">Proformy</TabsTrigger>
+            <TabsTrigger value="CORRECTION">Korekty</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input className="pl-9 min-h-[44px]" placeholder="Szukaj po numerze, kontrahencie, NIP..." value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+          <Select value={filterPayment} onValueChange={setFilterPayment}>
+            <SelectTrigger className="w-full sm:w-[180px] min-h-[44px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Wszystkie statusy</SelectItem>
+              {(Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).map(k => (
+                <SelectItem key={k} value={k}>{PAYMENT_STATUS_LABELS[k]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <Select value={filterDirection} onValueChange={setFilterDirection}>
-          <SelectTrigger className="w-full sm:w-[180px] min-h-[44px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Wszystkie kierunki</SelectItem>
-            <SelectItem value="INCOME">Przychody</SelectItem>
-            <SelectItem value="EXPENSE">Wydatki</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={filterPayment} onValueChange={setFilterPayment}>
-          <SelectTrigger className="w-full sm:w-[180px] min-h-[44px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Wszystkie statusy</SelectItem>
-            {(Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).map(k => (
-              <SelectItem key={k} value={k}>{PAYMENT_STATUS_LABELS[k]}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
-      {/* Table (desktop) / Cards (mobile) */}
+      {/* List */}
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground">Ładowanie...</div>
       ) : filtered.length === 0 ? (
         <Card><CardContent className="py-8 text-center text-muted-foreground">Brak dokumentów</CardContent></Card>
       ) : (
         <>
-          {/* Mobile card view */}
+          {/* Mobile */}
           <div className="space-y-3 md:hidden">
             {filtered.map(doc => (
               <div key={doc.id} className="mobile-data-card" onClick={() => openPreview(doc)}>
                 <div className="mobile-card-header">
                   <div className="flex items-center gap-2">
-                    {doc.direction === "INCOME" ? <ArrowDownCircle className="h-4 w-4 text-primary shrink-0" /> : <ArrowUpCircle className="h-4 w-4 text-destructive shrink-0" />}
+                    <Badge className={DOC_TYPE_COLORS[doc.document_type]} variant="secondary" className2="text-xs">
+                      {DOC_TYPE_SHORT[doc.document_type]}
+                    </Badge>
                     <span className="font-medium font-mono text-sm">{doc.document_number}</span>
                   </div>
-                  <Badge className={PAYMENT_STATUS_COLORS[doc.payment_status]} variant="secondary">
-                    {PAYMENT_STATUS_LABELS[doc.payment_status]}
-                  </Badge>
-                </div>
-                <div className="mobile-card-row">
-                  <span className="mobile-card-label">Typ</span>
-                  <span className="text-sm">{DOC_TYPE_LABELS[doc.document_type]}</span>
+                  <Badge className={PAYMENT_STATUS_COLORS[doc.payment_status]} variant="secondary">{PAYMENT_STATUS_LABELS[doc.payment_status]}</Badge>
                 </div>
                 <div className="mobile-card-row">
                   <span className="mobile-card-label">Kontrahent</span>
                   <span className="text-sm font-medium">{doc.contractor_name || getClientName(doc.clients)}</span>
                 </div>
-                {doc.contractor_nip && (
-                  <div className="mobile-card-row">
-                    <span className="mobile-card-label">NIP</span>
-                    <span className="text-sm font-mono">{doc.contractor_nip}</span>
-                  </div>
-                )}
                 <div className="mobile-card-row">
                   <span className="mobile-card-label">Brutto</span>
                   <span className="text-sm font-medium font-mono">{formatCurrency(doc.gross_amount)}</span>
@@ -611,15 +583,15 @@ export default function DocumentsPage() {
             ))}
           </div>
 
-          {/* Desktop table view */}
+          {/* Desktop */}
           <Card className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Numer</TableHead>
                   <TableHead>Typ</TableHead>
+                  <TableHead>Numer</TableHead>
                   <TableHead>Kontrahent</TableHead>
-                  <TableHead>Data wyst.</TableHead>
+                  <TableHead>Data</TableHead>
                   <TableHead>Termin</TableHead>
                   <TableHead className="text-right w-[120px]">Netto</TableHead>
                   <TableHead className="text-right w-[120px]">Brutto</TableHead>
@@ -631,12 +603,13 @@ export default function DocumentsPage() {
                 {filtered.map(doc => (
                   <TableRow key={doc.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openPreview(doc)}>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        {doc.direction === "INCOME" ? <ArrowDownCircle className="h-4 w-4 text-primary shrink-0" /> : <ArrowUpCircle className="h-4 w-4 text-destructive shrink-0" />}
-                        <span className="font-medium font-mono text-sm">{doc.document_number}</span>
-                      </div>
+                      <Badge className={DOC_TYPE_COLORS[doc.document_type]} variant="secondary">
+                        {DOC_TYPE_SHORT[doc.document_type]}
+                      </Badge>
                     </TableCell>
-                    <TableCell><span className="text-sm">{DOC_TYPE_LABELS[doc.document_type]}</span></TableCell>
+                    <TableCell>
+                      <span className="font-medium font-mono text-sm">{doc.document_number}</span>
+                    </TableCell>
                     <TableCell>
                       <div>
                         <p className="text-sm font-medium">{doc.contractor_name || getClientName(doc.clients)}</p>
@@ -648,15 +621,13 @@ export default function DocumentsPage() {
                     <TableCell className="text-right font-mono text-sm tabular-nums">{formatCurrency(doc.net_amount)}</TableCell>
                     <TableCell className="text-right font-mono text-sm font-medium tabular-nums">{formatCurrency(doc.gross_amount)}</TableCell>
                     <TableCell>
-                      <Badge className={PAYMENT_STATUS_COLORS[doc.payment_status]} variant="secondary">
-                        {PAYMENT_STATUS_LABELS[doc.payment_status]}
-                      </Badge>
+                      <Badge className={PAYMENT_STATUS_COLORS[doc.payment_status]} variant="secondary">{PAYMENT_STATUS_LABELS[doc.payment_status]}</Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openPreview(doc)} title="Podgląd"><Eye className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(doc)} title="Edytuj"><Pencil className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteConfirm(doc.id)} title="Usuń"><Trash2 className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openPreview(doc)}><Eye className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(doc)}><Pencil className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteConfirm(doc.id)}><Trash2 className="h-4 w-4" /></Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -666,6 +637,34 @@ export default function DocumentsPage() {
           </Card>
         </>
       )}
+
+      {/* ── Type Picker Dialog ── */}
+      <Dialog open={typePickerOpen} onOpenChange={setTypePickerOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Wybierz typ dokumentu</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 gap-3">
+            <Button variant="outline" className="h-auto p-4 justify-start gap-3" onClick={() => openNewDocument("PURCHASE_INVOICE")}>
+              <div className="rounded-lg p-2 bg-destructive/10 text-destructive"><ShoppingCart className="h-5 w-5" /></div>
+              <div className="text-left"><p className="font-medium">Faktura zakupowa</p><p className="text-xs text-muted-foreground">Zakup towarów i usług od dostawców</p></div>
+            </Button>
+            <Button variant="outline" className="h-auto p-4 justify-start gap-3" onClick={() => openNewDocument("SALES_INVOICE")}>
+              <div className="rounded-lg p-2 bg-primary/10 text-primary"><Receipt className="h-5 w-5" /></div>
+              <div className="text-left"><p className="font-medium">Faktura sprzedażowa</p><p className="text-xs text-muted-foreground">Sprzedaż usług i towarów klientom</p></div>
+            </Button>
+            <Button variant="outline" className="h-auto p-4 justify-start gap-3" onClick={() => openNewDocument("PROFORMA")}>
+              <div className="rounded-lg p-2 bg-accent text-accent-foreground"><FileCheck className="h-5 w-5" /></div>
+              <div className="text-left"><p className="font-medium">Proforma</p><p className="text-xs text-muted-foreground">Dokument informacyjny przed wystawieniem faktury</p></div>
+            </Button>
+            <Button variant="outline" className="h-auto p-4 justify-start gap-3" onClick={() => openNewDocument("CORRECTION")}>
+              <div className="rounded-lg p-2 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"><FileMinus2 className="h-5 w-5" /></div>
+              <div className="text-left"><p className="font-medium">Korekta</p><p className="text-xs text-muted-foreground">Korekta do istniejącego dokumentu</p></div>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* ── Preview Dialog ── */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
@@ -673,10 +672,19 @@ export default function DocumentsPage() {
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
               {previewDoc?.document_number}
+              {previewDoc && <Badge className={DOC_TYPE_COLORS[previewDoc.document_type]} variant="secondary">{DOC_TYPE_SHORT[previewDoc.document_type]}</Badge>}
             </DialogTitle>
           </DialogHeader>
           {previewDoc && (
             <div className="space-y-4">
+              {/* Correction reference */}
+              {previewDoc.document_type === "CORRECTION" && previewRelatedDoc && (
+                <div className="rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 p-3 text-sm">
+                  <p className="font-medium text-orange-700 dark:text-orange-400">Korekta do: {previewRelatedDoc.document_number}</p>
+                  {previewDoc.correction_reason && <p className="text-muted-foreground mt-1">Powód: {previewDoc.correction_reason}</p>}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Typ dokumentu</p>
@@ -704,22 +712,15 @@ export default function DocumentsPage() {
                   <p className="font-medium">{previewDoc.due_date || "—"}</p>
                 </div>
                 {previewDoc.sale_date && (
-                  <div>
-                    <p className="text-muted-foreground">Data sprzedaży</p>
-                    <p className="font-medium">{previewDoc.sale_date}</p>
-                  </div>
+                  <div><p className="text-muted-foreground">Data sprzedaży</p><p className="font-medium">{previewDoc.sale_date}</p></div>
                 )}
                 {previewDoc.payment_method && (
-                  <div>
-                    <p className="text-muted-foreground">Metoda płatności</p>
-                    <p className="font-medium">{PAYMENT_METHOD_LABELS[previewDoc.payment_method]}</p>
-                  </div>
+                  <div><p className="text-muted-foreground">Metoda płatności</p><p className="font-medium">{PAYMENT_METHOD_LABELS[previewDoc.payment_method]}</p></div>
                 )}
               </div>
 
               <Separator />
 
-              {/* Items */}
               {previewItems.length > 0 && (
                 <div>
                   <p className="text-sm font-medium mb-2">Pozycje dokumentu</p>
@@ -738,9 +739,7 @@ export default function DocumentsPage() {
                       {previewItems.map((pi: any) => (
                         <TableRow key={pi.id}>
                           <TableCell className="text-sm">{pi.name}</TableCell>
-                          <TableCell className="text-xs text-center">
-                            <Badge variant="outline" className="text-xs">{pi.description === "PRODUCT" ? "Produkt" : "Usługa"}</Badge>
-                          </TableCell>
+                          <TableCell className="text-xs text-center"><Badge variant="outline" className="text-xs">{pi.description === "PRODUCT" ? "Produkt" : "Usługa"}</Badge></TableCell>
                           <TableCell className="text-right text-sm tabular-nums">{pi.quantity}</TableCell>
                           <TableCell className="text-right text-sm tabular-nums">{formatCurrency(pi.unit_net)}</TableCell>
                           <TableCell className="text-right text-sm tabular-nums">{pi.vat_rate}%</TableCell>
@@ -754,7 +753,6 @@ export default function DocumentsPage() {
 
               <Separator />
 
-              {/* Totals */}
               <div className="rounded-lg bg-muted/50 p-4 space-y-1 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Netto</span><span className="font-mono tabular-nums">{formatCurrency(previewDoc.net_amount)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">VAT</span><span className="font-mono tabular-nums">{formatCurrency(previewDoc.vat_amount)}</span></div>
@@ -772,15 +770,12 @@ export default function DocumentsPage() {
                 </>
               )}
 
-              {/* Attachments */}
               <Separator />
               <DocumentAttachments documentId={previewDoc.id} />
 
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => setPreviewOpen(false)}>Zamknij</Button>
-                <Button onClick={() => { setPreviewOpen(false); openEdit(previewDoc); }}>
-                  <Pencil className="h-4 w-4 mr-1" /> Edytuj
-                </Button>
+                <Button onClick={() => { setPreviewOpen(false); openEdit(previewDoc); }}><Pencil className="h-4 w-4 mr-1" /> Edytuj</Button>
               </div>
             </div>
           )}
@@ -791,14 +786,20 @@ export default function DocumentsPage() {
       <Dialog open={formOpen} onOpenChange={v => { if (!v) resetForm(); else setFormOpen(true); }}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editId ? "Edytuj dokument" : "Nowy dokument"}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              {editId ? "Edytuj dokument" : "Nowy dokument"}
+              <Badge className={DOC_TYPE_COLORS[form.document_type]} variant="secondary">{DOC_TYPE_LABELS[form.document_type]}</Badge>
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-5">
-            {/* Top row: type, direction, number */}
+            {/* Top row */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <Label>Typ dokumentu *</Label>
-                <Select value={form.document_type} onValueChange={v => onDocTypeChange(v as DocType)}>
+                <Label>Typ dokumentu</Label>
+                <Select value={form.document_type} onValueChange={v => {
+                  const cfg = TYPE_CONFIG[v] || TYPE_CONFIG.OTHER;
+                  setForm({ ...form, document_type: v as DocType, direction: cfg.direction });
+                }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {(Object.keys(DOC_TYPE_LABELS) as DocType[]).map(k => (
@@ -824,28 +825,63 @@ export default function DocumentsPage() {
               </div>
             </div>
 
+            {/* Correction-specific: linked document + reason */}
+            {form.document_type === "CORRECTION" && (
+              <div className="rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-900/10 p-4 space-y-3">
+                <p className="text-sm font-medium text-orange-700 dark:text-orange-400">Dane korekty</p>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Dokument korygowany</Label>
+                    <SearchableSelect
+                      options={correctionDocOptions}
+                      value={form.related_document_id}
+                      onChange={v => {
+                        const rd = docs.find(d => d.id === v);
+                        setForm({
+                          ...form, related_document_id: v,
+                          client_id: rd?.client_id ?? form.client_id,
+                          contractor_name: rd?.contractor_name ?? form.contractor_name,
+                          contractor_nip: rd?.contractor_nip ?? form.contractor_nip,
+                          direction: rd?.direction ?? form.direction,
+                        });
+                      }}
+                      placeholder="Wybierz dokument..."
+                    />
+                    {relatedDoc && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {DOC_TYPE_SHORT[relatedDoc.document_type]} · {relatedDoc.contractor_name} · {formatCurrency(relatedDoc.gross_amount)}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label>Powód korekty</Label>
+                    <Textarea value={form.correction_reason} onChange={e => setForm({ ...form, correction_reason: e.target.value })} rows={2} placeholder="Np. błąd w cenie, zwrot towaru..." />
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Contractor section */}
             <div className="rounded-lg border border-border p-4 space-y-3">
-              <p className="text-sm font-medium text-muted-foreground">Kontrahent</p>
+              <p className="text-sm font-medium text-muted-foreground">{typeConfig.contractorLabel}</p>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="space-y-3">
                   <div>
-                    <Label>Klient z bazy</Label>
+                    <Label>{typeConfig.contractorLabel} z bazy</Label>
                     <SearchableSelect
                       options={clientOptions}
                       value={form.client_id}
                       onChange={onClientSelect}
-                      placeholder="Szukaj po nazwie, NIP, mieście..."
+                      placeholder={`Szukaj ${form.direction === "EXPENSE" ? "dostawcy" : "klienta"}...`}
                       onAddNew={() => setClientDialogOpen(true)}
-                      addNewLabel="Dodaj kontrahenta"
+                      addNewLabel={`Dodaj ${form.direction === "EXPENSE" ? "dostawcę" : "klienta"}`}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div><Label>Nazwa kontrahenta</Label><Input value={form.contractor_name} onChange={e => setForm({ ...form, contractor_name: e.target.value })} /></div>
+                    <div><Label>Nazwa</Label><Input value={form.contractor_name} onChange={e => setForm({ ...form, contractor_name: e.target.value })} /></div>
                     <div><Label>NIP</Label><Input value={form.contractor_nip} onChange={e => setForm({ ...form, contractor_nip: e.target.value })} /></div>
                   </div>
                 </div>
-                {/* Contractor details block */}
                 {selectedClient && (
                   <div className="rounded-md bg-muted/50 p-3 text-sm space-y-1">
                     <p className="font-medium">{selectedClient.display_name || selectedClient.company_name || [selectedClient.first_name, selectedClient.last_name].filter(Boolean).join(" ")}</p>
@@ -860,24 +896,27 @@ export default function DocumentsPage() {
 
             {/* Dates */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div><Label>Data wystawienia *</Label><Input type="date" value={form.issue_date} onChange={e => setForm({ ...form, issue_date: e.target.value })} /></div>
-              <div><Label>Data sprzedaży</Label><Input type="date" value={form.sale_date} onChange={e => setForm({ ...form, sale_date: e.target.value })} /></div>
-              <div><Label>Termin płatności</Label><Input type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} /></div>
-              <div><Label>Data otrzymania</Label><Input type="date" value={form.received_date} onChange={e => setForm({ ...form, received_date: e.target.value })} /></div>
+              <div><Label>{typeConfig.dateLabel} *</Label><Input type="date" value={form.issue_date} onChange={e => setForm({ ...form, issue_date: e.target.value })} /></div>
+              {form.document_type !== "PROFORMA" && (
+                <div><Label>Data sprzedaży</Label><Input type="date" value={form.sale_date} onChange={e => setForm({ ...form, sale_date: e.target.value })} /></div>
+              )}
+              <div><Label>{typeConfig.dueDateLabel}</Label><Input type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} /></div>
+              {form.document_type === "PURCHASE_INVOICE" && (
+                <div><Label>Data otrzymania</Label><Input type="date" value={form.received_date} onChange={e => setForm({ ...form, received_date: e.target.value })} /></div>
+              )}
             </div>
 
             {/* Line Items */}
             <div className="rounded-lg border border-border p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-muted-foreground">Pozycje dokumentu</p>
+                <p className="text-sm font-medium text-muted-foreground">{typeConfig.itemsLabel}</p>
                 <Button type="button" variant="outline" size="sm" onClick={() => setLineItems([...lineItems, { ...emptyLineItem }])}>
                   <Plus className="h-3 w-3 mr-1" /> Dodaj pozycję
                 </Button>
               </div>
-              {/* Header */}
-              <div className="hidden sm:grid grid-cols-[1fr_100px_70px_120px_70px_120px_36px] gap-2 text-xs font-medium text-muted-foreground">
+              <div className={`hidden sm:grid gap-2 text-xs font-medium text-muted-foreground ${typeConfig.showInventoryType ? "grid-cols-[1fr_100px_70px_120px_70px_120px_36px]" : "grid-cols-[1fr_70px_120px_70px_120px_36px]"}`}>
                 <span>Nazwa</span>
-                <span>Typ</span>
+                {typeConfig.showInventoryType && <span>Typ</span>}
                 <span>Ilość</span>
                 <span>Cena brutto</span>
                 <span>VAT%</span>
@@ -885,32 +924,29 @@ export default function DocumentsPage() {
                 <span></span>
               </div>
               {lineItems.map((item, idx) => (
-                <div key={idx} className="grid grid-cols-1 sm:grid-cols-[1fr_100px_70px_120px_70px_120px_36px] gap-2 items-center">
+                <div key={idx} className={`grid grid-cols-1 gap-2 items-center ${typeConfig.showInventoryType ? "sm:grid-cols-[1fr_100px_70px_120px_70px_120px_36px]" : "sm:grid-cols-[1fr_70px_120px_70px_120px_36px]"}`}>
                   <Input value={item.name} onChange={e => updateLineItem(idx, "name", e.target.value)} placeholder="Nazwa pozycji" className="h-9 text-sm" />
-                  <Select value={item.item_type} onValueChange={v => updateLineItem(idx, "item_type", v)}>
-                    <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="SERVICE">Usługa</SelectItem>
-                      <SelectItem value="PRODUCT">Produkt</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {typeConfig.showInventoryType && (
+                    <Select value={item.item_type} onValueChange={v => updateLineItem(idx, "item_type", v)}>
+                      <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="SERVICE">Usługa</SelectItem>
+                        <SelectItem value="PRODUCT">Produkt</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                   <Input type="number" min="0" step="1" value={item.quantity} placeholder="1" onChange={e => updateLineItem(idx, "quantity", e.target.value)} className="h-9 text-sm tabular-nums" />
                   <Input type="number" step="0.01"
                     value={(() => { const net = parseFloat(item.unit_net) || 0; const vat = parseFloat(item.vat_rate) || 23; return net > 0 ? (net * (1 + vat / 100)).toFixed(2) : ""; })()}
                     onChange={e => { const gross = parseFloat(e.target.value) || 0; const vat = parseFloat(item.vat_rate) || 23; updateLineItem(idx, "unit_net", (gross / (1 + vat / 100)).toFixed(2)); }}
                     placeholder="0.00" className="h-9 text-sm tabular-nums" />
                   <Input type="number" min="0" max="100" value={item.vat_rate} placeholder="23" onChange={e => updateLineItem(idx, "vat_rate", e.target.value)} className="h-9 text-sm tabular-nums" />
-                  <Input value={formatCurrency(
-                    (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_net) || 0) * (1 + (parseFloat(item.vat_rate) || 23) / 100)
-                  )} disabled className="h-9 text-sm bg-muted tabular-nums" />
+                  <Input value={formatCurrency((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_net) || 0) * (1 + (parseFloat(item.vat_rate) || 23) / 100))} disabled className="h-9 text-sm bg-muted tabular-nums" />
                   {lineItems.length > 1 ? (
-                    <Button type="button" variant="ghost" size="icon" className="h-9 w-9" onClick={() => setLineItems(lineItems.filter((_, i) => i !== idx))}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    <Button type="button" variant="ghost" size="icon" className="h-9 w-9" onClick={() => setLineItems(lineItems.filter((_, i) => i !== idx))}><Trash2 className="h-3.5 w-3.5" /></Button>
                   ) : <div />}
                 </div>
               ))}
-              {/* Summary */}
               <div className="border-t border-border pt-3 space-y-1 text-sm max-w-xs ml-auto">
                 <div className="flex justify-between"><span className="text-muted-foreground">Suma netto</span><span className="font-mono font-medium tabular-nums">{formatCurrency(computedFromItems.net)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Suma VAT</span><span className="font-mono tabular-nums">{formatCurrency(computedFromItems.vat)}</span></div>
@@ -937,53 +973,52 @@ export default function DocumentsPage() {
               </div>
             )}
 
-            {/* Payment section */}
-            <div className="rounded-lg border border-border p-4 space-y-3">
-              <p className="text-sm font-medium text-muted-foreground">Płatność</p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <Label>Status płatności</Label>
-                  <Select value={form.payment_status} onValueChange={v => onPaymentStatusChange(v as PaymentStatus)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).map(k => (
-                        <SelectItem key={k} value={k}>{PAYMENT_STATUS_LABELS[k]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Metoda płatności</Label>
-                  <Select value={form.payment_method} onValueChange={v => setForm({ ...form, payment_method: v })}>
-                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[]).map(k => (
-                        <SelectItem key={k} value={k}>{PAYMENT_METHOD_LABELS[k]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Kwota opłacona</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.paid_amount}
-                    onChange={e => setForm({ ...form, paid_amount: e.target.value })}
-                    disabled={form.payment_status === "PAID" || form.payment_status === "UNPAID"}
-                    className={form.payment_status === "PAID" || form.payment_status === "UNPAID" ? "bg-muted" : ""}
-                  />
-                  {(() => {
-                    const grossTotal = hasLineItems ? computedFromItems.gross : ((parseFloat(form.net_amount) || 0) * (1 + (parseFloat(form.vat_rate) || 23) / 100));
-                    const paid = parseFloat(form.paid_amount) || 0;
-                    const remaining = Math.max(0, grossTotal - paid);
-                    return remaining > 0 ? (
-                      <p className="text-xs text-muted-foreground mt-1 tabular-nums">Pozostało do zapłaty: <span className="font-medium text-destructive">{formatCurrency(remaining)}</span></p>
-                    ) : null;
-                  })()}
+            {/* Payment section — hidden for proforma */}
+            {typeConfig.showPayment && (
+              <div className="rounded-lg border border-border p-4 space-y-3">
+                <p className="text-sm font-medium text-muted-foreground">Płatność</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <Label>Status płatności</Label>
+                    <Select value={form.payment_status} onValueChange={v => onPaymentStatusChange(v as PaymentStatus)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).map(k => (
+                          <SelectItem key={k} value={k}>{PAYMENT_STATUS_LABELS[k]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Metoda płatności</Label>
+                    <Select value={form.payment_method} onValueChange={v => setForm({ ...form, payment_method: v })}>
+                      <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[]).map(k => (
+                          <SelectItem key={k} value={k}>{PAYMENT_METHOD_LABELS[k]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Kwota opłacona</Label>
+                    <Input type="number" step="0.01" value={form.paid_amount}
+                      onChange={e => setForm({ ...form, paid_amount: e.target.value })}
+                      disabled={form.payment_status === "PAID" || form.payment_status === "UNPAID"}
+                      className={form.payment_status === "PAID" || form.payment_status === "UNPAID" ? "bg-muted" : ""}
+                    />
+                    {(() => {
+                      const grossTotal = hasLineItems ? computedFromItems.gross : ((parseFloat(form.net_amount) || 0) * (1 + (parseFloat(form.vat_rate) || 23) / 100));
+                      const paid = parseFloat(form.paid_amount) || 0;
+                      const remaining = Math.max(0, grossTotal - paid);
+                      return remaining > 0 ? (
+                        <p className="text-xs text-muted-foreground mt-1 tabular-nums">Pozostało: <span className="font-medium text-destructive">{formatCurrency(remaining)}</span></p>
+                      ) : null;
+                    })()}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><Label>Opis</Label><Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
@@ -997,29 +1032,23 @@ export default function DocumentsPage() {
 
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={resetForm}>Anuluj</Button>
-              <Button
-                onClick={() => saveMutation.mutate(form)}
-                disabled={!form.issue_date || (!hasLineItems && !form.net_amount) || saveMutation.isPending}
-              >
+              <Button onClick={() => saveMutation.mutate(form)} disabled={!form.issue_date || (!hasLineItems && !form.net_amount) || saveMutation.isPending}>
                 {saveMutation.isPending ? "Zapisywanie..." : editId ? "Zapisz zmiany" : "Dodaj"}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
+
       <ClientFormDialog
         externalOpen={clientDialogOpen}
         onOpenChange={setClientDialogOpen}
         onCreated={(clientId) => {
           qc.invalidateQueries({ queryKey: ["clients-select-with-role"] });
-          // Auto-select after short delay for data to refresh
-          setTimeout(() => {
-            onClientSelect(clientId);
-          }, 300);
+          setTimeout(() => onClientSelect(clientId), 300);
         }}
       />
 
-      {/* ── Delete Confirmation ── */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={v => { if (!v) setDeleteConfirm(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
