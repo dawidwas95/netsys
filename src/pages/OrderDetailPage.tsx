@@ -52,6 +52,7 @@ import { cn } from "@/lib/utils";
 import { OrderItemsSection } from "@/components/order/OrderItemsSection";
 import CustomerMessagesStaff from "@/components/CustomerMessagesStaff";
 import { TechnicianAssignment } from "@/components/TechnicianAssignment";
+import { MobileQuickActions } from "@/components/MobileQuickActions";
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(v);
@@ -881,40 +882,7 @@ export default function OrderDetailPage() {
       </div>
 
       {/* Mobile floating quick actions */}
-      <div className="fixed bottom-[56px] left-0 right-0 z-40 md:hidden bg-card/95 backdrop-blur border-t px-3 py-2 safe-area-bottom">
-        <div className="flex items-center justify-around gap-1">
-          <button
-            className="flex flex-col items-center gap-0.5 p-2 rounded-lg active:bg-muted min-w-[56px]"
-            onClick={() => { setActiveTab("edit"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-          >
-            <Wrench className="h-5 w-5 text-primary" />
-            <span className="text-[10px] text-muted-foreground">Status</span>
-          </button>
-          <button
-            className="flex flex-col items-center gap-0.5 p-2 rounded-lg active:bg-muted min-w-[56px]"
-            onClick={() => setActiveTab("comments")}
-          >
-            <MessageSquare className="h-5 w-5 text-primary" />
-            <span className="text-[10px] text-muted-foreground">Notatka</span>
-          </button>
-          <button
-            className="flex flex-col items-center gap-0.5 p-2 rounded-lg active:bg-muted min-w-[56px]"
-            onClick={() => setActiveTab("photos")}
-          >
-            <Camera className="h-5 w-5 text-primary" />
-            <span className="text-[10px] text-muted-foreground">Zdjęcie</span>
-          </button>
-          <button
-            className="flex flex-col items-center gap-0.5 p-2 rounded-lg active:bg-muted min-w-[56px]"
-            onClick={() => setActiveTab("customer-messages")}
-          >
-            <Send className="h-5 w-5 text-primary" />
-            <span className="text-[10px] text-muted-foreground">Klient</span>
-          </button>
-        </div>
-      </div>
-      {/* Bottom spacer for mobile floating bar */}
-      <div className="h-16 md:hidden" />
+      <MobileQuickActions orderId={id!} activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>
   );
 }
