@@ -501,16 +501,16 @@ export default function OrderDetailPage() {
     onError: (err: any) => toast.error(err.message),
   });
 
-  function handleDownloadPDF() {
+  async function handleDownloadPDF() {
     if (!order) return;
-    const doc = generateOrderPDF({ order, orderItems, financials, companyName: "W3-Support" });
+    const doc = await generateOrderPDF({ order, orderItems, financials });
     doc.save(`${order.order_number.replace(/\//g, "-")}.pdf`);
     toast.success("PDF pobrany");
   }
 
-  function handlePrintPDF() {
+  async function handlePrintPDF() {
     if (!order) return;
-    const doc = generateOrderPDF({ order, orderItems, financials, companyName: "W3-Support" });
+    const doc = await generateOrderPDF({ order, orderItems, financials });
     const blob = doc.output("blob");
     const url = URL.createObjectURL(blob);
     const win = window.open(url);
