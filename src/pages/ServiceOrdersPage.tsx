@@ -50,11 +50,13 @@ export default function ServiceOrdersPage() {
   });
 
   // Set default dept filter from profile on first load
-  useState(() => {
-    if (myProfile?.default_department && deptFilter === "all") {
+  const [deptInitialized, setDeptInitialized] = useState(false);
+  useEffect(() => {
+    if (!deptInitialized && myProfile?.default_department) {
       setDeptFilter(myProfile.default_department);
+      setDeptInitialized(true);
     }
-  });
+  }, [myProfile, deptInitialized]);
 
   const { data: staffUsers = [] } = useQuery({
     queryKey: ["all-staff-users"],
