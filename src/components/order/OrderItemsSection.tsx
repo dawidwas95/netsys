@@ -291,7 +291,11 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
         </div>
         {!isCompleted && (
           <div className="flex items-center gap-1.5">
-            <Button variant="outline" size="sm" onClick={() => { setDialogTab("cost"); setDialogOpen(true); }}>
+            <Button variant="outline" size="sm" onClick={() => { 
+              setCustomItem({ name: "", quantity: "1", sale_net: "0", purchase_net: "", note: "", item_type: "INTERNAL_COST" });
+              setDialogTab("cost"); 
+              setDialogOpen(true); 
+            }}>
               <Receipt className="mr-1 h-3 w-3" />Dodaj koszt
             </Button>
             <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) resetDialog(); else setDialogOpen(true); }}>
