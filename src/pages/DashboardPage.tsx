@@ -221,9 +221,9 @@ function RecentOrders() {
             <span className="text-muted-foreground ml-2">{order.clients?.display_name}</span>
           </div>
           <div className="flex items-center gap-2">
-            {Number(order.total_net || 0) > 0 && (
+            {Number(order.total_gross || 0) > 0 && (
               <span className="font-mono text-xs text-muted-foreground">
-                {new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(Number(order.total_net))}
+                {new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(Number(order.total_gross))}
               </span>
             )}
             <OrderStatusBadge status={order.status} />
