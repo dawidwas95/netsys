@@ -185,13 +185,7 @@ export default function PurchaseRequestsPage() {
                 {ALL_STATUSES.map((s) => (<SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>))}
               </SelectContent>
             </Select>
-            <Select value={approvalFilter} onValueChange={setApprovalFilter}>
-              <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="Akceptacja" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Wszystkie</SelectItem>
-                {Object.entries(APPROVAL_LABELS).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}
-              </SelectContent>
-            </Select>
+            
             <Select value={urgencyFilter} onValueChange={setUrgencyFilter}>
               <SelectTrigger className="w-full sm:w-32"><SelectValue placeholder="Pilność" /></SelectTrigger>
               <SelectContent>
