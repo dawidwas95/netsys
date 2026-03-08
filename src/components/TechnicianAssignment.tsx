@@ -151,9 +151,11 @@ export function TechnicianAssignment({ orderId, orderNumber }: TechnicianAssignm
 
   const assignTech = useMutation({
     mutationFn: async (userId: string) => {
+      console.info("[TechnicianAssignment] assign start", { orderId, userId });
       if (assignedIds.has(userId)) {
-        throw new Error("Ten technik jest już przypisany do tego zlecenia");
+        throw new Error("Technik jest już przypisany do tego zlecenia");
       }
+
       const isPrimary = assigned.length === 0;
       const { error } = await supabase.from("order_technicians").upsert({
         order_id: orderId,
@@ -161,7 +163,11 @@ export function TechnicianAssignment({ orderId, orderNumber }: TechnicianAssignm
         is_primary: isPrimary,
         assigned_by: user?.id,
       } as any, { onConflict: "order_id,user_id", ignoreDuplicates: true });
-      if (error) throw error;
+
+      if (error) {
+        console.error("[TechnicianAssignment] assign db error", { orderId, userId, error });
+        throw error;
+      }
 
       const techName = allUsers.find((u) => u.id === userId)?.name ?? "?";
       await supabase.from("activity_logs").insert({
@@ -173,13 +179,21 @@ export function TechnicianAssignment({ orderId, orderNumber }: TechnicianAssignm
         user_id: user?.id,
         new_value_json: { technician_id: userId, technician_name: techName, is_primary: isPrimary } as any,
       });
+
+      console.info("[TechnicianAssignment] assign success", { orderId, userId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-technicians", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["order-technician-ids", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["service-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["kanban-orders"] });
       queryClient.invalidateQueries({ queryKey: ["order-logs", orderId] });
       toast.success("Technik przypisany");
     },
-    onError: (err: any) => toast.error(err.message || "Błąd przypisywania technika"),
+    onError: (err: any) => {
+      console.error("[TechnicianAssignment] assign failed", { orderId, error: err });
+      toast.error(err?.message || "Błąd przypisywania technika");
+    },
   });
 
   const removeTech = useMutation({
