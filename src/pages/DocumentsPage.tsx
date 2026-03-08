@@ -357,8 +357,14 @@ export default function DocumentsPage() {
       const { error } = await supabase.from("documents").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, deletedId) => {
       qc.invalidateQueries({ queryKey: ["documents"] });
+      supabase.from("activity_logs").insert({
+        entity_type: "document", entity_id: deletedId, action_type: "DELETE",
+        user_id: user?.id,
+        // @ts-ignore
+        description: "Usunięto dokument",
+      }).then();
       toast.success("Usunięto dokument");
       setDeleteConfirm(null);
     },
