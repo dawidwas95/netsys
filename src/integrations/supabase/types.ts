@@ -1072,6 +1072,96 @@ export type Database = {
           },
         ]
       }
+      notification_log: {
+        Row: {
+          body: string | null
+          channel: string
+          client_id: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          order_id: string | null
+          recipient: string | null
+          sent_at: string | null
+          status: string
+          subject: string | null
+        }
+        Insert: {
+          body?: string | null
+          channel?: string
+          client_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          order_id?: string | null
+          recipient?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+        }
+        Update: {
+          body?: string | null
+          channel?: string
+          client_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          order_id?: string | null
+          recipient?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_log_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_log_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "service_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_templates: {
+        Row: {
+          body_template: string
+          channel: string
+          created_at: string
+          event_type: string
+          id: string
+          is_active: boolean
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          body_template?: string
+          channel?: string
+          created_at?: string
+          event_type: string
+          id?: string
+          is_active?: boolean
+          subject?: string
+          updated_at?: string
+        }
+        Update: {
+          body_template?: string
+          channel?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          is_active?: boolean
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       offer_items: {
         Row: {
           description: string | null
