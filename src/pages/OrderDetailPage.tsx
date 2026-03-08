@@ -616,6 +616,9 @@ export default function OrderDetailPage() {
               <Badge variant="outline">{SERVICE_TYPE_LABELS[order.service_type as keyof typeof SERVICE_TYPE_LABELS]}</Badge>
               <Badge variant="outline">{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</Badge>
               {order.is_paid && <Badge className="bg-primary/10 text-primary border-primary/20">Opłacone</Badge>}
+              {(order as any).repair_approval_status === "WAITING_FOR_CUSTOMER" && <Badge className="bg-amber-100 text-amber-800 border-amber-300">🟡 Czeka na akceptację klienta</Badge>}
+              {(order as any).repair_approval_status === "APPROVED_BY_CUSTOMER" && <Badge className="bg-green-100 text-green-800 border-green-300">🟢 Klient zaakceptował</Badge>}
+              {(order as any).repair_approval_status === "REJECTED_BY_CUSTOMER" && <Badge className="bg-red-100 text-red-800 border-red-300">🔴 Klient odrzucił</Badge>}
             </div>
           </div>
         </div>
