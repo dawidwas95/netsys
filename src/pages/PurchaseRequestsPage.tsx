@@ -138,7 +138,7 @@ export default function PurchaseRequestsPage() {
     if (statusFilter !== "ACTIVE" && statusFilter !== "ALL" && r.status !== statusFilter) return false;
     if (urgencyFilter !== "ALL" && r.urgency !== urgencyFilter) return false;
     if (categoryFilter !== "ALL" && r.category !== categoryFilter) return false;
-    if (approvalFilter !== "ALL" && r.client_approval !== approvalFilter) return false;
+    
     if (search) {
       const q = search.toLowerCase();
       const orderNum = r.service_orders?.order_number?.toLowerCase() || "";
