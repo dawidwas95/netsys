@@ -212,8 +212,8 @@ export default function PurchaseRequestsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Status</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Status zamówienia</TableHead>
+                <TableHead>Akceptacja klienta</TableHead>
                 <TableHead>Nazwa części</TableHead>
                 <TableHead className="text-center">Ilość</TableHead>
                 <TableHead>Kategoria</TableHead>
