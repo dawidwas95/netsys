@@ -12,6 +12,35 @@ import { Check, Plus, Star, X, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+// Shared helper: fetch technicians for an order with profile names (no FK join needed)
+async function fetchOrderTechnicians(orderId: string) {
+  const { data: rows } = await supabase
+    .from("order_technicians")
+    .select("id, user_id, is_primary")
+    .eq("order_id", orderId);
+
+  if (!rows?.length) return [];
+
+  const userIds = rows.map((r) => r.user_id);
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("user_id, first_name, last_name, email")
+    .in("user_id", userIds);
+
+  const profileMap: Record<string, { first_name: string | null; last_name: string | null; email: string | null }> = {};
+  (profiles ?? []).forEach((p) => { profileMap[p.user_id] = p; });
+
+  return rows.map((t) => {
+    const p = profileMap[t.user_id];
+    return {
+      id: t.id,
+      userId: t.user_id,
+      isPrimary: Boolean(t.is_primary),
+      name: p ? ([p.first_name, p.last_name].filter(Boolean).join(" ") || p.email || "Użytkownik") : "Użytkownik",
+    };
+  });
+}
+
 interface TechnicianAvatarProps {
   name: string;
   isPrimary?: boolean;
