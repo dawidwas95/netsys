@@ -167,16 +167,29 @@ export function ClientFormDialog({ onCreated, onUpdated, trigger, externalOpen, 
         <DialogTitle>{isEdit ? "Edytuj klienta" : "Nowy klient"}</DialogTitle>
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-1.5">
-          <Label>Typ klienta</Label>
-          <Select value={form.client_type} onValueChange={(v) => setForm({ ...form, client_type: v as ClientType })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {(Object.keys(CLIENT_TYPE_LABELS) as ClientType[]).map((k) => (
-                <SelectItem key={k} value={k}>{CLIENT_TYPE_LABELS[k]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>Typ klienta</Label>
+            <Select value={form.client_type} onValueChange={(v) => setForm({ ...form, client_type: v as ClientType })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.keys(CLIENT_TYPE_LABELS) as ClientType[]).map((k) => (
+                  <SelectItem key={k} value={k}>{CLIENT_TYPE_LABELS[k]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Rola biznesowa</Label>
+            <Select value={form.business_role} onValueChange={(v) => setForm({ ...form, business_role: v as BusinessRole })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.keys(BUSINESS_ROLE_LABELS) as BusinessRole[]).map((k) => (
+                  <SelectItem key={k} value={k}>{BUSINESS_ROLE_LABELS[k]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {form.client_type === "COMPANY" && (
