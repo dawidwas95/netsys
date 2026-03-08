@@ -251,9 +251,12 @@ export default function ServiceOrdersPage() {
               orders.map((order: any) => (
                 <TableRow key={order.id} className="hover:bg-muted/50">
                   <TableCell>
-                    <Link to={`/orders/${order.id}`} className="font-medium text-primary hover:underline font-mono">
-                      {order.order_number}
-                    </Link>
+                    <div className="flex items-center gap-1.5">
+                      <Link to={`/orders/${order.id}`} className="font-medium text-primary hover:underline font-mono">
+                        {order.order_number}
+                      </Link>
+                      <ScheduleBadge date={(order as any).planned_execution_date} time={(order as any).planned_execution_time} />
+                    </div>
                   </TableCell>
                   <TableCell className="text-xs">{SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</TableCell>
                   <TableCell>{order.clients?.display_name}</TableCell>
