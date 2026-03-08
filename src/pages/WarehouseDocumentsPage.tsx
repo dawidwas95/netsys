@@ -420,6 +420,11 @@ export default function WarehouseDocumentsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>{d.document_date}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {d.related_order_id ? orders.find((o: any) => o.id === d.related_order_id)?.order_number || "Zlecenie" : ""}
+                      {d.notes?.startsWith("Auto z faktury") ? <Badge variant="outline" className="ml-1 text-[10px]">Auto</Badge> : ""}
+                      {d.notes?.startsWith("Auto z zlecenia") ? <Badge variant="outline" className="ml-1 text-[10px]">Auto</Badge> : ""}
+                    </TableCell>
                     <TableCell>{(d.warehouse_document_items || []).length}</TableCell>
                     <TableCell className="max-w-[200px] truncate">{d.notes || "—"}</TableCell>
                     <TableCell>{profileName(d.created_by)}</TableCell>
