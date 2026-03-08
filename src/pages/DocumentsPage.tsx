@@ -839,7 +839,7 @@ export default function DocumentsPage() {
 
             {/* Body: 2-column layout */}
             <div className="flex-1 overflow-y-auto">
-              <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-0">
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-0">
 
                 {/* LEFT: Main form content */}
                 <div className="p-6 space-y-6 border-r border-border">
