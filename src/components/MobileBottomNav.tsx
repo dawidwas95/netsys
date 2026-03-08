@@ -59,7 +59,7 @@ export function MobileBottomNav() {
   });
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t safe-area-bottom md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t md:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
       <div className="flex items-stretch">
         {bottomTabs.map((tab) => {
           if (tab.href === "__menu__") {
