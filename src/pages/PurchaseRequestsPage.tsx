@@ -32,14 +32,6 @@ const STATUS_COLORS: Record<string, string> = {
   DELIVERED: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
   CANCELLED: "bg-muted text-muted-foreground",
 };
-const APPROVAL_LABELS: Record<string, string> = {
-  PENDING: "Oczekuje", APPROVED: "Zaakceptowane", REJECTED: "Odrzucone",
-};
-const APPROVAL_BADGE_CFG: Record<string, { icon: typeof Clock; className: string }> = {
-  PENDING: { icon: Clock, className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300" },
-  APPROVED: { icon: CheckCircle2, className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" },
-  REJECTED: { icon: XCircle, className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" },
-};
 const URGENCY_LABELS: Record<string, string> = { LOW: "Niski", NORMAL: "Normalny", HIGH: "Wysoki", URGENT: "Pilny" };
 const URGENCY_COLORS: Record<string, string> = { URGENT: "text-destructive font-semibold", HIGH: "text-orange-600 font-medium", NORMAL: "", LOW: "text-muted-foreground" };
 const ALL_STATUSES = ["NEW", "TO_ORDER", "ORDERED", "DELIVERED", "CANCELLED"];
