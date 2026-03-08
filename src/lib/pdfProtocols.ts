@@ -526,7 +526,7 @@ export async function generatePickupPDF({ order, orderItems, financials }: Order
         break;
 
       case "signatures":
-        b.drawSignatures(["Podpis klienta (odbiór)"]);
+        b.drawSignatures(["Podpis klienta (odbiór)"], order);
         break;
 
       case "footer":
