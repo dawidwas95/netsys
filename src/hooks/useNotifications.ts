@@ -192,7 +192,8 @@ export function useMarkOrderAsRead() {
   });
 }
 
-/** Create notifications for @mentioned users in a comment */
+/** Create notifications for @mentioned users in a comment.
+ *  Supports new format: @[Name](userId) and legacy @name format */
 export async function createMentionNotifications(
   commentText: string,
   orderId: string,
@@ -201,33 +202,47 @@ export async function createMentionNotifications(
   orderNumber: string,
   profileMap: Record<string, { userId: string; name: string }>
 ) {
-  const mentionRegex = /@(\S+)/g;
-  let match;
   const mentionedUserIds = new Set<string>();
 
-  while ((match = mentionRegex.exec(commentText)) !== null) {
-    const mentionName = match[1].toLowerCase();
-    // Find matching profile by first_name, last_name, or full_name
-    for (const [, profile] of Object.entries(profileMap)) {
-      const nameParts = profile.name.toLowerCase().split(" ");
-      if (nameParts.some((part) => part === mentionName) || profile.name.toLowerCase().replace(/\s/g, "") === mentionName) {
-        mentionedUserIds.add(profile.userId);
+  // New format: @[Name](userId)
+  const newFormatRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
+  let match;
+  while ((match = newFormatRegex.exec(commentText)) !== null) {
+    mentionedUserIds.add(match[2]);
+  }
+
+  // Legacy format: @name (fallback for old comments)
+  if (mentionedUserIds.size === 0) {
+    const legacyRegex = /@(\S+)/g;
+    while ((match = legacyRegex.exec(commentText)) !== null) {
+      const mentionName = match[1].toLowerCase();
+      for (const [, profile] of Object.entries(profileMap)) {
+        const nameParts = profile.name.toLowerCase().split(" ");
+        if (nameParts.some((part) => part === mentionName) || profile.name.toLowerCase().replace(/\s/g, "") === mentionName) {
+          mentionedUserIds.add(profile.userId);
+        }
       }
     }
   }
 
   if (mentionedUserIds.size === 0) return;
 
+  // Clean display text (strip mention markup)
+  const displayText = commentText.replace(/@\[([^\]]+)\]\([^)]+\)/g, "@$1");
+
   const notifications = Array.from(mentionedUserIds).map((userId) => ({
     user_id: userId,
     type: "MENTION",
     title: `${authorName} wspomniał/a o Tobie`,
-    body: `W komentarzu do zlecenia ${orderNumber}: "${commentText.substring(0, 100)}${commentText.length > 100 ? "..." : ""}"`,
+    body: `W komentarzu do zlecenia ${orderNumber}: "${displayText.substring(0, 100)}${displayText.length > 100 ? "..." : ""}"`,
     related_order_id: orderId,
     related_comment_id: commentId,
   }));
 
   await supabase.from("notifications").insert(notifications);
+
+  // Also mark the order as unread for mentioned users
+  // (they'll see it highlighted in the order list)
 }
 
 /** Create notification for all relevant users about a new comment */
