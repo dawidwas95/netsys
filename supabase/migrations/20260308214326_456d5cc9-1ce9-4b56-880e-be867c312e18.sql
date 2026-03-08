@@ -1,0 +1,1 @@
+ALTER TABLE public.warehouse_documents ADD COLUMN IF NOT EXISTS linked_invoice_id uuid REFERENCES public.documents(id);

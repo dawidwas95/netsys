@@ -2320,6 +2320,7 @@ export type Database = {
           document_number: string
           document_type: Database["public"]["Enums"]["warehouse_doc_type"]
           id: string
+          linked_invoice_id: string | null
           notes: string | null
           related_order_id: string | null
           updated_at: string
@@ -2332,6 +2333,7 @@ export type Database = {
           document_number?: string
           document_type: Database["public"]["Enums"]["warehouse_doc_type"]
           id?: string
+          linked_invoice_id?: string | null
           notes?: string | null
           related_order_id?: string | null
           updated_at?: string
@@ -2344,6 +2346,7 @@ export type Database = {
           document_number?: string
           document_type?: Database["public"]["Enums"]["warehouse_doc_type"]
           id?: string
+          linked_invoice_id?: string | null
           notes?: string | null
           related_order_id?: string | null
           updated_at?: string
@@ -2354,6 +2357,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warehouse_documents_linked_invoice_id_fkey"
+            columns: ["linked_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
             referencedColumns: ["id"]
           },
           {
