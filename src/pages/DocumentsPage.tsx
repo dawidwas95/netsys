@@ -34,6 +34,7 @@ import { ClientFormDialog } from "@/components/ClientFormDialog";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/types/database";
 import { DocumentAttachments, useDocumentAttachmentCounts, uploadPendingFiles, type DocumentAttachmentsHandle } from "@/components/DocumentAttachments";
 import { createWarehouseDocument } from "@/lib/warehouseDocuments";
+import { OcrImportDialog, type OcrExtractedData } from "@/components/OcrImportDialog";
 
 type DocType = "PURCHASE_INVOICE" | "SALES_INVOICE" | "RECEIPT" | "PROFORMA" | "CORRECTION" | "OTHER";
 type DocDirection = "INCOME" | "EXPENSE";
