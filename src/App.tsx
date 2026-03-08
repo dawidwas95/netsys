@@ -18,6 +18,7 @@ import MyOrdersPage from "@/pages/MyOrdersPage";
 import MobileHomePage from "@/pages/MobileHomePage";
 import InventoryPage from "@/pages/InventoryPage";
 import PurchaseListPage from "@/pages/PurchaseListPage";
+import InstallPage from "@/pages/InstallPage";
 import OffersPage from "@/pages/OffersPage";
 import CashRegisterPage from "@/pages/CashRegisterPage";
 import ITDocsPage from "@/pages/ITDocsPage";
@@ -77,6 +78,7 @@ const App = () => (
             <Route path="/system-logs" element={<SystemLogsPage />} />
             <Route path="/data-management" element={<DataManagementPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/install" element={<InstallPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

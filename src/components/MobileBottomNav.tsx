@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import {
   Users, Monitor, Wrench, KanbanSquare, FileText, Wallet,
-  Receipt, ScrollText, Database, Settings, BookOpen, LogOut,
+  Receipt, ScrollText, Database, Settings, BookOpen, LogOut, Download,
 } from "lucide-react";
 
 const bottomTabs = [
@@ -36,6 +36,7 @@ const menuItems = [
   { title: "Logi systemowe", url: "/system-logs", icon: ScrollText },
   { title: "Zarządzanie danymi", url: "/data-management", icon: Database },
   { title: "Ustawienia", url: "/settings", icon: Settings },
+  { title: "Zainstaluj aplikację", url: "/install", icon: Download },
 ];
 
 export function MobileBottomNav() {
