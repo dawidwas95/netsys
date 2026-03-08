@@ -52,8 +52,8 @@ export default function InventoryPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
   const [detailItem, setDetailItem] = useState<any>(null);
-  const [moveOpen, setMoveOpen] = useState<{ itemId: string; itemName: string; type: "IN" | "OUT" } | null>(null);
-  const [adjustOpen, setAdjustOpen] = useState<{ itemId: string; itemName: string } | null>(null);
+  const [moveOpen, setMoveOpen] = useState<{ itemId: string; itemName: string; type: "IN" | "OUT"; currentStock: number } | null>(null);
+  const [adjustOpen, setAdjustOpen] = useState<{ itemId: string; itemName: string; currentStock: number } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<any>(null);
   const [archiveConfirm, setArchiveConfirm] = useState<any>(null);
   const [search, setSearch] = useState("");
