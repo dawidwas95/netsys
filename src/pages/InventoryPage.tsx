@@ -346,7 +346,9 @@ export default function InventoryPage() {
                       <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">Brak pozycji</TableCell></TableRow>
                     ) : (
                       displayItems.map((item: any) => {
-                        const isLow = item.stock_quantity <= item.minimum_quantity && item.is_active && !item.is_archived;
+                        const reserved = reservedMap[item.id] || 0;
+                        const available = Number(item.stock_quantity) - reserved;
+                        const isLow = available <= item.minimum_quantity && item.is_active && !item.is_archived;
                         return (
                           <TableRow key={item.id} className={`${isLow ? "bg-amber-500/5" : ""} ${item.is_archived ? "opacity-50" : ""} cursor-pointer hover:bg-muted/50`}
                             onClick={() => setDetailItem(item)}>
@@ -370,8 +372,14 @@ export default function InventoryPage() {
                               </div>
                             </TableCell>
                             <TableCell className="text-right tabular-nums font-medium">
-                              {isLow && <AlertTriangle className="inline h-3 w-3 text-amber-400 mr-1" />}
                               {Number(item.stock_quantity)} {item.unit}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums text-muted-foreground">
+                              {reserved > 0 ? reserved : "—"}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums font-medium">
+                              {isLow && <AlertTriangle className="inline h-3 w-3 text-amber-400 mr-1" />}
+                              <span className={available <= 0 ? "text-destructive" : ""}>{available} {item.unit}</span>
                             </TableCell>
                             <TableCell className="text-right tabular-nums text-muted-foreground">{Number(item.minimum_quantity)}</TableCell>
                             <TableCell className="text-right tabular-nums text-xs">{(Number(item.purchase_net) * (1 + (Number(item.vat_rate) || 23) / 100)).toFixed(2)} zł</TableCell>
