@@ -454,7 +454,10 @@ export default function DocumentsPage() {
 
   function openNewDocument(docType: DocType) {
     const cfg = TYPE_CONFIG[docType] || TYPE_CONFIG.OTHER;
-    setForm({ ...emptyForm, document_type: docType, direction: cfg.direction });
+    const buyerDefaults = (docType === "PURCHASE_INVOICE" && companySettings)
+      ? { buyer_name: companySettings.company_name || "", buyer_nip: companySettings.nip || "" }
+      : {};
+    setForm({ ...emptyForm, document_type: docType, direction: cfg.direction, ...buyerDefaults });
     setEditId(null);
     setLineItems([{ ...emptyLineItem }]);
     setTypePickerOpen(false);
