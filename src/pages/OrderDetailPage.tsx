@@ -846,7 +846,15 @@ export default function OrderDetailPage() {
                           </span>
                         </div>
                       </div>
-                      <p className="text-sm ml-9">{c.comment}</p>
+                      <p className="text-sm ml-9">
+                        {c.comment.split(/(@\S+)/g).map((part: string, i: number) =>
+                          part.startsWith("@") ? (
+                            <span key={i} className="text-primary font-medium bg-primary/10 px-0.5 rounded">{part}</span>
+                          ) : (
+                            <span key={i}>{part}</span>
+                          )
+                        )}
+                      </p>
                     </div>
                   ))}
                   <div className="flex gap-2">
