@@ -779,6 +779,8 @@ export type Database = {
       }
       documents: {
         Row: {
+          buyer_name: string | null
+          buyer_nip: string | null
           client_id: string | null
           contractor_name: string | null
           contractor_nip: string | null
@@ -813,6 +815,8 @@ export type Database = {
           vat_rate: number
         }
         Insert: {
+          buyer_name?: string | null
+          buyer_nip?: string | null
           client_id?: string | null
           contractor_name?: string | null
           contractor_nip?: string | null
@@ -847,6 +851,8 @@ export type Database = {
           vat_rate?: number
         }
         Update: {
+          buyer_name?: string | null
+          buyer_nip?: string | null
           client_id?: string | null
           contractor_name?: string | null
           contractor_nip?: string | null
