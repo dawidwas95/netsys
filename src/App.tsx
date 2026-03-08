@@ -73,11 +73,13 @@ const App = () => (
             <Route path="/daily-plan" element={<DailyPlanPage />} />
             <Route path="/orders/kanban" element={<KanbanPage />} />
             <Route path="/orders/:id" element={<OrderDetailPage />} />
-            <Route path="/it-work" element={<ITWorkPage />} />
+            {/* Hidden modules (can be restored later): */}
+            {/* <Route path="/it-work" element={<ITWorkPage />} /> */}
+            {/* <Route path="/offers" element={<OffersPage />} /> */}
+            {/* <Route path="/it-docs" element={<ITDocsPage />} /> */}
             <Route path="/inventory" element={<InventoryPage />} />
             <Route path="/purchase-list" element={<PurchaseListPage />} />
             <Route path="/purchase-requests" element={<PurchaseRequestsPage />} />
-            <Route path="/offers" element={<OffersPage />} />
             <Route path="/cash" element={<CashRegisterPage />} />
             <Route path="/it-docs" element={<ITDocsPage />} />
             <Route path="/documents" element={<DocumentsPage />} />
