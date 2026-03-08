@@ -834,16 +834,7 @@ export default function DocumentsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>Kierunek</Label>
-                <Select value={form.direction} onValueChange={v => setForm({ ...form, direction: v as DocDirection })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="INCOME">Przychód</SelectItem>
-                    <SelectItem value="EXPENSE">Wydatek</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Direction auto-derived from document type */}
               <div>
                 <Label>Numer dokumentu</Label>
                 <Input value={form.document_number} onChange={e => setForm({ ...form, document_number: e.target.value })} placeholder="np. FV/12/03/2026" />
