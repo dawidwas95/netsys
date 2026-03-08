@@ -18,6 +18,8 @@ import {
   KANBAN_COLUMNS,
   ORDER_PRIORITY_LABELS,
   SERVICE_TYPE_LABELS,
+  DEPARTMENT_LABELS,
+  DEPARTMENT_ICONS,
   type OrderStatus,
   type ServiceOrderWithRelations,
 } from "@/types/database";
