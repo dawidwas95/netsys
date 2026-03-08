@@ -56,6 +56,7 @@ import CustomerMessagesStaff from "@/components/CustomerMessagesStaff";
 import { TechnicianAssignment } from "@/components/TechnicianAssignment";
 import { MobileQuickActions } from "@/components/MobileQuickActions";
 import { OrderPurchaseRequests } from "@/components/order/OrderPurchaseRequests";
+import { OrderCostSummary } from "@/components/order/OrderCostSummary";
 import { MentionTextarea, renderCommentWithMentions } from "@/components/MentionTextarea";
 import { ScheduleOrderDialog } from "@/components/ScheduleOrderDialog";
 
@@ -984,6 +985,15 @@ export default function OrderDetailPage() {
             orderItems={orderItems}
             isCompleted={isCompleted}
             onItemsChanged={handleItemsChanged}
+          />
+
+          {/* Cost Summary */}
+          <OrderCostSummary
+            orderId={id!}
+            orderItems={orderItems}
+            laborNet={parseFloat(currentForm.labor_net) || 0}
+            partsNet={parseFloat(currentForm.parts_net) || 0}
+            extraCostNet={parseFloat(currentForm.extra_cost_net) || 0}
           />
 
           {/* Purchase Requests */}
