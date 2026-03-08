@@ -24,7 +24,7 @@ import {
 } from "@/types/database";
 import { OrderStatusBadge } from "@/pages/DashboardPage";
 import {
-  ClientSection, DeviceSection, OrderDataSection, DescriptionSection,
+  ClientSection, DeviceSection, OrderDataSection, DescriptionSection, TechnicianSelectSection,
 } from "@/components/order/OrderFormSections";
 
 export default function ServiceOrdersPage() {
@@ -67,9 +67,29 @@ export default function ServiceOrdersPage() {
   });
 
   const createOrder = useMutation({
-    mutationFn: async (data: ServiceOrderInsert) => {
-      const { error } = await supabase.from("service_orders").insert(data as any);
+    mutationFn: async (data: ServiceOrderInsert & { _technicianId?: string }) => {
+      const { _technicianId, ...orderData } = data;
+      const { data: inserted, error } = await supabase.from("service_orders").insert(orderData as any).select("id, order_number").single();
       if (error) throw error;
+
+      // Auto-assign technician if selected
+      if (_technicianId && inserted) {
+        await supabase.from("order_technicians").upsert({
+          order_id: inserted.id,
+          user_id: _technicianId,
+          is_primary: true,
+          assigned_by: user?.id,
+        } as any, { onConflict: "order_id,user_id", ignoreDuplicates: true });
+
+        await supabase.from("activity_logs").insert({
+          entity_type: "service_order",
+          entity_id: inserted.id,
+          action_type: "TECHNICIAN_ASSIGNED",
+          entity_name: inserted.order_number ?? "",
+          description: "Technik przypisany przy tworzeniu zlecenia",
+          user_id: user?.id,
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["service-orders"] });
@@ -187,7 +207,7 @@ export default function ServiceOrdersPage() {
 
 // ── New Order Form (uses shared sections) ──
 function NewOrderForm({ onSubmit, loading }: {
-  onSubmit: (data: ServiceOrderInsert) => void;
+  onSubmit: (data: any) => void;
   loading: boolean;
 }) {
   const [formData, setFormData] = useState<Record<string, any>>({
@@ -205,9 +225,9 @@ function NewOrderForm({ onSubmit, loading }: {
       toast.error("Wybierz klienta");
       return;
     }
-    // Generate random 4-digit pickup code
     const pickup_code = String(Math.floor(1000 + Math.random() * 9000));
-    onSubmit({ ...formData, pickup_code } as ServiceOrderInsert);
+    const { _technicianId, ...rest } = formData;
+    onSubmit({ ...rest, pickup_code, _technicianId } as any);
   };
 
   return (
@@ -222,6 +242,10 @@ function NewOrderForm({ onSubmit, loading }: {
         onChange={(v) => set("device_id", v)}
       />
       <OrderDataSection formData={formData} onChange={set} />
+      <TechnicianSelectSection
+        technicianId={formData._technicianId}
+        onChange={(v) => set("_technicianId", v)}
+      />
       <DescriptionSection formData={formData} onChange={set} />
 
       <Button type="submit" className="w-full" disabled={loading}>
