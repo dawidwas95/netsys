@@ -692,7 +692,6 @@ export async function generateOrderPDF({ order, orderItems, financials }: OrderP
 
       /* ═══════════════ SIGNATURES ═══════════════ */
       case "signatures": {
-        // Push signatures towards bottom but don't exceed page
         const minSigY = b.y + 10;
         const preferredSigY = b.pageH - b.marginBottom - 30;
         const sigY = Math.max(minSigY, Math.min(preferredSigY, 240));
@@ -706,7 +705,6 @@ export async function generateOrderPDF({ order, orderItems, financials }: OrderP
 
         b.checkPage(28);
 
-        // Signature boxes
         const boxW = 72;
         const boxLeft = b.ml;
         const boxRight = b.mr - boxW;
@@ -715,17 +713,33 @@ export async function generateOrderPDF({ order, orderItems, financials }: OrderP
         doc.setDrawColor(...PdfBuilder.BORDER);
         doc.setLineWidth(0.3);
         doc.roundedRect(boxLeft, b.y, boxW, 22, 1.5, 1.5, "S");
-        b.setFont("normal", 7, PdfBuilder.LIGHT_GRAY);
-        doc.text("Data i podpis", boxLeft + boxW / 2, b.y + 18, { align: "center" });
         b.setFont("bold", 7.5, PdfBuilder.GRAY);
         doc.text("PODPIS KLIENTA", boxLeft + boxW / 2, b.y - 2, { align: "center" });
+        if (order.client_signature_url) {
+          try { doc.addImage(order.client_signature_url, "PNG", boxLeft + 2, b.y + 1, boxW - 4, 18); } catch {}
+          if (order.client_signed_at) {
+            b.setFont("normal", 6, PdfBuilder.LIGHT_GRAY);
+            doc.text(new Date(order.client_signed_at).toLocaleString("pl-PL"), boxLeft + boxW / 2, b.y + 21, { align: "center" });
+          }
+        } else {
+          b.setFont("normal", 7, PdfBuilder.LIGHT_GRAY);
+          doc.text("Data i podpis", boxLeft + boxW / 2, b.y + 18, { align: "center" });
+        }
 
         // Right box - technician
         doc.roundedRect(boxRight, b.y, boxW, 22, 1.5, 1.5, "S");
-        b.setFont("normal", 7, PdfBuilder.LIGHT_GRAY);
-        doc.text("Data i podpis", boxRight + boxW / 2, b.y + 18, { align: "center" });
         b.setFont("bold", 7.5, PdfBuilder.GRAY);
         doc.text("PODPIS SERWISANTA", boxRight + boxW / 2, b.y - 2, { align: "center" });
+        if (order.technician_signature_url) {
+          try { doc.addImage(order.technician_signature_url, "PNG", boxRight + 2, b.y + 1, boxW - 4, 18); } catch {}
+          if (order.technician_signed_at) {
+            b.setFont("normal", 6, PdfBuilder.LIGHT_GRAY);
+            doc.text(new Date(order.technician_signed_at).toLocaleString("pl-PL"), boxRight + boxW / 2, b.y + 21, { align: "center" });
+          }
+        } else {
+          b.setFont("normal", 7, PdfBuilder.LIGHT_GRAY);
+          doc.text("Data i podpis", boxRight + boxW / 2, b.y + 18, { align: "center" });
+        }
 
         b.y += 26;
         break;

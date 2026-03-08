@@ -229,7 +229,7 @@ class DocBuilder {
     this.y += 2;
   }
 
-  drawSignatures(labels: string[]) {
+  drawSignatures(labels: string[], order?: any) {
     const minY = this.y + 8;
     const prefY = this.pageH - 38;
     let sigY = Math.max(minY, Math.min(prefY, 240));
@@ -241,6 +241,11 @@ class DocBuilder {
     const totalW = labels.length * boxW + (labels.length - 1) * 8;
     const startX = this.ml + (this.cw - totalW) / 2;
 
+    const sigFields = [
+      { label: labels[0], urlKey: "client_signature_url", dateKey: "client_signed_at" },
+      { label: labels[1], urlKey: "technician_signature_url", dateKey: "technician_signed_at" },
+    ];
+
     for (let i = 0; i < labels.length; i++) {
       const x = startX + i * (boxW + 8);
       this.doc.setDrawColor(...BORDER);
@@ -248,8 +253,18 @@ class DocBuilder {
       this.doc.roundedRect(x, this.y, boxW, 22, 1.5, 1.5, "S");
       this.setFont("bold", 7.5, GRAY);
       this.doc.text(labels[i].toUpperCase(), x + boxW / 2, this.y - 2, { align: "center" });
-      this.setFont("normal", 7, LIGHT_GRAY);
-      this.doc.text("Data i podpis", x + boxW / 2, this.y + 18, { align: "center" });
+
+      const sf = sigFields[i];
+      if (order && sf && order[sf.urlKey]) {
+        try { this.doc.addImage(order[sf.urlKey], "PNG", x + 2, this.y + 1, boxW - 4, 18); } catch {}
+        if (order[sf.dateKey]) {
+          this.setFont("normal", 6, LIGHT_GRAY);
+          this.doc.text(new Date(order[sf.dateKey]).toLocaleString("pl-PL"), x + boxW / 2, this.y + 21, { align: "center" });
+        }
+      } else {
+        this.setFont("normal", 7, LIGHT_GRAY);
+        this.doc.text("Data i podpis", x + boxW / 2, this.y + 18, { align: "center" });
+      }
     }
     this.y += 26;
   }
