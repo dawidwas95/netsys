@@ -469,7 +469,8 @@ export default function DocumentsPage() {
     setLineItems(updated);
   }
 
-  const relevantClients = form.direction === "EXPENSE" ? supplierClients : customerClients;
+  const derivedDirection = (TYPE_CONFIG[form.document_type] || TYPE_CONFIG.OTHER).direction;
+  const relevantClients = derivedDirection === "EXPENSE" ? supplierClients : customerClients;
   const clientOptions = relevantClients.map((c: any) => {
     const name = c.display_name || c.company_name || [c.first_name, c.last_name].filter(Boolean).join(" ") || "—";
     const details = [c.nip ? `NIP: ${c.nip}` : "", c.address_city, c.phone].filter(Boolean).join(" · ");
