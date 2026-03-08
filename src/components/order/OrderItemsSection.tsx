@@ -89,6 +89,33 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
     },
   });
 
+  // Fetch all active reservations to compute available stock
+  const { data: allReservations = [] } = useQuery({
+    queryKey: ["inventory-reservations-active"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("inventory_reservations" as any)
+        .select("id, inventory_item_id, quantity")
+        .eq("status", "RESERVED");
+      if (error) throw error;
+      return (data ?? []) as Reservation[];
+    },
+  });
+
+  // Map: inventory_item_id -> total reserved quantity
+  const reservedMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    allReservations.forEach((r) => {
+      map[r.inventory_item_id] = (map[r.inventory_item_id] || 0) + Number(r.quantity);
+    });
+    return map;
+  }, [allReservations]);
+
+  // Helper: get available stock for an item
+  const getAvailableStock = (item: InventoryItem) => {
+    return Number(item.stock_quantity) - (reservedMap[item.id] || 0);
+  };
+
   const filteredInventory = useMemo(() => {
     if (!inventorySearch) return inventoryItems;
     const q = inventorySearch.toLowerCase();
