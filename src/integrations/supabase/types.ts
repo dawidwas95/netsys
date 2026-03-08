@@ -779,11 +779,27 @@ export type Database = {
       }
       documents: {
         Row: {
+          buyer_building: string | null
+          buyer_city: string | null
+          buyer_country: string | null
+          buyer_email: string | null
+          buyer_local: string | null
           buyer_name: string | null
           buyer_nip: string | null
+          buyer_phone: string | null
+          buyer_postal_code: string | null
+          buyer_street: string | null
           client_id: string | null
+          contractor_building: string | null
+          contractor_city: string | null
+          contractor_country: string | null
+          contractor_email: string | null
+          contractor_local: string | null
           contractor_name: string | null
           contractor_nip: string | null
+          contractor_phone: string | null
+          contractor_postal_code: string | null
+          contractor_street: string | null
           correction_reason: string | null
           created_at: string
           created_by: string | null
@@ -815,11 +831,27 @@ export type Database = {
           vat_rate: number
         }
         Insert: {
+          buyer_building?: string | null
+          buyer_city?: string | null
+          buyer_country?: string | null
+          buyer_email?: string | null
+          buyer_local?: string | null
           buyer_name?: string | null
           buyer_nip?: string | null
+          buyer_phone?: string | null
+          buyer_postal_code?: string | null
+          buyer_street?: string | null
           client_id?: string | null
+          contractor_building?: string | null
+          contractor_city?: string | null
+          contractor_country?: string | null
+          contractor_email?: string | null
+          contractor_local?: string | null
           contractor_name?: string | null
           contractor_nip?: string | null
+          contractor_phone?: string | null
+          contractor_postal_code?: string | null
+          contractor_street?: string | null
           correction_reason?: string | null
           created_at?: string
           created_by?: string | null
@@ -851,11 +883,27 @@ export type Database = {
           vat_rate?: number
         }
         Update: {
+          buyer_building?: string | null
+          buyer_city?: string | null
+          buyer_country?: string | null
+          buyer_email?: string | null
+          buyer_local?: string | null
           buyer_name?: string | null
           buyer_nip?: string | null
+          buyer_phone?: string | null
+          buyer_postal_code?: string | null
+          buyer_street?: string | null
           client_id?: string | null
+          contractor_building?: string | null
+          contractor_city?: string | null
+          contractor_country?: string | null
+          contractor_email?: string | null
+          contractor_local?: string | null
           contractor_name?: string | null
           contractor_nip?: string | null
+          contractor_phone?: string | null
+          contractor_postal_code?: string | null
+          contractor_street?: string | null
           correction_reason?: string | null
           created_at?: string
           created_by?: string | null
