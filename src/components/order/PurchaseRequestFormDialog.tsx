@@ -18,9 +18,6 @@ import { toast } from "sonner";
 const URGENCY_LABELS: Record<string, string> = {
   LOW: "Niski", NORMAL: "Normalny", HIGH: "Wysoki", URGENT: "Pilny",
 };
-const APPROVAL_LABELS: Record<string, string> = {
-  PENDING: "Oczekuje na akceptację", APPROVED: "Zaakceptowane", REJECTED: "Odrzucone",
-};
 const STATUS_LABELS: Record<string, string> = {
   NEW: "Nowe", TO_ORDER: "Do zamówienia", ORDERED: "Zamówione",
   DELIVERED: "Dostarczone", CANCELLED: "Anulowane",
