@@ -947,7 +947,7 @@ export default function DocumentsPage() {
         externalOpen={clientDialogOpen}
         onOpenChange={setClientDialogOpen}
         onCreated={(clientId) => {
-          qc.invalidateQueries({ queryKey: ["clients-select"] });
+          qc.invalidateQueries({ queryKey: ["clients-select-with-role"] });
           // Auto-select after short delay for data to refresh
           setTimeout(() => {
             onClientSelect(clientId);
