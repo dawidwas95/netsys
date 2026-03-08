@@ -337,8 +337,8 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                                         <div className="text-[10px] text-amber-400">min: {item.minimum_quantity}</div>
                                       )}
                                     </TableCell>
-                                    <TableCell className="text-right tabular-nums text-xs">{formatCurrency(item.purchase_net)}</TableCell>
-                                    <TableCell className="text-right tabular-nums text-xs">{formatCurrency(item.sale_net)}</TableCell>
+                                    <TableCell className="text-right tabular-nums text-xs">{formatCurrency(item.purchase_net * 1.23)}</TableCell>
+                                    <TableCell className="text-right tabular-nums text-xs">{formatCurrency(item.sale_net * 1.23)}</TableCell>
                                     <TableCell>
                                       {noStock ? (
                                         <Badge variant="outline" className="text-[10px] text-destructive">Brak</Badge>
