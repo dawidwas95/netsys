@@ -1899,6 +1899,7 @@ export type Database = {
           device_id: string | null
           diagnosis: string | null
           estimated_completion_date: string | null
+          estimated_repair_cost_gross: number | null
           extra_cost_net: number | null
           id: string
           intake_channel: Database["public"]["Enums"]["intake_channel"] | null
@@ -1917,6 +1918,9 @@ export type Database = {
           priority: Database["public"]["Enums"]["order_priority"]
           problem_description: string | null
           received_at: string
+          repair_approval_at: string | null
+          repair_approval_note: string | null
+          repair_approval_status: Database["public"]["Enums"]["repair_approval_status"]
           repair_description: string | null
           reported_at: string | null
           sales_document_number: string | null
@@ -1952,6 +1956,7 @@ export type Database = {
           device_id?: string | null
           diagnosis?: string | null
           estimated_completion_date?: string | null
+          estimated_repair_cost_gross?: number | null
           extra_cost_net?: number | null
           id?: string
           intake_channel?: Database["public"]["Enums"]["intake_channel"] | null
@@ -1970,6 +1975,9 @@ export type Database = {
           priority?: Database["public"]["Enums"]["order_priority"]
           problem_description?: string | null
           received_at?: string
+          repair_approval_at?: string | null
+          repair_approval_note?: string | null
+          repair_approval_status?: Database["public"]["Enums"]["repair_approval_status"]
           repair_description?: string | null
           reported_at?: string | null
           sales_document_number?: string | null
@@ -2005,6 +2013,7 @@ export type Database = {
           device_id?: string | null
           diagnosis?: string | null
           estimated_completion_date?: string | null
+          estimated_repair_cost_gross?: number | null
           extra_cost_net?: number | null
           id?: string
           intake_channel?: Database["public"]["Enums"]["intake_channel"] | null
@@ -2023,6 +2032,9 @@ export type Database = {
           priority?: Database["public"]["Enums"]["order_priority"]
           problem_description?: string | null
           received_at?: string
+          repair_approval_at?: string | null
+          repair_approval_note?: string | null
+          repair_approval_status?: Database["public"]["Enums"]["repair_approval_status"]
           repair_description?: string | null
           reported_at?: string | null
           sales_document_number?: string | null
@@ -2200,6 +2212,11 @@ export type Database = {
         | "DELIVERED"
         | "CANCELLED"
       purchase_request_urgency: "LOW" | "NORMAL" | "HIGH" | "URGENT"
+      repair_approval_status:
+        | "NONE"
+        | "WAITING_FOR_CUSTOMER"
+        | "APPROVED_BY_CUSTOMER"
+        | "REJECTED_BY_CUSTOMER"
       sales_document_type: "RECEIPT" | "INVOICE" | "NONE"
       service_category:
         | "ADMINISTRATION"
@@ -2417,6 +2434,12 @@ export const Constants = {
         "CANCELLED",
       ],
       purchase_request_urgency: ["LOW", "NORMAL", "HIGH", "URGENT"],
+      repair_approval_status: [
+        "NONE",
+        "WAITING_FOR_CUSTOMER",
+        "APPROVED_BY_CUSTOMER",
+        "REJECTED_BY_CUSTOMER",
+      ],
       sales_document_type: ["RECEIPT", "INVOICE", "NONE"],
       service_category: [
         "ADMINISTRATION",

@@ -378,8 +378,18 @@ export function DescriptionSection({ formData, onChange }: { formData: Record<st
   );
 }
 
+const REPAIR_APPROVAL_STATUS_LABELS: Record<string, { label: string; color: string; icon: string }> = {
+  NONE: { label: "Nie dotyczy", color: "bg-muted text-muted-foreground", icon: "" },
+  WAITING_FOR_CUSTOMER: { label: "Oczekuje na decyzję klienta", color: "bg-amber-100 text-amber-800 border-amber-300", icon: "🟡" },
+  APPROVED_BY_CUSTOMER: { label: "Zaakceptowane przez klienta", color: "bg-green-100 text-green-800 border-green-300", icon: "🟢" },
+  REJECTED_BY_CUSTOMER: { label: "Odrzucone przez klienta", color: "bg-red-100 text-red-800 border-red-300", icon: "🔴" },
+};
+
 // ═══ DIAGNOSIS SECTION ═══
 export function DiagnosisSection({ formData, onChange, onStatusChange }: { formData: Record<string, any>; onChange: (field: string, value: any) => void; onStatusChange?: (status: string) => void; }) {
+  const approvalStatus = formData.repair_approval_status ?? "NONE";
+  const approvalInfo = REPAIR_APPROVAL_STATUS_LABELS[approvalStatus] || REPAIR_APPROVAL_STATUS_LABELS.NONE;
+
   return (
     <FormSection icon={Wrench} title="Diagnostyka i naprawa">
       {onStatusChange && (
@@ -393,6 +403,54 @@ export function DiagnosisSection({ formData, onChange, onStatusChange }: { formD
       )}
       <div className="space-y-1"><Label className="text-xs">Diagnoza</Label><Textarea rows={3} value={formData.diagnosis ?? ""} onChange={(e) => onChange("diagnosis", e.target.value)} placeholder="Wynik diagnostyki, ustalenia" /></div>
       <div className="space-y-1"><Label className="text-xs">Opis wykonanych prac / naprawy</Label><Textarea rows={3} value={formData.repair_description ?? ""} onChange={(e) => onChange("repair_description", e.target.value)} placeholder="Jakie prace zostały wykonane?" /></div>
+
+      {/* Repair Approval Section */}
+      <div className="border-t border-border pt-4 mt-2 space-y-3">
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Akceptacja kosztu naprawy</h4>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Szacunkowy koszt naprawy (brutto)</Label>
+            <Input
+              type="number" step="0.01" className="h-9 font-mono tabular-nums"
+              value={formData.estimated_repair_cost_gross ?? ""}
+              onChange={(e) => onChange("estimated_repair_cost_gross", e.target.value ? parseFloat(e.target.value) : null)}
+              placeholder="0.00"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Status akceptacji</Label>
+            <Select value={approvalStatus} onValueChange={(v) => onChange("repair_approval_status", v)}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="NONE">Nie dotyczy</SelectItem>
+                <SelectItem value="WAITING_FOR_CUSTOMER">🟡 Oczekuje na klienta</SelectItem>
+                <SelectItem value="APPROVED_BY_CUSTOMER">🟢 Zaakceptowane</SelectItem>
+                <SelectItem value="REJECTED_BY_CUSTOMER">🔴 Odrzucone</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {approvalStatus !== "NONE" && (
+          <Badge className={`${approvalInfo.color}`}>
+            {approvalInfo.icon} {approvalInfo.label}
+          </Badge>
+        )}
+
+        {formData.repair_approval_at && (
+          <p className="text-xs text-muted-foreground">
+            Decyzja: {new Date(formData.repair_approval_at).toLocaleString("pl-PL")}
+          </p>
+        )}
+
+        {formData.repair_approval_note && (
+          <div className="text-sm">
+            <p className="text-xs text-muted-foreground font-medium mb-1">Uwagi klienta</p>
+            <p className="bg-muted/50 rounded-md p-2 text-sm">{formData.repair_approval_note}</p>
+          </div>
+        )}
+      </div>
     </FormSection>
   );
 }
