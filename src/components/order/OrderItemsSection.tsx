@@ -10,6 +10,9 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
@@ -19,11 +22,20 @@ import { Plus, Trash2, Package, PenLine, AlertTriangle, Search } from "lucide-re
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+type OrderItemType = "PRODUCT" | "SERVICE" | "INTERNAL_COST";
+
+const ITEM_TYPE_LABELS: Record<OrderItemType, string> = {
+  PRODUCT: "Magazyn",
+  SERVICE: "Usługa",
+  INTERNAL_COST: "Koszt wewn.",
+};
+
 interface OrderItem {
   id: string;
   order_id: string;
   inventory_item_id: string | null;
   item_name_snapshot: string;
+  item_type: string;
   quantity: number;
   sale_net: number;
   purchase_net: number;
@@ -72,7 +84,7 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
   const [selectedInvItem, setSelectedInvItem] = useState<InventoryItem | null>(null);
   const [invQuantity, setInvQuantity] = useState("1");
   const [invSaleNet, setInvSaleNet] = useState("");
-  const [customItem, setCustomItem] = useState({ name: "", quantity: "1", sale_net: "", purchase_net: "", note: "" });
+  const [customItem, setCustomItem] = useState({ name: "", quantity: "1", sale_net: "", purchase_net: "", note: "", item_type: "SERVICE" as OrderItemType });
 
   const { data: inventoryItems = [] } = useQuery({
     queryKey: ["inventory-items-active"],
@@ -142,7 +154,7 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
     setInventorySearch("");
     setInvQuantity("1");
     setInvSaleNet("");
-    setCustomItem({ name: "", quantity: "1", sale_net: "", purchase_net: "", note: "" });
+    setCustomItem({ name: "", quantity: "1", sale_net: "", purchase_net: "", note: "", item_type: "SERVICE" });
     setDialogTab("inventory");
   }
 
@@ -165,13 +177,14 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
         order_id: orderId,
         inventory_item_id: selectedInvItem.id,
         item_name_snapshot: selectedInvItem.name,
+        item_type: "PRODUCT",
         quantity: qty,
         sale_net: saleNet,
         purchase_net: purchaseNet,
         total_sale_net: qty * saleNet,
         total_purchase_net: qty * purchaseNet,
         created_by: user?.id,
-      }).select("id").single();
+      } as any).select("id").single();
       if (error) throw error;
 
       // Create reservation (no OUT movement yet)
@@ -219,13 +232,14 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
         order_id: orderId,
         inventory_item_id: null,
         item_name_snapshot: customItem.name.trim(),
+        item_type: customItem.item_type,
         quantity: qty,
         sale_net: saleNet,
         purchase_net: purchaseNet,
         total_sale_net: qty * saleNet,
         total_purchase_net: qty * purchaseNet,
         created_by: user?.id,
-      });
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -481,14 +495,29 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                 </TabsContent>
 
                 <TabsContent value="custom" className="space-y-4 mt-3">
-                  <div className="space-y-1">
-                    <Label>Nazwa *</Label>
-                    <Input
-                      value={customItem.name}
-                      onChange={(e) => setCustomItem({ ...customItem, name: e.target.value })}
-                      placeholder="np. Adapter USB-C"
-                    />
+                  <div className="grid grid-cols-[1fr_140px] gap-3">
+                    <div className="space-y-1">
+                      <Label>Nazwa *</Label>
+                      <Input
+                        value={customItem.name}
+                        onChange={(e) => setCustomItem({ ...customItem, name: e.target.value })}
+                        placeholder="np. Adapter USB-C, Bolt kurier, parking"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Typ pozycji</Label>
+                      <Select value={customItem.item_type} onValueChange={(v) => setCustomItem({ ...customItem, item_type: v as OrderItemType })}>
+                        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="SERVICE">Usługa</SelectItem>
+                          <SelectItem value="INTERNAL_COST">Koszt wewnętrzny</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
+                  {customItem.item_type === "INTERNAL_COST" && (
+                    <p className="text-xs text-muted-foreground">Koszt wewnętrzny: Bolt, paliwo, parking, transport — nie wpływa na magazyn.</p>
+                  )}
                   <div className="grid grid-cols-3 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs">Ilość</Label>
@@ -561,15 +590,11 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                       {formatCurrency(profitGross)}
                     </TableCell>
                     <TableCell className="text-center">
-                      {item.inventory_item_id ? (
-                        <div className="flex flex-col items-center gap-0.5">
-                          <Badge variant="outline" className="text-[10px]">Magazyn</Badge>
-                          {!isCompleted && (
-                            <Badge variant="secondary" className="text-[9px] px-1 py-0">Rezerw.</Badge>
-                          )}
-                        </div>
-                      ) : (
-                        <Badge variant="outline" className="text-[10px]">Własna</Badge>
+                      <Badge variant="outline" className="text-[10px]">
+                        {ITEM_TYPE_LABELS[(item.item_type || (item.inventory_item_id ? "PRODUCT" : "SERVICE")) as OrderItemType] || "Własna"}
+                      </Badge>
+                      {item.inventory_item_id && !isCompleted && (
+                        <Badge variant="secondary" className="text-[9px] px-1 py-0 ml-1">Rezerw.</Badge>
                       )}
                     </TableCell>
                     {!isCompleted && (

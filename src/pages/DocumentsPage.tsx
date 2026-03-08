@@ -37,7 +37,7 @@ import { createWarehouseDocument } from "@/lib/warehouseDocuments";
 type DocType = "PURCHASE_INVOICE" | "SALES_INVOICE" | "RECEIPT" | "PROFORMA" | "CORRECTION" | "OTHER";
 type DocDirection = "INCOME" | "EXPENSE";
 type PaymentStatus = "UNPAID" | "PARTIALLY_PAID" | "PAID" | "OVERDUE";
-type DocItemType = "PRODUCT" | "SERVICE";
+type DocItemType = "PRODUCT" | "SERVICE" | "INTERNAL_COST";
 
 const DOC_TYPE_LABELS: Record<DocType, string> = {
   PURCHASE_INVOICE: "Faktura zakupowa",
@@ -96,11 +96,11 @@ const TYPE_CONFIG: Record<string, {
   showPayment: boolean;
 }> = {
   PURCHASE_INVOICE: { contractorLabel: "Dostawca", dateLabel: "Data zakupu", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje zakupu", direction: "EXPENSE", showInventoryType: true, showPayment: true },
-  SALES_INVOICE: { contractorLabel: "Klient", dateLabel: "Data sprzedaży", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje sprzedaży", direction: "INCOME", showInventoryType: false, showPayment: true },
-  PROFORMA: { contractorLabel: "Klient", dateLabel: "Data wystawienia", dueDateLabel: "Termin ważności", itemsLabel: "Pozycje", direction: "INCOME", showInventoryType: false, showPayment: false },
-  CORRECTION: { contractorLabel: "Kontrahent", dateLabel: "Data wystawienia", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje korekty", direction: "INCOME", showInventoryType: false, showPayment: true },
-  RECEIPT: { contractorLabel: "Kontrahent", dateLabel: "Data wystawienia", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje", direction: "INCOME", showInventoryType: false, showPayment: true },
-  OTHER: { contractorLabel: "Kontrahent", dateLabel: "Data wystawienia", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje", direction: "INCOME", showInventoryType: false, showPayment: true },
+  SALES_INVOICE: { contractorLabel: "Klient", dateLabel: "Data sprzedaży", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje sprzedaży", direction: "INCOME", showInventoryType: true, showPayment: true },
+  PROFORMA: { contractorLabel: "Klient", dateLabel: "Data wystawienia", dueDateLabel: "Termin ważności", itemsLabel: "Pozycje", direction: "INCOME", showInventoryType: true, showPayment: false },
+  CORRECTION: { contractorLabel: "Kontrahent", dateLabel: "Data wystawienia", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje korekty", direction: "INCOME", showInventoryType: true, showPayment: true },
+  RECEIPT: { contractorLabel: "Kontrahent", dateLabel: "Data wystawienia", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje", direction: "INCOME", showInventoryType: true, showPayment: true },
+  OTHER: { contractorLabel: "Kontrahent", dateLabel: "Data wystawienia", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje", direction: "INCOME", showInventoryType: true, showPayment: true },
 };
 
 interface Document {
@@ -249,7 +249,7 @@ export default function DocumentsPage() {
       setLineItems(data.map((di: any) => ({
         id: di.id, name: di.name, quantity: di.quantity.toString(), unit: di.unit,
         unit_net: di.unit_net.toString(), vat_rate: di.vat_rate.toString(),
-        item_type: (di.description === "PRODUCT" ? "PRODUCT" : "SERVICE") as DocItemType,
+        item_type: (di.item_type || di.description || "SERVICE") as DocItemType,
         inventory_item_id: di.inventory_item_id,
       })));
     } else {
@@ -314,7 +314,7 @@ export default function DocumentsPage() {
             return {
               document_id: docId!, name: item.name, quantity: qty, unit: item.unit || "szt.",
               unit_net: unitNet, vat_rate: vatR, total_net: totalNet, total_vat: totalVat, total_gross: totalGross,
-              sort_order: idx, description: item.item_type, inventory_item_id: item.inventory_item_id || null,
+              sort_order: idx, description: item.item_type, item_type: item.item_type, inventory_item_id: item.inventory_item_id || null,
             };
           });
           const { error: itemErr } = await supabase.from("document_items").insert(items);
@@ -325,7 +325,7 @@ export default function DocumentsPage() {
               await supabase.from("inventory_movements").delete().eq("source_id", docId!).eq("source_type", "PURCHASE");
             }
             for (const item of items) {
-              if (item.description === "PRODUCT") {
+              if (item.item_type === "PRODUCT") {
                 let invItemId = item.inventory_item_id;
                 if (!invItemId) {
                   const { data: existing } = await supabase.from("inventory_items").select("id").eq("name", item.name).maybeSingle();
@@ -949,8 +949,9 @@ export default function DocumentsPage() {
                     <Select value={item.item_type} onValueChange={v => updateLineItem(idx, "item_type", v)}>
                       <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="PRODUCT">Produkt mag.</SelectItem>
                         <SelectItem value="SERVICE">Usługa</SelectItem>
-                        <SelectItem value="PRODUCT">Produkt</SelectItem>
+                        <SelectItem value="INTERNAL_COST">Koszt wewn.</SelectItem>
                       </SelectContent>
                     </Select>
                   )}

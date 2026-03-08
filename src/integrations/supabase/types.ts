@@ -695,6 +695,7 @@ export type Database = {
           document_id: string
           id: string
           inventory_item_id: string | null
+          item_type: string
           name: string
           quantity: number
           related_it_work_id: string | null
@@ -713,6 +714,7 @@ export type Database = {
           document_id: string
           id?: string
           inventory_item_id?: string | null
+          item_type?: string
           name: string
           quantity?: number
           related_it_work_id?: string | null
@@ -731,6 +733,7 @@ export type Database = {
           document_id?: string
           id?: string
           inventory_item_id?: string | null
+          item_type?: string
           name?: string
           quantity?: number
           related_it_work_id?: string | null
@@ -1897,6 +1900,7 @@ export type Database = {
           id: string
           inventory_item_id: string | null
           item_name_snapshot: string
+          item_type: string
           order_id: string
           purchase_net: number
           quantity: number
@@ -1910,6 +1914,7 @@ export type Database = {
           id?: string
           inventory_item_id?: string | null
           item_name_snapshot: string
+          item_type?: string
           order_id: string
           purchase_net?: number
           quantity?: number
@@ -1923,6 +1928,7 @@ export type Database = {
           id?: string
           inventory_item_id?: string | null
           item_name_snapshot?: string
+          item_type?: string
           order_id?: string
           purchase_net?: number
           quantity?: number

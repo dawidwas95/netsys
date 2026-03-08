@@ -68,6 +68,7 @@ interface OrderItem {
   order_id: string;
   inventory_item_id: string | null;
   item_name_snapshot: string;
+  item_type: string;
   quantity: number;
   sale_net: number;
   purchase_net: number;
