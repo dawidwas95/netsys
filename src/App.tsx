@@ -27,6 +27,7 @@ import DocumentsPage from "@/pages/DocumentsPage";
 import SystemLogsPage from "@/pages/SystemLogsPage";
 import DataManagementPage from "@/pages/DataManagementPage";
 import SettingsPage from "@/pages/SettingsPage";
+import WarehouseDocumentsPage from "@/pages/WarehouseDocumentsPage";
 import OrderStatusPage from "@/pages/OrderStatusPage";
 import ServiceBoardDisplay from "@/pages/ServiceBoardDisplay";
 import DailyPlanPage from "@/pages/DailyPlanPage";
