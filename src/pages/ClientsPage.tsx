@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
@@ -13,9 +16,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Search, Phone, Mail, Archive, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { CLIENT_TYPE_LABELS, type Client, type ClientType } from "@/types/database";
+import { CLIENT_TYPE_LABELS, BUSINESS_ROLE_LABELS, type Client, type ClientType, type BusinessRole } from "@/types/database";
 import { Link } from "react-router-dom";
 import { ClientFormDialog } from "@/components/ClientFormDialog";
+import { Badge } from "@/components/ui/badge";
 
 export default function ClientsPage() {
   const [search, setSearch] = useState("");
