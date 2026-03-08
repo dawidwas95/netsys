@@ -26,7 +26,7 @@ import {
 import {
   Plus, Search, FileText, ArrowDownCircle, ArrowUpCircle, Pencil, Trash2, Eye,
   DollarSign, ShoppingCart, Receipt, FileCheck, FileMinus2, CalendarDays,
-  Building2, MapPin, Mail, Phone as PhoneIcon, Hash,
+  Building2, MapPin, Mail, Phone as PhoneIcon, Hash, Paperclip,
 } from "lucide-react";
 import { toast } from "sonner";
 import { SearchableSelect } from "@/components/SearchableSelect";
