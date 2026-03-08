@@ -108,7 +108,23 @@ export default function PurchaseRequestsPage() {
     onError: () => toast.error("Błąd aktualizacji statusu"),
   });
 
-  
+  const updateApproval = useMutation({
+    mutationFn: async ({ id, approval }: { id: string; approval: string }) => {
+      const { error } = await supabase.from("purchase_requests").update({
+        client_approval: approval as any,
+        client_approval_changed_by: user?.id,
+        client_approval_changed_at: new Date().toISOString(),
+      }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["purchase-requests-global"] });
+      queryClient.invalidateQueries({ queryKey: ["purchase-requests"] });
+      toast.success("Akceptacja zaktualizowana");
+    },
+    onError: () => toast.error("Błąd aktualizacji"),
+  });
+
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
