@@ -552,7 +552,7 @@ export default function DocumentsPage() {
     const client = clients.find((c: any) => c.id === clientId);
     setForm({
       ...form, client_id: clientId,
-      contractor_name: client ? (client.display_name || client.company_name || [client.first_name, client.last_name].filter(Boolean).join(" ")) : "",
+      contractor_name: client ? (client.company_name || client.display_name || [client.first_name, client.last_name].filter(Boolean).join(" ")) : "",
       contractor_nip: client?.nip ?? "",
       contractor_street: client?.address_street ?? "",
       contractor_building: client?.address_building ?? "",
