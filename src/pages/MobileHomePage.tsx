@@ -196,7 +196,7 @@ export default function MobileHomePage() {
       {scannerOpen && (
         <QRScanner
           open={scannerOpen}
-          onClose={() => setScannerOpen(false)}
+          onOpenChange={setScannerOpen}
           onScan={handleScan}
         />
       )}
