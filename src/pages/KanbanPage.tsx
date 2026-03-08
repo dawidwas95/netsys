@@ -265,12 +265,10 @@ function KanbanCardContent({
         </div>
       </div>
 
-      {(order as any).profiles?.full_name && (
-        <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-1">
-          <User className="h-3 w-3" />
-          {(order as any).profiles.full_name}
-        </div>
-      )}
+      <div className="flex items-center justify-between mt-1.5">
+        <TechnicianBadges orderId={order.id} compact />
+        <QuickAssignButton orderId={order.id} orderNumber={order.order_number} />
+      </div>
     </Link>
   );
 }
