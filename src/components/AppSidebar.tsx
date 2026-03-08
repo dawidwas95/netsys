@@ -1,5 +1,5 @@
-import logoW3s from "@/assets/logo-w3s.png";
 import {
+  Wrench as LogoIcon,
   LayoutDashboard,
   Users,
   Monitor,
