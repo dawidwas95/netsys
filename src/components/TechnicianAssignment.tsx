@@ -223,10 +223,12 @@ export function TechnicianAssignment({ orderId, orderNumber }: TechnicianAssignm
 
   const setPrimary = useMutation({
     mutationFn: async ({ rowId, userId, name }: { rowId: string; userId: string; name: string }) => {
-      // Unset all primary first
-      await supabase.from("order_technicians").update({ is_primary: false } as any).eq("order_id", orderId);
+      const { error: unsetError } = await supabase.from("order_technicians").update({ is_primary: false } as any).eq("order_id", orderId);
+      if (unsetError) throw unsetError;
+
       const { error } = await supabase.from("order_technicians").update({ is_primary: true } as any).eq("id", rowId);
       if (error) throw error;
+
       await supabase.from("activity_logs").insert({
         entity_type: "service_order",
         entity_id: orderId,
@@ -239,10 +241,13 @@ export function TechnicianAssignment({ orderId, orderNumber }: TechnicianAssignm
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-technicians", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["order-technician-ids", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["service-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["kanban-orders"] });
       queryClient.invalidateQueries({ queryKey: ["order-logs", orderId] });
       toast.success("Główny technik zmieniony");
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: any) => toast.error(err?.message || "Błąd zmiany głównego technika"),
   });
 
   const sorted = [...assigned].sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0));
