@@ -81,7 +81,7 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
   const [selectedInvItem, setSelectedInvItem] = useState<InventoryItem | null>(null);
   const [invQuantity, setInvQuantity] = useState("1");
   const [invSaleNet, setInvSaleNet] = useState("");
-  const [customItem, setCustomItem] = useState({ name: "", quantity: "1", sale_net: "", purchase_net: "", note: "" });
+  const [customItem, setCustomItem] = useState({ name: "", quantity: "1", sale_net: "", purchase_net: "", note: "", item_type: "SERVICE" as OrderItemType });
 
   const { data: inventoryItems = [] } = useQuery({
     queryKey: ["inventory-items-active"],
