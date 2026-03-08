@@ -33,6 +33,7 @@ export default function CashRegisterPage() {
   const queryClient = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [revertTx, setRevertTx] = useState<any | null>(null);
   const [filterDate, setFilterDate] = useState("");
 
   const { data: transactions = [], isLoading } = useQuery({
