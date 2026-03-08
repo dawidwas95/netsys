@@ -86,8 +86,39 @@ serve(async (req) => {
 
     const address = parseAddress(subject.workingAddress || subject.residenceAddress);
 
+    // For JDG (sole proprietorship), subject.name contains the full business name
+    // e.g. "DW-TECH DAWID WAŚ". We always use subject.name as company_name.
+    // Try to extract first/last name from representatives or by parsing the name.
+    let firstName: string | null = null;
+    let lastName: string | null = null;
+
+    // The White List API provides representatives as a comma-separated list
+    // For JDG, we can try to extract the owner name from representatives
+    if (subject.representatives) {
+      // Format is typically "IMIĘ NAZWISKO" or multiple separated by commas
+      const rep = subject.representatives.split(",")[0].trim();
+      const parts = rep.split(/\s+/);
+      if (parts.length >= 2) {
+        firstName = parts[0];
+        lastName = parts.slice(1).join(" ");
+      }
+    }
+
+    // If no KRS (likely JDG), and no representatives parsed, try to extract from name
+    // JDG names often end with "IMIĘ NAZWISKO" after the business name
+    if (!firstName && !subject.krs && subject.name) {
+      const nameParts = subject.name.trim().split(/\s+/);
+      if (nameParts.length >= 2) {
+        // Last two words are likely first name + last name
+        lastName = nameParts[nameParts.length - 1];
+        firstName = nameParts[nameParts.length - 2];
+      }
+    }
+
     const result = {
       company_name: subject.name || null,
+      first_name: firstName,
+      last_name: lastName,
       nip: cleanNip,
       regon: subject.regon || null,
       krs: subject.krs || null,
@@ -98,6 +129,7 @@ serve(async (req) => {
       city: address.city,
       country: "Polska",
       vat_status: subject.statusVat || null,
+      is_jdg: !subject.krs,
     };
 
     return new Response(JSON.stringify({ data: result }), {
