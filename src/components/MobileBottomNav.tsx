@@ -1,6 +1,6 @@
 import { useLocation, Link } from "react-router-dom";
 import {
-  LayoutDashboard, ListTodo, Package, ClipboardList, Menu,
+  LayoutDashboard, ListTodo, Package, ClipboardList, Menu, CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
