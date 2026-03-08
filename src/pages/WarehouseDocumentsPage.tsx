@@ -202,7 +202,7 @@ export default function WarehouseDocumentsPage() {
 
           if (inserted) {
             const cfg = DOC_TYPE_CONFIG[formType];
-            await supabase.from("inventory_movements").insert({
+            await (supabase.from("inventory_movements") as any).insert({
               item_id: it.inventory_item_id,
               movement_type: cfg.movementType,
               quantity: parseFloat(it.quantity) || 1,
