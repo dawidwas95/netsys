@@ -1072,6 +1072,30 @@ export default function DocumentsPage() {
               <Separator />
               <DocumentAttachments documentId={previewDoc.id} />
 
+              {/* Linked warehouse documents */}
+              {previewLinkedPz.length > 0 && (
+                <>
+                  <Separator />
+                  <div>
+                    <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      Powiązane dokumenty magazynowe
+                    </p>
+                    <div className="space-y-1.5">
+                      {previewLinkedPz.map((pz: any) => (
+                        <div key={pz.id} className="flex items-center justify-between text-sm border rounded-md px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/30 text-xs">{pz.document_type}</Badge>
+                            <span className="font-mono font-medium">{pz.document_number}</span>
+                          </div>
+                          <span className="text-muted-foreground text-xs">{pz.document_date}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => setPreviewOpen(false)}>Zamknij</Button>
                 <Button onClick={() => { setPreviewOpen(false); openEdit(previewDoc); }}><Pencil className="h-4 w-4 mr-1" /> Edytuj</Button>
