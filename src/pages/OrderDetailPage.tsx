@@ -758,6 +758,10 @@ export default function OrderDetailPage() {
               </Card>
             </TabsContent>
 
+            <TabsContent value="customer-messages" className="mt-4">
+              <CustomerMessagesStaff orderId={id!} />
+            </TabsContent>
+
             <TabsContent value="history" className="mt-4">
               <Card>
                 <CardContent className="pt-4">
