@@ -57,6 +57,8 @@ function clientToForm(client: Client) {
     nip: client.nip ?? "",
     regon: client.regon ?? "",
     address_street: client.address_street ?? "",
+    address_building: (client as any).address_building ?? "",
+    address_local: (client as any).address_local ?? "",
     address_city: client.address_city ?? "",
     address_postal_code: client.address_postal_code ?? "",
     address_country: client.address_country ?? "Polska",
