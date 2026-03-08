@@ -181,7 +181,7 @@ export default function DocumentsPage() {
       const grossAmount = hasLineItems ? computedFromItems.gross : netAmount + vatAmount;
 
       const payload: Record<string, unknown> = {
-        document_number: values.document_number,
+        document_number: values.document_number.trim() || 'TEMP',
         document_type: values.document_type,
         direction: values.direction,
         client_id: values.client_id || null,
