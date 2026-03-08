@@ -6,6 +6,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -19,22 +25,12 @@ Deno.serve(async (req) => {
 
     // Verify caller is authenticated
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (!authHeader) return json({ error: "Unauthorized" }, 401);
 
     const { data: { user: caller } } = await supabaseAdmin.auth.getUser(
       authHeader.replace("Bearer ", "")
     );
-    if (!caller) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (!caller) return json({ error: "Unauthorized" }, 401);
 
     // Check caller is admin
     const { data: callerRole } = await supabaseAdmin
@@ -44,66 +40,82 @@ Deno.serve(async (req) => {
       .eq("role", "ADMIN")
       .maybeSingle();
 
-    if (!callerRole) {
-      return new Response(JSON.stringify({ error: "Forbidden: admin only" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (!callerRole) return json({ error: "Forbidden: admin only" }, 403);
+
+    const { action, target_user_id, updates, new_user } = await req.json();
+
+    // ── CREATE USER ──
+    if (action === "create_user") {
+      if (!new_user?.email || !new_user?.password) {
+        return json({ error: "email and password required" }, 400);
+      }
+
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email: new_user.email,
+        password: new_user.password,
+        email_confirm: true,
+        user_metadata: {
+          first_name: new_user.first_name ?? "",
+          last_name: new_user.last_name ?? "",
+        },
       });
+
+      if (authError) return json({ error: authError.message }, 400);
+
+      const newUserId = authData.user.id;
+
+      // The handle_new_user trigger should create profile & default role,
+      // but let's ensure correct role is set
+      if (new_user.role && new_user.role !== "EMPLOYEE") {
+        await supabaseAdmin
+          .from("user_roles")
+          .update({ role: new_user.role })
+          .eq("user_id", newUserId);
+      }
+
+      // Update profile with is_active if specified
+      if (new_user.is_active === false) {
+        await supabaseAdmin
+          .from("profiles")
+          .update({ is_active: false })
+          .eq("user_id", newUserId);
+      }
+
+      await supabaseAdmin.from("activity_logs").insert({
+        entity_id: newUserId,
+        entity_type: "USER",
+        action_type: "CREATE",
+        entity_name: `${new_user.first_name ?? ""} ${new_user.last_name ?? ""}`.trim(),
+        user_id: caller.id,
+        description: `Utworzono użytkownika: ${new_user.email}`,
+      });
+
+      return json({ success: true, user_id: newUserId });
     }
 
-    const { action, target_user_id, updates } = await req.json();
-
-    if (!target_user_id) {
-      return new Response(JSON.stringify({ error: "target_user_id required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // All other actions require target_user_id
+    if (!target_user_id) return json({ error: "target_user_id required" }, 400);
 
     // Prevent self-deletion
     if (action === "delete" && target_user_id === caller.id) {
-      return new Response(JSON.stringify({ error: "Cannot delete yourself" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json({ error: "Cannot delete yourself" }, 400);
     }
 
+    // ── DELETE USER ──
     if (action === "delete") {
-      // Get profile info before deletion for audit
       const { data: profile } = await supabaseAdmin
         .from("profiles")
         .select("first_name, last_name, email")
         .eq("user_id", target_user_id)
         .maybeSingle();
 
-      // Delete from user_roles
-      await supabaseAdmin
-        .from("user_roles")
-        .delete()
-        .eq("user_id", target_user_id);
+      await supabaseAdmin.from("user_roles").delete().eq("user_id", target_user_id);
+      await supabaseAdmin.from("order_technicians").delete().eq("user_id", target_user_id);
+      await supabaseAdmin.from("profiles").update({ is_active: false }).eq("user_id", target_user_id);
 
-      // Delete from order_technicians
-      await supabaseAdmin
-        .from("order_technicians")
-        .delete()
-        .eq("user_id", target_user_id);
-
-      // Archive profile (mark inactive) rather than delete to preserve references
-      await supabaseAdmin
-        .from("profiles")
-        .update({ is_active: false })
-        .eq("user_id", target_user_id);
-
-      // Delete from auth
       const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(target_user_id);
-      if (authError) {
-        return new Response(JSON.stringify({ error: authError.message }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      if (authError) return json({ error: authError.message }, 500);
 
-      // Log the action
       await supabaseAdmin.from("activity_logs").insert({
         entity_id: target_user_id,
         entity_type: "USER",
@@ -113,11 +125,10 @@ Deno.serve(async (req) => {
         description: `Usunięto użytkownika: ${profile?.email ?? target_user_id}`,
       });
 
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json({ success: true });
     }
 
+    // ── TOGGLE ACTIVE ──
     if (action === "toggle_active") {
       const { data: profile } = await supabaseAdmin
         .from("profiles")
@@ -126,10 +137,7 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       const newActive = !profile?.is_active;
-      await supabaseAdmin
-        .from("profiles")
-        .update({ is_active: newActive })
-        .eq("user_id", target_user_id);
+      await supabaseAdmin.from("profiles").update({ is_active: newActive }).eq("user_id", target_user_id);
 
       await supabaseAdmin.from("activity_logs").insert({
         entity_id: target_user_id,
@@ -140,40 +148,21 @@ Deno.serve(async (req) => {
         description: newActive ? "Aktywowano użytkownika" : "Dezaktywowano użytkownika",
       });
 
-      return new Response(JSON.stringify({ success: true, is_active: newActive }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json({ success: true, is_active: newActive });
     }
 
+    // ── UPDATE PROFILE ──
     if (action === "update_profile") {
-      const { error } = await supabaseAdmin
-        .from("profiles")
-        .update(updates)
-        .eq("user_id", target_user_id);
-
-      if (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const { error } = await supabaseAdmin.from("profiles").update(updates).eq("user_id", target_user_id);
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true });
     }
 
+    // ── UPDATE ROLE ──
     if (action === "update_role") {
       const { role } = updates;
-      // Remove existing roles and set new one
-      await supabaseAdmin
-        .from("user_roles")
-        .delete()
-        .eq("user_id", target_user_id);
-
-      await supabaseAdmin
-        .from("user_roles")
-        .insert({ user_id: target_user_id, role });
+      await supabaseAdmin.from("user_roles").delete().eq("user_id", target_user_id);
+      await supabaseAdmin.from("user_roles").insert({ user_id: target_user_id, role });
 
       await supabaseAdmin.from("activity_logs").insert({
         entity_id: target_user_id,
@@ -183,19 +172,11 @@ Deno.serve(async (req) => {
         description: `Zmieniono rolę na: ${role}`,
       });
 
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json({ success: true });
     }
 
-    return new Response(JSON.stringify({ error: "Unknown action" }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ error: "Unknown action" }, 400);
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ error: err.message }, 500);
   }
 });

@@ -31,7 +31,7 @@ import { toast } from "sonner";
 import {
   Bell, Mail, MessageSquare, Save, Info, FileText, Building2,
   ChevronUp, ChevronDown, Eye, GripVertical, Users, MoreHorizontal,
-  Pencil, UserX, Trash2, Shield,
+  Pencil, UserX, Trash2, Shield, Plus,
 } from "lucide-react";
 import type { PdfSection, PdfSettings, PdfTemplateConfig } from "@/lib/pdfEngine";
 import { DEFAULT_SETTINGS, SERVICE_ORDER_SECTIONS } from "@/lib/pdfEngine";
@@ -70,8 +70,18 @@ export default function SettingsPage() {
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: "Administrator",
   MANAGER: "Manager",
+  TECHNICIAN: "Technik",
+  OFFICE: "Biuro",
   EMPLOYEE: "Pracownik",
 };
+
+const ROLE_OPTIONS = [
+  { value: "ADMIN", label: "Administrator" },
+  { value: "TECHNICIAN", label: "Technik" },
+  { value: "OFFICE", label: "Biuro" },
+  { value: "MANAGER", label: "Manager" },
+  { value: "EMPLOYEE", label: "Pracownik" },
+];
 
 function TeamManagement() {
   const { user } = useAuth();
@@ -80,6 +90,16 @@ function TeamManagement() {
   const [deleteUserName, setDeleteUserName] = useState("");
   const [editUser, setEditUser] = useState<any | null>(null);
   const [editForm, setEditForm] = useState<Record<string, string>>({});
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    password: "",
+    role: "TECHNICIAN",
+    is_active: true,
+  });
+  const [creating, setCreating] = useState(false);
 
   const { data: currentUserRole } = useQuery({
     queryKey: ["current-user-role", user?.id],
@@ -173,6 +193,33 @@ function TeamManagement() {
     }
   };
 
+  const handleCreateUser = async () => {
+    if (!createForm.email || !createForm.password) {
+      toast.error("Podaj e-mail i hasło");
+      return;
+    }
+    if (createForm.password.length < 6) {
+      toast.error("Hasło musi mieć minimum 6 znaków");
+      return;
+    }
+    setCreating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-user", {
+        body: { action: "create_user", new_user: createForm },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Użytkownik został utworzony");
+      setShowCreateDialog(false);
+      setCreateForm({ first_name: "", last_name: "", email: "", password: "", role: "TECHNICIAN", is_active: true });
+      queryClient.invalidateQueries({ queryKey: ["team-users"] });
+    } catch (e: any) {
+      toast.error(e.message || "Błąd tworzenia użytkownika");
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const startEdit = (u: any) => {
     setEditUser(u);
     setEditForm({
@@ -188,9 +235,16 @@ function TeamManagement() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Users className="h-5 w-5" /> Zarządzanie zespołem
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Users className="h-5 w-5" /> Zarządzanie zespołem
+            </CardTitle>
+            {isAdmin && (
+              <Button onClick={() => setShowCreateDialog(true)}>
+                <Plus className="mr-1 h-4 w-4" /> Utwórz użytkownika
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -200,6 +254,7 @@ function TeamManagement() {
                 <TableHead>E-mail</TableHead>
                 <TableHead>Rola</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Utworzono</TableHead>
                 {isAdmin && <TableHead className="w-12" />}
               </TableRow>
             </TableHeader>
@@ -217,9 +272,9 @@ function TeamManagement() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="ADMIN">Administrator</SelectItem>
-                          <SelectItem value="MANAGER">Manager</SelectItem>
-                          <SelectItem value="EMPLOYEE">Pracownik</SelectItem>
+                          {ROLE_OPTIONS.map((r) => (
+                            <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     ) : (
@@ -230,6 +285,9 @@ function TeamManagement() {
                     <Badge variant={u.is_active ? "default" : "outline"} className={u.is_active ? "bg-primary/10 text-primary border-primary/30" : ""}>
                       {u.is_active ? "Aktywny" : "Nieaktywny"}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {new Date(u.created_at).toLocaleDateString("pl-PL")}
                   </TableCell>
                   {isAdmin && (
                     <TableCell>
@@ -268,6 +326,31 @@ function TeamManagement() {
               ))}
             </TableBody>
           </Table>
+        </CardContent>
+      </Card>
+
+      {/* Role legend */}
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Shield className="h-4 w-4 text-muted-foreground" /> Uprawnienia ról
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <p className="font-medium mb-1">Administrator</p>
+              <p className="text-muted-foreground text-xs">Pełny dostęp do systemu, zarządzanie użytkownikami, ustawienia, finanse</p>
+            </div>
+            <div>
+              <p className="font-medium mb-1">Technik</p>
+              <p className="text-muted-foreground text-xs">Zlecenia serwisowe, diagnostyka, komentarze, magazyn. Bez dostępu do finansów i ustawień</p>
+            </div>
+            <div>
+              <p className="font-medium mb-1">Biuro</p>
+              <p className="text-muted-foreground text-xs">Klienci, zlecenia, faktury, oferty, komunikacja z klientami</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -326,6 +409,79 @@ function TeamManagement() {
             <Button variant="outline" onClick={() => setEditUser(null)}>Anuluj</Button>
             <Button onClick={handleEditSave} disabled={manageUser.isPending}>
               <Save className="mr-1 h-4 w-4" /> Zapisz
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create User Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Utwórz nowego użytkownika</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Imię</Label>
+                <Input
+                  value={createForm.first_name}
+                  onChange={(e) => setCreateForm((p) => ({ ...p, first_name: e.target.value }))}
+                  placeholder="Jan"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Nazwisko</Label>
+                <Input
+                  value={createForm.last_name}
+                  onChange={(e) => setCreateForm((p) => ({ ...p, last_name: e.target.value }))}
+                  placeholder="Kowalski"
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>E-mail *</Label>
+              <Input
+                type="email"
+                value={createForm.email}
+                onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))}
+                placeholder="jan@firma.pl"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Hasło tymczasowe *</Label>
+              <Input
+                type="password"
+                value={createForm.password}
+                onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))}
+                placeholder="Minimum 6 znaków"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Rola</Label>
+              <Select value={createForm.role} onValueChange={(v) => setCreateForm((p) => ({ ...p, role: v }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLE_OPTIONS.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={createForm.is_active}
+                onCheckedChange={(v) => setCreateForm((p) => ({ ...p, is_active: v }))}
+              />
+              <Label>Aktywny</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>Anuluj</Button>
+            <Button onClick={handleCreateUser} disabled={creating}>
+              {creating ? "Tworzenie..." : "Utwórz użytkownika"}
             </Button>
           </DialogFooter>
         </DialogContent>
