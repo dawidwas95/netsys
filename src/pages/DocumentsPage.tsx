@@ -1222,7 +1222,7 @@ export default function DocumentsPage() {
                                   onClick={async () => {
                                     const data = await lookupNip(form.contractor_nip);
                                     if (data) setForm(prev => ({
-                                      ...prev, contractor_name: data.company_name || prev.contractor_name,
+                                      ...prev, contractor_name: preferExistingBusinessName(prev.contractor_name, data.company_name, data.is_person_name_only),
                                       contractor_nip: data.nip, contractor_street: data.street, contractor_building: data.building,
                                       contractor_local: data.local, contractor_postal_code: data.postal_code,
                                       contractor_city: data.city, contractor_country: data.country,
