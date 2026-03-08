@@ -92,15 +92,23 @@ serve(async (req) => {
     let firstName: string | null = null;
     let lastName: string | null = null;
 
-    // The White List API provides representatives as a comma-separated list
-    // For JDG, we can try to extract the owner name from representatives
-    if (subject.representatives) {
-      // Format is typically "IMIĘ NAZWISKO" or multiple separated by commas
-      const rep = subject.representatives.split(",")[0].trim();
-      const parts = rep.split(/\s+/);
-      if (parts.length >= 2) {
-        firstName = parts[0];
-        lastName = parts.slice(1).join(" ");
+    // The White List API provides representatives as an array of objects or a string
+    const reps = subject.representatives;
+    if (reps) {
+      let repName = "";
+      if (Array.isArray(reps) && reps.length > 0) {
+        // Each rep may be an object with name/firstName/lastName or just a string
+        const rep = reps[0];
+        repName = typeof rep === "string" ? rep : (rep.name || `${rep.firstName || ""} ${rep.lastName || ""}`.trim());
+      } else if (typeof reps === "string") {
+        repName = reps.split(",")[0].trim();
+      }
+      if (repName) {
+        const parts = repName.trim().split(/\s+/);
+        if (parts.length >= 2) {
+          firstName = parts[0];
+          lastName = parts.slice(1).join(" ");
+        }
       }
     }
 
