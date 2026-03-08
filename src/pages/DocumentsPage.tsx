@@ -641,7 +641,7 @@ export default function DocumentsPage() {
                     </TableCell>
                     <TableCell>
                       <span className="font-medium font-mono text-sm">{doc.document_number}</span>
-                      {attachmentCounts[doc.id] && <Paperclip className="h-3 w-3 text-muted-foreground ml-1.5 inline" title={`${attachmentCounts[doc.id]} załącznik(ów)`} />}
+                      {attachmentCounts[doc.id] && <span className="inline-flex ml-1.5" title={`${attachmentCounts[doc.id]} załącznik(ów)`}><Paperclip className="h-3 w-3 text-muted-foreground" /></span>}
                     </TableCell>
                     <TableCell>
                       <div>
