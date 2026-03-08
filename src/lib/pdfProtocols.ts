@@ -382,7 +382,7 @@ export async function generateIntakePDF({ order }: { order: any }) {
         break;
 
       case "signatures":
-        b.drawSignatures(["Podpis klienta", "Podpis serwisanta"]);
+        b.drawSignatures(["Podpis klienta", "Podpis serwisanta"], order);
         break;
 
       case "footer":
