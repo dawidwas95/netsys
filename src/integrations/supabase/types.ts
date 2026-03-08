@@ -1596,12 +1596,14 @@ export type Database = {
           manufacturer: string | null
           model: string | null
           order_id: string
+          product_url: string | null
           quantity: number
           requested_by: string | null
           requested_by_name: string | null
           status: Database["public"]["Enums"]["purchase_request_status"]
           status_changed_at: string | null
           status_changed_by: string | null
+          supplier: string | null
           updated_at: string
           urgency: Database["public"]["Enums"]["purchase_request_urgency"]
         }
@@ -1615,12 +1617,14 @@ export type Database = {
           manufacturer?: string | null
           model?: string | null
           order_id: string
+          product_url?: string | null
           quantity?: number
           requested_by?: string | null
           requested_by_name?: string | null
           status?: Database["public"]["Enums"]["purchase_request_status"]
           status_changed_at?: string | null
           status_changed_by?: string | null
+          supplier?: string | null
           updated_at?: string
           urgency?: Database["public"]["Enums"]["purchase_request_urgency"]
         }
@@ -1634,12 +1638,14 @@ export type Database = {
           manufacturer?: string | null
           model?: string | null
           order_id?: string
+          product_url?: string | null
           quantity?: number
           requested_by?: string | null
           requested_by_name?: string | null
           status?: Database["public"]["Enums"]["purchase_request_status"]
           status_changed_at?: string | null
           status_changed_by?: string | null
+          supplier?: string | null
           updated_at?: string
           urgency?: Database["public"]["Enums"]["purchase_request_urgency"]
         }
