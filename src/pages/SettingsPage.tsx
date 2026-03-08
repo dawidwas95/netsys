@@ -224,7 +224,7 @@ function TeamManagement() {
       if (data?.error) throw new Error(data.error);
       toast.success("Użytkownik został utworzony");
       setShowCreateDialog(false);
-      setCreateForm({ first_name: "", last_name: "", email: "", password: "", role: "TECHNICIAN", is_active: true });
+      setCreateForm({ first_name: "", last_name: "", email: "", password: "", role: "SERWISANT", is_active: true });
       queryClient.invalidateQueries({ queryKey: ["team-users"] });
     } catch (e: any) {
       toast.error(e.message || "Błąd tworzenia użytkownika");
