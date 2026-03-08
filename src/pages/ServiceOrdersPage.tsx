@@ -207,7 +207,7 @@ export default function ServiceOrdersPage() {
 
 // ── New Order Form (uses shared sections) ──
 function NewOrderForm({ onSubmit, loading }: {
-  onSubmit: (data: ServiceOrderInsert) => void;
+  onSubmit: (data: any) => void;
   loading: boolean;
 }) {
   const [formData, setFormData] = useState<Record<string, any>>({
@@ -225,9 +225,9 @@ function NewOrderForm({ onSubmit, loading }: {
       toast.error("Wybierz klienta");
       return;
     }
-    // Generate random 4-digit pickup code
     const pickup_code = String(Math.floor(1000 + Math.random() * 9000));
-    onSubmit({ ...formData, pickup_code } as ServiceOrderInsert);
+    const { _technicianId, ...rest } = formData;
+    onSubmit({ ...rest, pickup_code, _technicianId } as any);
   };
 
   return (
@@ -242,6 +242,10 @@ function NewOrderForm({ onSubmit, loading }: {
         onChange={(v) => set("device_id", v)}
       />
       <OrderDataSection formData={formData} onChange={set} />
+      <TechnicianSelectSection
+        technicianId={formData._technicianId}
+        onChange={(v) => set("_technicianId", v)}
+      />
       <DescriptionSection formData={formData} onChange={set} />
 
       <Button type="submit" className="w-full" disabled={loading}>
