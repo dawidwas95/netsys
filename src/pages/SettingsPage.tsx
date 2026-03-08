@@ -69,18 +69,14 @@ export default function SettingsPage() {
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: "Administrator",
-  MANAGER: "Manager",
-  TECHNICIAN: "Technik",
-  OFFICE: "Biuro",
-  EMPLOYEE: "Pracownik",
+  KIEROWNIK: "Kierownik",
+  SERWISANT: "Serwisant",
 };
 
 const ROLE_OPTIONS = [
   { value: "ADMIN", label: "Administrator" },
-  { value: "TECHNICIAN", label: "Technik" },
-  { value: "OFFICE", label: "Biuro" },
-  { value: "MANAGER", label: "Manager" },
-  { value: "EMPLOYEE", label: "Pracownik" },
+  { value: "KIEROWNIK", label: "Kierownik" },
+  { value: "SERWISANT", label: "Serwisant" },
 ];
 
 function TeamManagement() {
@@ -96,7 +92,7 @@ function TeamManagement() {
     last_name: "",
     email: "",
     password: "",
-    role: "TECHNICIAN",
+    role: "SERWISANT",
     is_active: true,
   });
   const [creating, setCreating] = useState(false);
@@ -110,7 +106,7 @@ function TeamManagement() {
         .select("role")
         .eq("user_id", user.id)
         .maybeSingle();
-      return data?.role ?? null;
+      return (data?.role as string) ?? null;
     },
     enabled: !!user,
   });
@@ -128,9 +124,9 @@ function TeamManagement() {
 
       const { data: roles } = await supabase.from("user_roles").select("*");
       
-      return (profiles ?? []).map((p: any) => ({
+        return (profiles ?? []).map((p: any) => ({
         ...p,
-        role: (roles ?? []).find((r: any) => r.user_id === p.user_id)?.role ?? "EMPLOYEE",
+        role: (roles ?? []).find((r: any) => r.user_id === p.user_id)?.role ?? "SERWISANT",
       }));
     },
   });
@@ -228,7 +224,7 @@ function TeamManagement() {
       if (data?.error) throw new Error(data.error);
       toast.success("Użytkownik został utworzony");
       setShowCreateDialog(false);
-      setCreateForm({ first_name: "", last_name: "", email: "", password: "", role: "TECHNICIAN", is_active: true });
+      setCreateForm({ first_name: "", last_name: "", email: "", password: "", role: "SERWISANT", is_active: true });
       queryClient.invalidateQueries({ queryKey: ["team-users"] });
     } catch (e: any) {
       toast.error(e.message || "Błąd tworzenia użytkownika");
@@ -248,7 +244,7 @@ function TeamManagement() {
       last_name: u.last_name ?? "",
       phone: u.phone ?? "",
       email: u.email ?? "",
-      role: u.role ?? "EMPLOYEE",
+      role: u.role ?? "SERWISANT",
       is_active: u.is_active ? "true" : "false",
       default_department: u.default_department ?? "",
     });
@@ -394,15 +390,15 @@ function TeamManagement() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
               <p className="font-medium mb-1">Administrator</p>
-              <p className="text-muted-foreground text-xs">Pełny dostęp do systemu, zarządzanie użytkownikami, ustawienia, finanse</p>
+              <p className="text-muted-foreground text-xs">Pełny dostęp do systemu: użytkownicy, role, ustawienia, finanse, backup, logi</p>
             </div>
             <div>
-              <p className="font-medium mb-1">Technik</p>
-              <p className="text-muted-foreground text-xs">Zlecenia serwisowe, diagnostyka, komentarze, magazyn. Bez dostępu do finansów i ustawień</p>
+              <p className="font-medium mb-1">Kierownik</p>
+              <p className="text-muted-foreground text-xs">Zlecenia, klienci, magazyn, zamówienia, faktury, oferty, prace IT, statystyki finansowe. Bez zarządzania użytkownikami i narzędzi systemowych</p>
             </div>
             <div>
-              <p className="font-medium mb-1">Biuro</p>
-              <p className="text-muted-foreground text-xs">Klienci, zlecenia, faktury, oferty, komunikacja z klientami</p>
+              <p className="font-medium mb-1">Serwisant</p>
+              <p className="text-muted-foreground text-xs">Zlecenia serwisowe, diagnostyka, komentarze, magazyn, zapotrzebowanie. Bez faktur, ustawień i narzędzi administracyjnych</p>
             </div>
           </div>
         </CardContent>
@@ -472,7 +468,7 @@ function TeamManagement() {
               <div className="space-y-1">
                 <Label>Rola</Label>
                 <Select
-                  value={editForm.role ?? "EMPLOYEE"}
+                  value={editForm.role ?? "SERWISANT"}
                   onValueChange={(v) => setEditForm((p) => ({ ...p, role: v }))}
                 >
                   <SelectTrigger>

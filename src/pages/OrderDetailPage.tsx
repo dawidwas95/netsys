@@ -118,7 +118,7 @@ export default function OrderDetailPage() {
     enabled: !!user?.id,
   });
 
-  const isAdmin = myRoles.some((r: any) => r.role === "ADMIN" || r.role === "MANAGER");
+  const isAdmin = myRoles.some((r: any) => r.role === "ADMIN" || r.role === "KIEROWNIK");
 
   const { data: linkedStats } = useQuery({
     queryKey: ["order-linked-stats", id],

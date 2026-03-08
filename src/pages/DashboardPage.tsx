@@ -337,12 +337,12 @@ import { ORDER_STATUS_LABELS, type OrderStatus } from "@/types/database";
 
 function TodaysScheduledOrders() {
   const { user } = useAuth();
-  const { isAdmin, isManager, isTechnician } = useUserRole();
+  const { isAdmin, isKierownik, isSerwisant } = useUserRole();
 
   const today = new Date().toISOString().split("T")[0];
 
   const { data: orders = [] } = useQuery({
-    queryKey: ["dashboard-todays-schedule", user?.id, isAdmin, isManager],
+    queryKey: ["dashboard-todays-schedule", user?.id, isAdmin, isKierownik],
     queryFn: async () => {
       // Fetch orders with planned_execution_date = today or overdue (past dates, not completed)
       let query = supabase
@@ -358,8 +358,8 @@ function TodaysScheduledOrders() {
 
       let result = (data ?? []) as any[];
 
-      // Filter by technician assignment if not admin/manager
-      if (isTechnician && user?.id) {
+      // Filter by technician assignment if serwisant (not admin/kierownik)
+      if (isSerwisant && user?.id) {
         const { data: assignments } = await supabase
           .from("order_technicians")
           .select("order_id")

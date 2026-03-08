@@ -72,7 +72,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { signOut } = useAuth();
-  const { isAdmin, canAccessFinance, canAccessSystemLogs, canAccessDataManagement, canAccessSettings, isTechnician } = useUserRole();
+  const { isAdmin, isSerwisant, canAccessFinance, canAccessSystemLogs, canAccessDataManagement, canAccessSettings, canAccessDocuments, canAccessOffers, canAccessITWork } = useUserRole();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -97,6 +97,13 @@ export function AppSidebar() {
   );
 
   // Filter system nav based on role
+  // Filter service nav for SERWISANT (no offers, no IT work module)
+  const filteredServiceNav = serviceNav.filter((item) => {
+    if (item.url === "/offers" && !canAccessOffers) return false;
+    if (item.url === "/it-work" && !canAccessITWork) return false;
+    return true;
+  });
+
   const filteredSystemNav = systemNav.filter((item) => {
     if (item.url === "/system-logs" && !canAccessSystemLogs) return false;
     if (item.url === "/data-management" && !canAccessDataManagement) return false;
@@ -123,7 +130,7 @@ export function AppSidebar() {
 
         <SidebarGroup>
           <SidebarGroupLabel>Serwis</SidebarGroupLabel>
-          <SidebarGroupContent>{renderItems(serviceNav)}</SidebarGroupContent>
+          <SidebarGroupContent>{renderItems(filteredServiceNav)}</SidebarGroupContent>
         </SidebarGroup>
 
         {canAccessFinance && (

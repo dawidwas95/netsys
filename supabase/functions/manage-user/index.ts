@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
 
       // The handle_new_user trigger should create profile & default role,
       // but let's ensure correct role is set
-      if (new_user.role && new_user.role !== "EMPLOYEE") {
+      if (new_user.role && new_user.role !== "SERWISANT") {
         await supabaseAdmin
           .from("user_roles")
           .update({ role: new_user.role })
