@@ -472,6 +472,50 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_read_by_client: boolean
+          is_read_by_staff: boolean
+          message: string
+          sender_name: string
+          sender_type: string
+          sender_user_id: string | null
+          service_order_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read_by_client?: boolean
+          is_read_by_staff?: boolean
+          message: string
+          sender_name?: string
+          sender_type: string
+          sender_user_id?: string | null
+          service_order_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read_by_client?: boolean
+          is_read_by_staff?: boolean
+          message?: string
+          sender_name?: string
+          sender_type?: string
+          sender_user_id?: string | null
+          service_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_messages_service_order_id_fkey"
+            columns: ["service_order_id"]
+            isOneToOne: false
+            referencedRelation: "service_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devices: {
         Row: {
           asset_tag: string | null

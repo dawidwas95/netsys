@@ -26,7 +26,7 @@ import {
 import {
   ArrowLeft, Send, Clock, User, Monitor, Plus, Trash2,
   DollarSign, TrendingUp, TrendingDown, Percent, FileDown, Printer,
-  CheckCircle, AlertTriangle, Save, Archive, XCircle, PenLine,
+  CheckCircle, AlertTriangle, Save, Archive, XCircle, PenLine, MessageSquare,
 } from "lucide-react";
 import { generateOrderPDF } from "@/lib/generateOrderPDF";
 import { generateIntakePDF, generatePickupPDF } from "@/lib/pdfProtocols";
@@ -49,6 +49,7 @@ import {
 import { OrderPhotoGallery } from "@/components/OrderPhotoGallery";
 import { cn } from "@/lib/utils";
 import { OrderItemsSection } from "@/components/order/OrderItemsSection";
+import CustomerMessagesStaff from "@/components/CustomerMessagesStaff";
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(v);
@@ -688,10 +689,13 @@ export default function OrderDetailPage() {
         {/* LEFT COLUMN */}
         <div className="space-y-5">
           <Tabs defaultValue="edit">
-            <TabsList>
+            <TabsList className="flex-wrap">
               <TabsTrigger value="edit">Edycja</TabsTrigger>
               <TabsTrigger value="photos">Zdjęcia</TabsTrigger>
               <TabsTrigger value="comments">Komentarze ({comments?.length ?? 0})</TabsTrigger>
+              <TabsTrigger value="customer-messages">
+                <MessageSquare className="mr-1 h-3 w-3" />Wiadomości klienta
+              </TabsTrigger>
               <TabsTrigger value="history">Historia</TabsTrigger>
               <TabsTrigger value="documents">Dokumenty</TabsTrigger>
               <TabsTrigger value="signatures"><PenLine className="mr-1 h-3 w-3" />Podpisy</TabsTrigger>
@@ -752,6 +756,10 @@ export default function OrderDetailPage() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="customer-messages" className="mt-4">
+              <CustomerMessagesStaff orderId={id!} />
             </TabsContent>
 
             <TabsContent value="history" className="mt-4">

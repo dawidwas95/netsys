@@ -9,7 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Wrench, Search, Monitor, Calendar, FileText, DollarSign, CheckCircle, Clock, AlertTriangle } from "lucide-react";
 import { ORDER_STATUS_LABELS, DEVICE_CATEGORY_LABELS, type OrderStatus, type DeviceCategory } from "@/types/database";
 
+import CustomerMessagesPublic from "@/components/CustomerMessagesPublic";
+
 interface PublicOrderData {
+  order_id: string;
   order_number: string;
   status: OrderStatus;
   received_at: string;
@@ -19,6 +22,7 @@ interface PublicOrderData {
   total_gross: number | null;
   is_paid: boolean;
   estimated_completion_date: string | null;
+  unread_messages: number;
   device: { manufacturer: string; model: string; category: DeviceCategory } | null;
 }
 
@@ -145,13 +149,27 @@ export default function OrderStatusPage() {
           </Card>
         )}
 
-        {order && <OrderStatusView order={order} onBack={() => setOrder(null)} />}
+        {order && (
+          <OrderStatusView
+            order={order}
+            onBack={() => setOrder(null)}
+            token={token}
+            orderNumber={orderNumber}
+            phone={phone}
+          />
+        )}
       </main>
     </div>
   );
 }
 
-function OrderStatusView({ order, onBack }: { order: PublicOrderData; onBack: () => void }) {
+function OrderStatusView({ order, onBack, token, orderNumber, phone }: {
+  order: PublicOrderData;
+  onBack: () => void;
+  token?: string | null;
+  orderNumber?: string;
+  phone?: string;
+}) {
   const statusLabel = ORDER_STATUS_LABELS[order.status] || order.status;
   const statusColor = STATUS_COLORS[order.status] || "bg-muted text-foreground";
 
@@ -274,8 +292,15 @@ function OrderStatusView({ order, onBack }: { order: PublicOrderData; onBack: ()
         </CardContent>
       </Card>
 
+      {/* Customer messages */}
+      <CustomerMessagesPublic
+        token={token}
+        orderNumber={orderNumber}
+        phone={phone}
+      />
+
       <p className="text-center text-xs text-muted-foreground pt-4">
-        W razie pytań skontaktuj się z serwisem telefonicznie.
+        W razie pytań skontaktuj się z serwisem telefonicznie lub wyślij wiadomość powyżej.
       </p>
     </div>
   );
