@@ -12,17 +12,19 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Pencil, Archive } from "lucide-react";
+import { Search, Pencil, Archive, History } from "lucide-react";
 import { toast } from "sonner";
 import { DEVICE_CATEGORY_LABELS, type Device, type DeviceCategory } from "@/types/database";
 import { Link } from "react-router-dom";
 import { DeviceFormDialog } from "@/components/DeviceFormDialog";
+import { DeviceHistoryDialog } from "@/components/DeviceHistoryDialog";
 
 export default function DevicesPage() {
   const [search, setSearch] = useState("");
   const [editDevice, setEditDevice] = useState<Device | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [archiveDevice, setArchiveDevice] = useState<Device | null>(null);
+  const [historyDevice, setHistoryDevice] = useState<Device | null>(null);
   const queryClient = useQueryClient();
 
   const { data: devices, isLoading } = useQuery({
