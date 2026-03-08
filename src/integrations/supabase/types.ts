@@ -1414,6 +1414,41 @@ export type Database = {
           },
         ]
       }
+      order_technicians: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          id: string
+          is_primary: boolean
+          order_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          is_primary?: boolean
+          order_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          is_primary?: boolean
+          order_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_technicians_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "service_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pdf_templates: {
         Row: {
           config: Json
