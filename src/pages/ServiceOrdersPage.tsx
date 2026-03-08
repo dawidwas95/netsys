@@ -73,7 +73,7 @@ export default function ServiceOrdersPage() {
   });
 
   const { data: orders, isLoading } = useQuery({
-    queryKey: ["service-orders", search, statusFilter, techFilter],
+    queryKey: ["service-orders", search, statusFilter, techFilter, deptFilter],
     queryFn: async () => {
       // If filtering by technician, first get matching order IDs
       let techOrderIds: string[] | null = null;
