@@ -549,11 +549,19 @@ export default function DocumentsPage() {
   }
 
   function onClientSelect(clientId: string) {
-    const client = clients.find((c) => c.id === clientId);
+    const client = clients.find((c: any) => c.id === clientId);
     setForm({
       ...form, client_id: clientId,
       contractor_name: client ? (client.display_name || client.company_name || [client.first_name, client.last_name].filter(Boolean).join(" ")) : "",
       contractor_nip: client?.nip ?? "",
+      contractor_street: client?.address_street ?? "",
+      contractor_building: client?.address_building ?? "",
+      contractor_local: client?.address_local ?? "",
+      contractor_postal_code: client?.address_postal_code ?? "",
+      contractor_city: client?.address_city ?? "",
+      contractor_country: client?.address_country ?? "Polska",
+      contractor_email: client?.email ?? "",
+      contractor_phone: client?.phone ?? "",
     });
   }
 
