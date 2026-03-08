@@ -300,9 +300,10 @@ export default function ServiceOrdersPage() {
               <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Brak zleceń</TableCell></TableRow>
             ) : (
               orders.map((order: any) => (
-                <TableRow key={order.id} className="hover:bg-muted/50">
+                <TableRow key={order.id} className={`hover:bg-muted/50 ${unreadOrderIds.has(order.id) ? "bg-primary/5" : ""}`}>
                   <TableCell>
                     <div className="flex items-center gap-1.5">
+                      {unreadOrderIds.has(order.id) && <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />}
                       <Link to={`/orders/${order.id}`} className="font-medium text-primary hover:underline font-mono">
                         {order.order_number}
                       </Link>
