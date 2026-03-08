@@ -35,7 +35,8 @@ import { sendOrderNotification } from "@/lib/notifications";
 import { toast } from "sonner";
 import SignatureCanvas from "@/components/SignatureCanvas";
 import OrderQRCode from "@/components/OrderQRCode";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useMarkOrderAsRead, createMentionNotifications, createCommentNotification } from "@/hooks/useNotifications";
 import {
   ORDER_STATUS_LABELS, ORDER_PRIORITY_LABELS, SERVICE_TYPE_LABELS,
   PAYMENT_METHOD_LABELS, INTAKE_CHANNEL_LABELS, DEVICE_CATEGORY_LABELS,
