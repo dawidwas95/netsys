@@ -93,17 +93,43 @@ export default function PurchaseRequestsPage() {
   const categories = categoriesRaw.map((c: any) => c.label as string);
 
   const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+    mutationFn: async ({ id, status, orderId, itemName }: { id: string; status: string; orderId?: string; itemName?: string }) => {
       const { error } = await supabase.from("purchase_requests").update({
         status: status as any,
         status_changed_by: user?.id,
         status_changed_at: new Date().toISOString(),
       }).eq("id", id);
       if (error) throw error;
+
+      // When part is DELIVERED, notify assigned technicians
+      if (status === "DELIVERED" && orderId) {
+        const { data: techs } = await supabase
+          .from("order_technicians")
+          .select("user_id")
+          .eq("order_id", orderId);
+
+        const { data: orderData } = await supabase
+          .from("service_orders")
+          .select("order_number")
+          .eq("id", orderId)
+          .single();
+
+        if (techs && techs.length > 0 && orderData && itemName) {
+          const notifications = techs.map((t: any) => ({
+            user_id: t.user_id,
+            title: `📦 Część dostarczona: ${itemName}`,
+            body: `Część "${itemName}" dla zlecenia ${orderData.order_number} została dostarczona i czeka na montaż.`,
+            type: "PART_DELIVERED",
+            related_order_id: orderId,
+          }));
+          await supabase.from("notifications").insert(notifications);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-requests-global"] });
       queryClient.invalidateQueries({ queryKey: ["purchase-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
       toast.success("Status zaktualizowany");
     },
     onError: () => toast.error("Błąd aktualizacji statusu"),
