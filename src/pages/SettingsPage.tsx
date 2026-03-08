@@ -64,6 +64,277 @@ export default function SettingsPage() {
 }
 
 // ══════════════════════════════════════════════
+// Team Management
+// ══════════════════════════════════════════════
+
+const ROLE_LABELS: Record<string, string> = {
+  ADMIN: "Administrator",
+  MANAGER: "Manager",
+  EMPLOYEE: "Pracownik",
+};
+
+function TeamManagement() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
+  const [deleteUserName, setDeleteUserName] = useState("");
+  const [editUser, setEditUser] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState<Record<string, string>>({});
+
+  const { data: currentUserRole } = useQuery({
+    queryKey: ["current-user-role", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return data?.role ?? null;
+    },
+    enabled: !!user,
+  });
+
+  const isAdmin = currentUserRole === "ADMIN";
+
+  const { data: users = [], isLoading } = useQuery({
+    queryKey: ["team-users"],
+    queryFn: async () => {
+      const { data: profiles, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+
+      const { data: roles } = await supabase.from("user_roles").select("*");
+      
+      return (profiles ?? []).map((p: any) => ({
+        ...p,
+        role: (roles ?? []).find((r: any) => r.user_id === p.user_id)?.role ?? "EMPLOYEE",
+      }));
+    },
+  });
+
+  const manageUser = useMutation({
+    mutationFn: async ({ action, target_user_id, updates }: { action: string; target_user_id: string; updates?: any }) => {
+      const { data, error } = await supabase.functions.invoke("manage-user", {
+        body: { action, target_user_id, updates },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["team-users"] });
+    },
+  });
+
+  const handleDelete = async () => {
+    if (!deleteUserId) return;
+    try {
+      await manageUser.mutateAsync({ action: "delete", target_user_id: deleteUserId });
+      toast.success("Użytkownik został usunięty");
+      setDeleteUserId(null);
+    } catch (e: any) {
+      toast.error(e.message || "Błąd usuwania użytkownika");
+    }
+  };
+
+  const handleToggleActive = async (userId: string) => {
+    try {
+      await manageUser.mutateAsync({ action: "toggle_active", target_user_id: userId });
+      toast.success("Status użytkownika zmieniony");
+    } catch (e: any) {
+      toast.error(e.message || "Błąd zmiany statusu");
+    }
+  };
+
+  const handleRoleChange = async (userId: string, role: string) => {
+    try {
+      await manageUser.mutateAsync({ action: "update_role", target_user_id: userId, updates: { role } });
+      toast.success("Rola zmieniona");
+    } catch (e: any) {
+      toast.error(e.message || "Błąd zmiany roli");
+    }
+  };
+
+  const handleEditSave = async () => {
+    if (!editUser) return;
+    try {
+      await manageUser.mutateAsync({
+        action: "update_profile",
+        target_user_id: editUser.user_id,
+        updates: editForm,
+      });
+      toast.success("Dane użytkownika zaktualizowane");
+      setEditUser(null);
+    } catch (e: any) {
+      toast.error(e.message || "Błąd zapisu");
+    }
+  };
+
+  const startEdit = (u: any) => {
+    setEditUser(u);
+    setEditForm({
+      first_name: u.first_name ?? "",
+      last_name: u.last_name ?? "",
+      phone: u.phone ?? "",
+    });
+  };
+
+  if (isLoading) return <p className="text-muted-foreground">Ładowanie...</p>;
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Users className="h-5 w-5" /> Zarządzanie zespołem
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Użytkownik</TableHead>
+                <TableHead>E-mail</TableHead>
+                <TableHead>Rola</TableHead>
+                <TableHead>Status</TableHead>
+                {isAdmin && <TableHead className="w-12" />}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users.map((u: any) => (
+                <TableRow key={u.id} className={!u.is_active ? "opacity-50" : ""}>
+                  <TableCell className="font-medium">
+                    {[u.first_name, u.last_name].filter(Boolean).join(" ") || "—"}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{u.email ?? "—"}</TableCell>
+                  <TableCell>
+                    {isAdmin && u.user_id !== user?.id ? (
+                      <Select value={u.role} onValueChange={(v) => handleRoleChange(u.user_id, v)}>
+                        <SelectTrigger className="w-[140px] h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ADMIN">Administrator</SelectItem>
+                          <SelectItem value="MANAGER">Manager</SelectItem>
+                          <SelectItem value="EMPLOYEE">Pracownik</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge variant="secondary">{ROLE_LABELS[u.role] ?? u.role}</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={u.is_active ? "default" : "outline"} className={u.is_active ? "bg-primary/10 text-primary border-primary/30" : ""}>
+                      {u.is_active ? "Aktywny" : "Nieaktywny"}
+                    </Badge>
+                  </TableCell>
+                  {isAdmin && (
+                    <TableCell>
+                      {u.user_id !== user?.id && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => startEdit(u)}>
+                              <Pencil className="mr-2 h-4 w-4" /> Edytuj
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleToggleActive(u.user_id)}>
+                              <UserX className="mr-2 h-4 w-4" />
+                              {u.is_active ? "Dezaktywuj" : "Aktywuj"}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => {
+                                setDeleteUserId(u.user_id);
+                                setDeleteUserName(
+                                  [u.first_name, u.last_name].filter(Boolean).join(" ") || u.email || "użytkownik"
+                                );
+                              }}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" /> Usuń
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteUserId} onOpenChange={() => setDeleteUserId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Czy na pewno chcesz usunąć tego użytkownika?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Użytkownik <strong>{deleteUserName}</strong> zostanie trwale usunięty z systemu.
+              Istniejące rekordy (zlecenia, komentarze) zostaną zachowane.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Usuń użytkownika
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editUser} onOpenChange={() => setEditUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edytuj użytkownika</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <Label>Imię</Label>
+              <Input
+                value={editForm.first_name ?? ""}
+                onChange={(e) => setEditForm((p) => ({ ...p, first_name: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Nazwisko</Label>
+              <Input
+                value={editForm.last_name ?? ""}
+                onChange={(e) => setEditForm((p) => ({ ...p, last_name: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Telefon</Label>
+              <Input
+                value={editForm.phone ?? ""}
+                onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditUser(null)}>Anuluj</Button>
+            <Button onClick={handleEditSave} disabled={manageUser.isPending}>
+              <Save className="mr-1 h-4 w-4" /> Zapisz
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+// ══════════════════════════════════════════════
 // Company Settings
 // ══════════════════════════════════════════════
 
