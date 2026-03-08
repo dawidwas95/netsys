@@ -1482,9 +1482,11 @@ export default function DocumentsPage() {
 
       <ClientFormDialog
         externalOpen={clientDialogOpen}
-        onOpenChange={setClientDialogOpen}
+        onOpenChange={(v) => { setClientDialogOpen(v); if (!v) setClientInitialData(null); }}
+        initialData={clientInitialData}
         onCreated={(clientId) => {
           qc.invalidateQueries({ queryKey: ["clients-select-with-role"] });
+          setClientInitialData(null);
           setTimeout(() => onClientSelect(clientId), 300);
         }}
       />

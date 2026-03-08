@@ -91,7 +91,7 @@ function buildPayload(form: typeof emptyForm) {
   };
 }
 
-export function ClientFormDialog({ onCreated, onUpdated, trigger, externalOpen, onOpenChange, editClient }: ClientFormDialogProps) {
+export function ClientFormDialog({ onCreated, onUpdated, trigger, externalOpen, onOpenChange, editClient, initialData }: ClientFormDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
   const setOpen = (v: boolean) => {
@@ -110,9 +110,15 @@ export function ClientFormDialog({ onCreated, onUpdated, trigger, externalOpen, 
   // Reset/populate form when dialog opens/closes or editClient changes
   useEffect(() => {
     if (open) {
-      setForm(editClient ? clientToForm(editClient) : { ...emptyForm });
+      if (editClient) {
+        setForm(clientToForm(editClient));
+      } else if (initialData) {
+        setForm({ ...emptyForm, ...initialData });
+      } else {
+        setForm({ ...emptyForm });
+      }
     }
-  }, [open, editClient]);
+  }, [open, editClient, initialData]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
