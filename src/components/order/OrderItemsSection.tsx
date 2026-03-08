@@ -281,26 +281,31 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
   const availableStock = selectedInvItem ? getAvailableStock(selectedInvItem) : 0;
   const stockWarning = selectedInvItem && parseFloat(invQuantity) > availableStock;
 
-  return (
+   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Package className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Pozycje / Części</span>
+          <span className="text-sm font-medium">Pozycje / Części / Koszty</span>
           <span className="text-xs text-muted-foreground">({orderItems.length})</span>
         </div>
         {!isCompleted && (
-          <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) resetDialog(); else setDialogOpen(true); }}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm"><Plus className="mr-1 h-3 w-3" />Dodaj</Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
-              <DialogHeader><DialogTitle>Dodaj pozycję do zlecenia</DialogTitle></DialogHeader>
-              <Tabs value={dialogTab} onValueChange={(v) => setDialogTab(v as any)} className="flex-1 flex flex-col overflow-hidden">
-                <TabsList className="w-full">
-                  <TabsTrigger value="inventory" className="flex-1"><Package className="mr-1 h-3 w-3" />Z magazynu</TabsTrigger>
-                  <TabsTrigger value="custom" className="flex-1"><PenLine className="mr-1 h-3 w-3" />Niestandardowa</TabsTrigger>
-                </TabsList>
+          <div className="flex items-center gap-1.5">
+            <Button variant="outline" size="sm" onClick={() => { setDialogTab("cost"); setDialogOpen(true); }}>
+              <Receipt className="mr-1 h-3 w-3" />Dodaj koszt
+            </Button>
+            <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) resetDialog(); else setDialogOpen(true); }}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm"><Plus className="mr-1 h-3 w-3" />Dodaj pozycję</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+                <DialogHeader><DialogTitle>{dialogTab === "cost" ? "Dodaj koszt do zlecenia" : "Dodaj pozycję do zlecenia"}</DialogTitle></DialogHeader>
+                <Tabs value={dialogTab} onValueChange={(v) => setDialogTab(v as any)} className="flex-1 flex flex-col overflow-hidden">
+                  <TabsList className="w-full">
+                    <TabsTrigger value="inventory" className="flex-1"><Package className="mr-1 h-3 w-3" />Z magazynu</TabsTrigger>
+                    <TabsTrigger value="custom" className="flex-1"><PenLine className="mr-1 h-3 w-3" />Usługa</TabsTrigger>
+                    <TabsTrigger value="cost" className="flex-1"><Receipt className="mr-1 h-3 w-3" />Koszt</TabsTrigger>
+                  </TabsList>
 
                 <TabsContent value="inventory" className="flex-1 overflow-hidden flex flex-col space-y-3 mt-3">
                   {!selectedInvItem ? (
