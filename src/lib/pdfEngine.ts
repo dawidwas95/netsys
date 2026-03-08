@@ -391,31 +391,25 @@ export async function generateOrderPDF({ order, orderItems, financials }: OrderP
 
       /* ═══════════════ DOCUMENT TITLE ═══════════════ */
       case "document_title": {
-        b.checkPage(20);
-
-        // Title block on right
         const statusLabel = ORDER_STATUS_LABELS[order.status as OrderStatus] ?? order.status;
         const isCompleted = order.status === "COMPLETED" || order.status === "READY_FOR_RETURN";
         const docTitle = isCompleted ? "PROTOKÓŁ SERWISOWY" : "POTWIERDZENIE PRZYJĘCIA DO SERWISU";
 
-        b.setFont("bold", 15, PdfBuilder.DARK);
+        b.setFont("bold", 12, PdfBuilder.DARK);
         doc.text(docTitle, b.ml, b.y);
-        b.y += 6;
 
-        // Info row under title
-        b.setFont("bold", 10, PdfBuilder.PRIMARY);
-        doc.text(`Nr: ${order.order_number}`, b.ml, b.y);
-
-        b.setFont("normal", 8, PdfBuilder.GRAY);
-        doc.text(`Status: ${statusLabel}`, b.ml + 70, b.y);
-        doc.text(`Data: ${fmtDate(order.received_at)}`, b.mr - 2, b.y, { align: "right" });
+        // Info on same line right-aligned
+        b.setFont("bold", 9, PdfBuilder.PRIMARY);
+        doc.text(order.order_number, b.mr - 2, b.y, { align: "right" });
         b.y += 4;
 
-        // Thin line
+        b.setFont("normal", 7.5, PdfBuilder.GRAY);
+        doc.text(`Status: ${statusLabel}  |  Data: ${fmtDate(order.received_at)}`, b.ml, b.y);
+        b.y += 3;
         doc.setDrawColor(...PdfBuilder.BORDER);
         doc.setLineWidth(0.15);
         doc.line(b.ml, b.y, b.mr, b.y);
-        b.y += 5;
+        b.y += 3;
 
         break;
       }
