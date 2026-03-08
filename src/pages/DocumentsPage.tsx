@@ -206,7 +206,7 @@ const emptyForm = {
 
 function getClientName(c: Document["clients"]) {
   if (!c) return "—";
-  return c.display_name || c.company_name || [c.first_name, c.last_name].filter(Boolean).join(" ") || "—";
+  return c.company_name || c.display_name || [c.first_name, c.last_name].filter(Boolean).join(" ") || "—";
 }
 
 function formatCurrency(v: number) {
@@ -552,7 +552,7 @@ export default function DocumentsPage() {
     const client = clients.find((c: any) => c.id === clientId);
     setForm({
       ...form, client_id: clientId,
-      contractor_name: client ? (client.display_name || client.company_name || [client.first_name, client.last_name].filter(Boolean).join(" ")) : "",
+      contractor_name: client ? (client.company_name || client.display_name || [client.first_name, client.last_name].filter(Boolean).join(" ")) : "",
       contractor_nip: client?.nip ?? "",
       contractor_street: client?.address_street ?? "",
       contractor_building: client?.address_building ?? "",
@@ -607,6 +607,12 @@ export default function DocumentsPage() {
     return nip.replace(/^PL/i, "").replace(/[\s\-]/g, "");
   }
 
+  function preferExistingBusinessName(existing: string, incoming: string | null, incomingIsPersonalOnly?: boolean) {
+    if (!incoming) return existing;
+    if (existing.trim() && incomingIsPersonalOnly) return existing;
+    return incoming;
+  }
+
   function handleOcrData(data: OcrExtractedData) {
     const docType = (data.document_type as DocType) || "PURCHASE_INVOICE";
     const cfg = TYPE_CONFIG[docType] || TYPE_CONFIG.OTHER;
@@ -643,9 +649,9 @@ export default function DocumentsPage() {
         setForm(prev => ({
           ...prev,
           client_id: match.id,
-          contractor_name: match.display_name || match.company_name || [match.first_name, match.last_name].filter(Boolean).join(" ") || prev.contractor_name,
+          contractor_name: match.company_name || match.display_name || [match.first_name, match.last_name].filter(Boolean).join(" ") || prev.contractor_name,
         }));
-        toast.success(`Znaleziono kontrahenta na podstawie NIP: ${match.display_name || match.company_name}`, { duration: 5000 });
+        toast.success(`Znaleziono kontrahenta na podstawie NIP: ${match.company_name || match.display_name || ""}`, { duration: 5000 });
       } else {
         // NIP not found — offer to create new contractor
         const ocrName = isPurchase ? data.seller_name : data.buyer_name;
@@ -657,7 +663,7 @@ export default function DocumentsPage() {
               label: "Dodaj kontrahenta",
               onClick: () => {
                 setClientInitialData({
-                  client_type: "BUSINESS",
+                  client_type: "COMPANY",
                   business_role: isPurchase ? "SUPPLIER" : "CUSTOMER",
                   company_name: ocrName || "",
                   nip: contractorNip,
@@ -1216,7 +1222,7 @@ export default function DocumentsPage() {
                                   onClick={async () => {
                                     const data = await lookupNip(form.contractor_nip);
                                     if (data) setForm(prev => ({
-                                      ...prev, contractor_name: data.company_name || prev.contractor_name,
+                                      ...prev, contractor_name: preferExistingBusinessName(prev.contractor_name, data.company_name, data.is_person_name_only),
                                       contractor_nip: data.nip, contractor_street: data.street, contractor_building: data.building,
                                       contractor_local: data.local, contractor_postal_code: data.postal_code,
                                       contractor_city: data.city, contractor_country: data.country,
@@ -1292,7 +1298,7 @@ export default function DocumentsPage() {
                               onClick={async () => {
                                 const data = await lookupNip(form.buyer_nip);
                                 if (data) setForm(prev => ({
-                                  ...prev, buyer_name: data.company_name || prev.buyer_name,
+                                  ...prev, buyer_name: preferExistingBusinessName(prev.buyer_name, data.company_name, data.is_person_name_only),
                                   buyer_nip: data.nip, buyer_street: data.street, buyer_building: data.building,
                                   buyer_local: data.local, buyer_postal_code: data.postal_code,
                                   buyer_city: data.city, buyer_country: data.country,
