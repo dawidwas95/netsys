@@ -125,9 +125,30 @@ export default function KanbanPage() {
 
   return (
     <div>
+      {/* Department board switcher */}
+      <div className="flex items-center gap-1.5 mb-4 p-1 bg-muted/50 rounded-lg w-fit">
+        {[
+          { value: "all", label: "Wszystkie", icon: "📋" },
+          { value: "PHONE_SERVICE", label: "Serwis telefonów", icon: "📱" },
+          { value: "COMPUTER_SERVICE", label: "Serwis komputerów", icon: "💻" },
+        ].map((opt) => (
+          <Button
+            key={opt.value}
+            variant={deptFilter === opt.value ? "default" : "ghost"}
+            size="sm"
+            className={`min-h-[38px] text-sm ${deptFilter === opt.value ? "" : "text-muted-foreground hover:text-foreground"}`}
+            onClick={() => setDeptFilter(opt.value)}
+          >
+            <span className="mr-1.5">{opt.icon}</span> {opt.label}
+          </Button>
+        ))}
+      </div>
+
       <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Tablica zleceń</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {deptFilter === "all" ? "Tablica zleceń" : `${DEPARTMENT_ICONS[deptFilter]} ${DEPARTMENT_LABELS[deptFilter]}`}
+          </h1>
           <p className="text-muted-foreground text-sm">{orders.length} zleceń</p>
         </div>
         <div className="flex items-center gap-2">
@@ -140,15 +161,6 @@ export default function KanbanPage() {
               className="pl-9 w-64"
             />
           </div>
-          <Select value={deptFilter} onValueChange={setDeptFilter}>
-            <SelectTrigger className="w-52"><SelectValue placeholder="Dział serwisu" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Wszystkie działy</SelectItem>
-              {Object.entries(DEPARTMENT_LABELS).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{DEPARTMENT_ICONS[k]} {v}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           <Link to="/orders" className="text-sm text-muted-foreground hover:text-primary">
             Widok listy →
           </Link>
