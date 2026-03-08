@@ -510,15 +510,17 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
             </TableHeader>
             <TableBody>
               {orderItems.map((item) => {
-                const profit = item.total_sale_net - item.total_purchase_net;
+                const purchaseGross = item.total_purchase_net * 1.23;
+                const saleGross = item.total_sale_net * 1.23;
+                const profitGross = saleGross - purchaseGross;
                 return (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium text-sm">{item.item_name_snapshot}</TableCell>
                     <TableCell className="text-center tabular-nums">{item.quantity}</TableCell>
-                    <TableCell className="text-right tabular-nums text-xs">{formatCurrency(item.total_purchase_net)}</TableCell>
-                    <TableCell className="text-right tabular-nums text-xs">{formatCurrency(item.total_sale_net)}</TableCell>
-                    <TableCell className={cn("text-right tabular-nums text-xs font-medium", profit >= 0 ? "text-primary" : "text-destructive")}>
-                      {formatCurrency(profit)}
+                    <TableCell className="text-right tabular-nums text-xs">{formatCurrency(purchaseGross)}</TableCell>
+                    <TableCell className="text-right tabular-nums text-xs">{formatCurrency(saleGross)}</TableCell>
+                    <TableCell className={cn("text-right tabular-nums text-xs font-medium", profitGross >= 0 ? "text-primary" : "text-destructive")}>
+                      {formatCurrency(profitGross)}
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge variant="outline" className="text-[10px]">
