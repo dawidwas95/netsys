@@ -55,6 +55,7 @@ import CustomerMessagesStaff from "@/components/CustomerMessagesStaff";
 import { TechnicianAssignment } from "@/components/TechnicianAssignment";
 import { MobileQuickActions } from "@/components/MobileQuickActions";
 import { OrderPurchaseRequests } from "@/components/order/OrderPurchaseRequests";
+import { MentionTextarea, renderCommentWithMentions } from "@/components/MentionTextarea";
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(v);
