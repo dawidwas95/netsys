@@ -1175,32 +1175,32 @@ export default function DocumentsPage() {
                 </div>
 
                 {/* RIGHT: Summary Panel */}
-                <div className="p-6 bg-muted/20 space-y-5">
+                <div className="p-6 bg-muted/30 space-y-5 lg:sticky lg:top-0">
                   {/* Summary totals */}
-                  <div className="rounded-lg border border-border bg-card p-5 space-y-3">
-                    <h3 className="text-sm font-semibold text-foreground">Podsumowanie</h3>
-                    <div className="space-y-2.5 text-sm">
+                  <div className="rounded-xl border border-border bg-card p-6 space-y-4 shadow-sm">
+                    <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Razem</h3>
+                    <div className="space-y-3 text-sm">
                       <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Netto</span>
-                        <span className="font-mono tabular-nums font-medium">{formatCurrency(hasLineItems ? computedFromItems.net : (parseFloat(form.net_amount) || 0))}</span>
+                        <span className="font-mono tabular-nums font-medium text-base">{formatCurrency(hasLineItems ? computedFromItems.net : (parseFloat(form.net_amount) || 0))}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">VAT</span>
-                        <span className="font-mono tabular-nums">{formatCurrency(hasLineItems ? computedFromItems.vat : ((parseFloat(form.net_amount) || 0) * (parseFloat(form.vat_rate) || 23) / 100))}</span>
+                        <span className="font-mono tabular-nums text-base">{formatCurrency(hasLineItems ? computedFromItems.vat : ((parseFloat(form.net_amount) || 0) * (parseFloat(form.vat_rate) || 23) / 100))}</span>
                       </div>
                       <Separator />
-                      <div className="flex justify-between items-center text-lg">
-                        <span className="font-semibold">Brutto</span>
-                        <span className="font-mono tabular-nums font-bold text-primary">{formatCurrency(hasLineItems ? computedFromItems.gross : ((parseFloat(form.net_amount) || 0) * (1 + (parseFloat(form.vat_rate) || 23) / 100)))}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-bold">Brutto</span>
+                        <span className="font-mono tabular-nums font-bold text-xl text-primary">{formatCurrency(hasLineItems ? computedFromItems.gross : ((parseFloat(form.net_amount) || 0) * (1 + (parseFloat(form.vat_rate) || 23) / 100)))}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Payment status card */}
                   {typeConfig.showPayment && (
-                    <div className="rounded-lg border border-border bg-card p-5 space-y-3">
-                      <h3 className="text-sm font-semibold text-foreground">Płatność</h3>
-                      <div className="space-y-2 text-sm">
+                    <div className="rounded-xl border border-border bg-card p-5 space-y-3 shadow-sm">
+                      <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Płatność</h3>
+                      <div className="space-y-2.5 text-sm">
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Status</span>
                           <Badge className={PAYMENT_STATUS_COLORS[form.payment_status as PaymentStatus]} variant="secondary">{PAYMENT_STATUS_LABELS[form.payment_status as PaymentStatus]}</Badge>
@@ -1208,23 +1208,26 @@ export default function DocumentsPage() {
                         {form.payment_method && (
                           <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">Metoda</span>
-                            <span className="text-sm">{PAYMENT_METHOD_LABELS[form.payment_method as PaymentMethod] || form.payment_method}</span>
+                            <span className="text-sm font-medium">{PAYMENT_METHOD_LABELS[form.payment_method as PaymentMethod] || form.payment_method}</span>
                           </div>
                         )}
-                        {parseFloat(form.paid_amount) > 0 && (
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Zapłacono</span>
-                            <span className="font-mono tabular-nums font-medium">{formatCurrency(parseFloat(form.paid_amount))}</span>
-                          </div>
-                        )}
+                        <Separator />
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Zapłacono</span>
+                          <span className="font-mono tabular-nums font-medium">{formatCurrency(parseFloat(form.paid_amount) || 0)}</span>
+                        </div>
                         {(() => {
                           const grossTotal = hasLineItems ? computedFromItems.gross : ((parseFloat(form.net_amount) || 0) * (1 + (parseFloat(form.vat_rate) || 23) / 100));
                           const paid = parseFloat(form.paid_amount) || 0;
                           const remaining = Math.max(0, grossTotal - paid);
                           return remaining > 0 ? (
-                            <div className="flex justify-between items-center pt-1 border-t border-border">
-                              <span className="text-muted-foreground">Pozostało</span>
-                              <span className="font-mono tabular-nums font-medium text-destructive">{formatCurrency(remaining)}</span>
+                            <div className="flex justify-between items-center rounded-md bg-destructive/10 px-3 py-2">
+                              <span className="text-sm font-medium text-destructive">Pozostało</span>
+                              <span className="font-mono tabular-nums font-bold text-destructive">{formatCurrency(remaining)}</span>
+                            </div>
+                          ) : grossTotal > 0 ? (
+                            <div className="flex justify-between items-center rounded-md bg-primary/10 px-3 py-2">
+                              <span className="text-sm font-medium text-primary">Opłacono w całości</span>
                             </div>
                           ) : null;
                         })()}
@@ -1234,20 +1237,22 @@ export default function DocumentsPage() {
 
                   {/* Items breakdown */}
                   {hasLineItems && (
-                    <div className="rounded-lg border border-border bg-card p-5 space-y-3">
-                      <h3 className="text-sm font-semibold text-foreground">Pozycje ({lineItems.filter(i => i.name.trim()).length})</h3>
-                      <div className="space-y-1.5 text-xs">
+                    <div className="rounded-xl border border-border bg-card p-5 space-y-3 shadow-sm">
+                      <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">
+                        Pozycje <span className="text-muted-foreground font-normal">({lineItems.filter(i => i.name.trim()).length})</span>
+                      </h3>
+                      <div className="space-y-1.5 text-xs max-h-[200px] overflow-y-auto">
                         {lineItems.filter(i => i.name.trim()).map((item, idx) => {
                           const gross = (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_net) || 0) * (1 + (parseFloat(item.vat_rate) || 23) / 100);
                           return (
-                            <div key={idx} className="flex justify-between items-center py-1">
-                              <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                <Badge variant="outline" className="text-[9px] shrink-0 px-1">
-                                  {item.item_type === "PRODUCT" ? "P" : item.item_type === "INTERNAL_COST" ? "K" : "U"}
+                            <div key={idx} className="flex justify-between items-center py-1.5 border-b border-border/50 last:border-0">
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <Badge variant="outline" className="text-[9px] shrink-0 px-1.5 py-0.5">
+                                  {item.item_type === "PRODUCT" ? "MAG" : item.item_type === "INTERNAL_COST" ? "KOSZT" : "USŁ"}
                                 </Badge>
                                 <span className="truncate">{item.name}</span>
                               </div>
-                              <span className="font-mono tabular-nums ml-2 shrink-0">{formatCurrency(gross)}</span>
+                              <span className="font-mono tabular-nums ml-2 shrink-0 font-medium">{formatCurrency(gross)}</span>
                             </div>
                           );
                         })}
@@ -1256,7 +1261,7 @@ export default function DocumentsPage() {
                   )}
 
                   {/* Direction info */}
-                  <div className="rounded-lg border border-border bg-card p-4">
+                  <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
                     <div className="flex items-center gap-2 text-sm">
                       {derivedDirection === "EXPENSE" ? (
                         <ArrowUpCircle className="h-4 w-4 text-destructive" />
@@ -1264,7 +1269,7 @@ export default function DocumentsPage() {
                         <ArrowDownCircle className="h-4 w-4 text-primary" />
                       )}
                       <span className="font-medium">{DIRECTION_LABELS[derivedDirection]}</span>
-                      <span className="text-muted-foreground text-xs">(auto na podstawie typu)</span>
+                      <span className="text-muted-foreground text-xs">(auto)</span>
                     </div>
                   </div>
                 </div>
