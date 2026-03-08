@@ -987,6 +987,15 @@ export default function OrderDetailPage() {
             onItemsChanged={handleItemsChanged}
           />
 
+          {/* Cost Summary */}
+          <OrderCostSummary
+            orderId={id!}
+            orderItems={orderItems}
+            laborNet={parseFloat(currentForm.labor_net) || 0}
+            partsNet={parseFloat(currentForm.parts_net) || 0}
+            extraCostNet={parseFloat(currentForm.extra_cost_net) || 0}
+          />
+
           {/* Purchase Requests */}
           <OrderPurchaseRequests orderId={id!} repairApprovalStatus={(order as any).repair_approval_status} />
 
