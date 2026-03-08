@@ -314,7 +314,7 @@ export default function DocumentsPage() {
             return {
               document_id: docId!, name: item.name, quantity: qty, unit: item.unit || "szt.",
               unit_net: unitNet, vat_rate: vatR, total_net: totalNet, total_vat: totalVat, total_gross: totalGross,
-              sort_order: idx, description: item.item_type, inventory_item_id: item.inventory_item_id || null,
+              sort_order: idx, description: item.item_type, item_type: item.item_type, inventory_item_id: item.inventory_item_id || null,
             };
           });
           const { error: itemErr } = await supabase.from("document_items").insert(items);
