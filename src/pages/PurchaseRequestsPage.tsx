@@ -263,9 +263,9 @@ export default function PurchaseRequestsPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={13} className="text-center text-muted-foreground py-8">Ładowanie...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={14} className="text-center text-muted-foreground py-8">Ładowanie...</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={13} className="text-center text-muted-foreground py-8">Brak zapotrzebowań</TableCell></TableRow>
+                <TableRow><TableCell colSpan={14} className="text-center text-muted-foreground py-8">Brak zapotrzebowań</TableCell></TableRow>
               ) : (
                 filtered.map((r: any) => (
                   <TableRow key={r.id}>
