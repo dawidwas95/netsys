@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Users, Monitor, Wrench, X } from "lucide-react";
+import { Search, Users, Monitor, Wrench, ScanLine } from "lucide-react";
 import {
   CommandDialog, CommandInput, CommandList, CommandEmpty,
   CommandGroup, CommandItem, CommandSeparator,
 } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
+import { QRScanner } from "@/components/QRScanner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface SearchResult {
   id: string;
