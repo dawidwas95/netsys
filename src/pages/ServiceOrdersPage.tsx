@@ -132,6 +132,7 @@ export default function ServiceOrdersPage() {
              ))}
            </SelectContent>
          </Select>
+       </div>
 
       <div className="data-table-wrapper">
         <Table>
@@ -141,6 +142,7 @@ export default function ServiceOrdersPage() {
               <TableHead>Typ</TableHead>
               <TableHead>Klient</TableHead>
               <TableHead>Urządzenie</TableHead>
+              <TableHead>Technik</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Priorytet</TableHead>
               <TableHead>Data przyjęcia</TableHead>
