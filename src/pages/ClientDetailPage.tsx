@@ -14,12 +14,13 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Phone, Mail, MapPin, Building2, Pencil, Archive, ClipboardList, Monitor, Banknote } from "lucide-react";
+import { ArrowLeft, Phone, Mail, MapPin, Building2, Pencil, Archive, ClipboardList, Monitor, Banknote, History } from "lucide-react";
 import { toast } from "sonner";
 import { CLIENT_TYPE_LABELS, BUSINESS_ROLE_LABELS, DEVICE_CATEGORY_LABELS, type Client, type ClientType, type Device, type DeviceCategory, type BusinessRole } from "@/types/database";
 import { OrderStatusBadge } from "@/pages/DashboardPage";
 import { ClientFormDialog } from "@/components/ClientFormDialog";
 import { DeviceFormDialog } from "@/components/DeviceFormDialog";
+import { DeviceHistoryDialog } from "@/components/DeviceHistoryDialog";
 
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
