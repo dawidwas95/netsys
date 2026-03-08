@@ -1154,6 +1154,17 @@ export default function DocumentsPage() {
                 </>
               )}
 
+              {/* Manual PZ creation button for purchase invoices without linked PZ */}
+              {previewDoc.document_type === "PURCHASE_INVOICE" && previewLinkedPz.length === 0 && (
+                <>
+                  <Separator />
+                  <Button variant="outline" className="w-full" onClick={manualCreatePzFromPreview} disabled={pzCreating}>
+                    {pzCreating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+                    Utwórz PZ z faktury zakupowej
+                  </Button>
+                </>
+              )}
+
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => setPreviewOpen(false)}>Zamknij</Button>
                 <Button onClick={() => { setPreviewOpen(false); openEdit(previewDoc); }}><Pencil className="h-4 w-4 mr-1" /> Edytuj</Button>
