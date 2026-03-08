@@ -270,6 +270,13 @@ export default function CashRegisterPage() {
                     <TableCell className={`text-right tabular-nums font-medium ${t.transaction_type === "IN" ? "text-emerald-400" : "text-red-400"}`}>
                       {t.transaction_type === "IN" ? "+" : "-"}{Number(t.display_amount || t.amount).toFixed(2)} zł
                     </TableCell>
+                    <TableCell className="text-right">
+                      {canCorrectCash && t.source_type !== "CORRECTION" && (
+                        <Button variant="outline" size="sm" onClick={() => setRevertTx(t)}>
+                          <RotateCcw className="h-3.5 w-3.5 mr-1" /> Korekta
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))
               )}
