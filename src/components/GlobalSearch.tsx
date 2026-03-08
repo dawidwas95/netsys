@@ -258,7 +258,7 @@ export function GlobalSearch() {
         onScan={handleScan}
       />
 
-      <CommandDialog open={open} onOpenChange={setOpen}>
+      <CommandDialog open={open} onOpenChange={setOpen} shouldFilter={false}>
         <CommandInput
           placeholder="Szukaj po nazwie, telefonie, S/N, IMEI, NIP..."
           value={query}
