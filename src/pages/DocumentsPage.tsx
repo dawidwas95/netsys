@@ -569,10 +569,19 @@ export default function DocumentsPage() {
     setFormOpen(true);
   }
 
+  const [previewLinkedPz, setPreviewLinkedPz] = useState<any[]>([]);
+
   async function openPreview(doc: Document) {
     setPreviewDoc(doc);
     const { data } = await supabase.from("document_items").select("*").eq("document_id", doc.id).order("sort_order");
     setPreviewItems(data ?? []);
+
+    // Fetch linked PZ documents
+    const { data: pzDocs } = await (supabase.from("warehouse_documents") as any)
+      .select("id, document_number, document_date, document_type")
+      .eq("linked_invoice_id", doc.id);
+    setPreviewLinkedPz(pzDocs ?? []);
+
     setPreviewOpen(true);
   }
 
