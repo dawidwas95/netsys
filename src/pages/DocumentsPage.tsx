@@ -506,7 +506,7 @@ export default function DocumentsPage() {
 
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={resetForm}>Anuluj</Button>
-                <Button onClick={() => saveMutation.mutate(form)} disabled={!form.issue_date || !form.net_amount || saveMutation.isPending}>
+                <Button onClick={() => saveMutation.mutate(form)} disabled={!form.issue_date || (!hasLineItems && !form.net_amount) || saveMutation.isPending}>
                   {saveMutation.isPending ? "Zapisywanie..." : editId ? "Zapisz zmiany" : "Dodaj"}
                 </Button>
               </div>
