@@ -251,8 +251,13 @@ export default function OrderDetailPage() {
         .eq("id", id!);
       if (error) throw error;
       await supabase.from("activity_logs").insert({
-        entity_type: "service_order", entity_id: id!, action_type: "update",
+        entity_type: "service_order", entity_id: id!, action_type: updates.status !== order?.status ? "STATUS_CHANGE" : "UPDATE",
         new_value_json: updates, user_id: user?.id,
+        // @ts-ignore
+        entity_name: order?.order_number || "",
+        description: updates.status !== order?.status
+          ? `Zmiana statusu: ${order?.status} → ${updates.status}`
+          : "Edycja zlecenia",
       });
       const shouldCreateCash = updates.status === "COMPLETED" || (updates.is_paid && order?.status === "COMPLETED");
       if (shouldCreateCash) {
