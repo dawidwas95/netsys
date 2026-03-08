@@ -86,18 +86,21 @@ export function TechnicianBadges({ orderId, compact }: TechnicianBadgesProps) {
     queryFn: () => fetchOrderTechnicians(orderId),
   });
 
-  if (!techs.length) return null;
+  if (!techs.length) {
+    return compact
+      ? <span className="text-xs text-muted-foreground">Nieprzypisany</span>
+      : <span className="text-xs text-muted-foreground">Nieprzypisany</span>;
+  }
 
   const sorted = [...techs].sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0));
 
   if (compact) {
     return (
-      <div className="flex items-center -space-x-1">
-        {sorted.slice(0, 3).map((t) => (
-          <TechnicianAvatar key={t.userId} name={t.name} isPrimary={t.isPrimary} size="sm" />
-        ))}
-        {sorted.length > 3 && (
-          <span className="text-[10px] text-muted-foreground ml-1">+{sorted.length - 3}</span>
+      <div className="flex items-center gap-1.5">
+        <TechnicianAvatar key={sorted[0].userId} name={sorted[0].name} isPrimary={sorted[0].isPrimary} size="sm" />
+        <span className="text-xs truncate max-w-[120px]">{sorted[0].name}</span>
+        {sorted.length > 1 && (
+          <span className="text-[10px] text-muted-foreground">+{sorted.length - 1}</span>
         )}
       </div>
     );
