@@ -779,6 +779,7 @@ export type Database = {
           client_id: string | null
           contractor_name: string | null
           contractor_nip: string | null
+          correction_reason: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -799,6 +800,7 @@ export type Database = {
           payment_method: Database["public"]["Enums"]["payment_method"] | null
           payment_status: Database["public"]["Enums"]["document_payment_status"]
           received_date: string | null
+          related_document_id: string | null
           related_offer_id: string | null
           related_order_id: string | null
           sale_date: string | null
@@ -811,6 +813,7 @@ export type Database = {
           client_id?: string | null
           contractor_name?: string | null
           contractor_nip?: string | null
+          correction_reason?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -831,6 +834,7 @@ export type Database = {
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           payment_status?: Database["public"]["Enums"]["document_payment_status"]
           received_date?: string | null
+          related_document_id?: string | null
           related_offer_id?: string | null
           related_order_id?: string | null
           sale_date?: string | null
@@ -843,6 +847,7 @@ export type Database = {
           client_id?: string | null
           contractor_name?: string | null
           contractor_nip?: string | null
+          correction_reason?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -863,6 +868,7 @@ export type Database = {
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           payment_status?: Database["public"]["Enums"]["document_payment_status"]
           received_date?: string | null
+          related_document_id?: string | null
           related_offer_id?: string | null
           related_order_id?: string | null
           sale_date?: string | null
@@ -877,6 +883,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_related_document_id_fkey"
+            columns: ["related_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
             referencedColumns: ["id"]
           },
           {
