@@ -230,6 +230,15 @@ export default function KanbanPage() {
                 {colOrders.map((order) => (
                   <KanbanCard key={order.id} order={order} />
                 ))}
+                {col.status === "NEW" && (
+                  <button
+                    type="button"
+                    onClick={() => setDialogOpen(true)}
+                    className="w-full py-2 text-xs text-muted-foreground hover:text-primary border border-dashed border-border rounded-md hover:border-primary/50 transition-colors"
+                  >
+                    <Plus className="h-3 w-3 inline mr-1" />Dodaj zlecenie
+                  </button>
+                )}
               </KanbanColumn>
             );
           })}
