@@ -42,6 +42,7 @@ import {
   FormSection, ClientSection, DeviceSection, OrderDataSection,
   DescriptionSection, DiagnosisSection, FinanceSection, PaymentSection,
 } from "@/components/order/OrderFormSections";
+import { OrderPhotoGallery } from "@/components/OrderPhotoGallery";
 import { cn } from "@/lib/utils";
 
 function formatCurrency(v: number) {
