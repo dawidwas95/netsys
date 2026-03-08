@@ -29,6 +29,7 @@ import DataManagementPage from "@/pages/DataManagementPage";
 import SettingsPage from "@/pages/SettingsPage";
 import OrderStatusPage from "@/pages/OrderStatusPage";
 import ServiceBoardDisplay from "@/pages/ServiceBoardDisplay";
+import DailyPlanPage from "@/pages/DailyPlanPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -69,6 +70,7 @@ const App = () => (
             <Route path="/clients/:id" element={<ClientDetailPage />} />
             <Route path="/devices" element={<DevicesPage />} />
             <Route path="/orders" element={<ServiceOrdersPage />} />
+            <Route path="/daily-plan" element={<DailyPlanPage />} />
             <Route path="/orders/kanban" element={<KanbanPage />} />
             <Route path="/orders/:id" element={<OrderDetailPage />} />
             <Route path="/it-work" element={<ITWorkPage />} />
