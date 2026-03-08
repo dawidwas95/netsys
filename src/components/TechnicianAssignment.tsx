@@ -265,9 +265,12 @@ export function TechnicianAssignment({ orderId, orderNumber }: TechnicianAssignm
                       key={u.id}
                       value={u.name}
                       onSelect={() => {
-                        if (!assignedIds.has(u.id)) {
-                          assignTech.mutate(u.id);
+                        if (assignedIds.has(u.id)) {
+                          toast.error("Technik jest już przypisany do tego zlecenia");
+                          setOpen(false);
+                          return;
                         }
+                        assignTech.mutate(u.id);
                         setOpen(false);
                       }}
                       disabled={assignedIds.has(u.id)}
