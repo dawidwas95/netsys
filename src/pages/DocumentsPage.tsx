@@ -189,6 +189,7 @@ export default function DocumentsPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
+  const [pzPromptData, setPzPromptData] = useState<{ docId: string; docNumber: string; clientId: string | null; items: any[] } | null>(null);
 
   const { data: docs = [], isLoading } = useQuery({
     queryKey: ["documents"],
