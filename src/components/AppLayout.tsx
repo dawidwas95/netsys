@@ -3,10 +3,12 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Outlet } from "react-router-dom";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { RedirectMobile } from "@/components/RedirectMobile";
 
 export default function AppLayout() {
   return (
     <SidebarProvider>
+      <RedirectMobile />
       <div className="min-h-screen flex w-full pb-[56px] md:pb-0">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
