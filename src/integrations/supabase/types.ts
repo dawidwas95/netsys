@@ -2263,6 +2263,108 @@ export type Database = {
         }
         Relationships: []
       }
+      warehouse_document_items: {
+        Row: {
+          created_at: string
+          id: string
+          inventory_item_id: string
+          notes: string | null
+          price_net: number | null
+          quantity: number
+          sort_order: number
+          warehouse_document_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inventory_item_id: string
+          notes?: string | null
+          price_net?: number | null
+          quantity?: number
+          sort_order?: number
+          warehouse_document_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inventory_item_id?: string
+          notes?: string | null
+          price_net?: number | null
+          quantity?: number
+          sort_order?: number
+          warehouse_document_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "warehouse_document_items_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warehouse_document_items_warehouse_document_id_fkey"
+            columns: ["warehouse_document_id"]
+            isOneToOne: false
+            referencedRelation: "warehouse_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      warehouse_documents: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          document_date: string
+          document_number: string
+          document_type: Database["public"]["Enums"]["warehouse_doc_type"]
+          id: string
+          notes: string | null
+          related_order_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_date?: string
+          document_number?: string
+          document_type: Database["public"]["Enums"]["warehouse_doc_type"]
+          id?: string
+          notes?: string | null
+          related_order_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_date?: string
+          document_number?: string
+          document_type?: Database["public"]["Enums"]["warehouse_doc_type"]
+          id?: string
+          notes?: string | null
+          related_order_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "warehouse_documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warehouse_documents_related_order_id_fkey"
+            columns: ["related_order_id"]
+            isOneToOne: false
+            referencedRelation: "service_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -2368,6 +2470,7 @@ export type Database = {
         | "MAINTENANCE"
         | "OTHER"
       service_type: "COMPUTER_SERVICE" | "PHONE_SERVICE"
+      warehouse_doc_type: "PZ" | "WZ" | "PW" | "RW" | "CORRECTION"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2595,6 +2698,7 @@ export const Constants = {
         "OTHER",
       ],
       service_type: ["COMPUTER_SERVICE", "PHONE_SERVICE"],
+      warehouse_doc_type: ["PZ", "WZ", "PW", "RW", "CORRECTION"],
     },
   },
 } as const
