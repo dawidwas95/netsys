@@ -853,10 +853,17 @@ export default function DocumentsPage() {
                   <p className="font-medium">{DIRECTION_LABELS[(TYPE_CONFIG[previewDoc.document_type] || TYPE_CONFIG.OTHER).direction]}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Kontrahent</p>
+                  <p className="text-muted-foreground">{(TYPE_CONFIG[previewDoc.document_type] || TYPE_CONFIG.OTHER).contractorLabel}</p>
                   <p className="font-medium">{previewDoc.contractor_name || getClientName(previewDoc.clients)}</p>
                   {previewDoc.contractor_nip && <p className="text-xs text-muted-foreground">NIP: {previewDoc.contractor_nip}</p>}
                 </div>
+                {((previewDoc as any).buyer_name || (previewDoc as any).buyer_nip) && (
+                  <div>
+                    <p className="text-muted-foreground">Nabywca</p>
+                    <p className="font-medium">{(previewDoc as any).buyer_name || "—"}</p>
+                    {(previewDoc as any).buyer_nip && <p className="text-xs text-muted-foreground">NIP: {(previewDoc as any).buyer_nip}</p>}
+                  </div>
+                )}
                 <div>
                   <p className="text-muted-foreground">Status płatności</p>
                   <Badge className={PAYMENT_STATUS_COLORS[previewDoc.payment_status]} variant="secondary">{PAYMENT_STATUS_LABELS[previewDoc.payment_status]}</Badge>
