@@ -26,7 +26,7 @@ import {
 import { OrderStatusBadge } from "@/pages/DashboardPage";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Search, Calendar, User, Monitor, AlertTriangle, CheckCircle, UserPlus } from "lucide-react";
+import { Search, Calendar, User, Monitor, AlertTriangle, CheckCircle, UserPlus, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { TechnicianBadges, QuickAssignButton } from "@/components/TechnicianAssignment";
