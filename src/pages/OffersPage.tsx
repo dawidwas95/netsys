@@ -509,8 +509,8 @@ function OfferDetailDialog({ offerId, onClose, onStatusChange }: {
                 <TableHead>Nazwa</TableHead>
                 <TableHead>Typ</TableHead>
                 <TableHead className="text-right">Ilość</TableHead>
-                <TableHead className="text-right">Cena netto</TableHead>
-                <TableHead className="text-right">Wartość netto</TableHead>
+                <TableHead className="text-right">Cena brutto</TableHead>
+                <TableHead className="text-right">Wartość brutto</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
