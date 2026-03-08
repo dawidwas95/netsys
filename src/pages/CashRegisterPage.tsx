@@ -84,6 +84,17 @@ export default function CashRegisterPage() {
       .reduce((sum: number, t: any) => sum + (t.display_amount || Number(t.amount)), 0);
   }, [transactions]);
 
+  const { data: myRoles = [] } = useQuery({
+    queryKey: ["my-roles-cash"],
+    queryFn: async () => {
+      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user?.id);
+      return data ?? [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const canCorrectCash = myRoles.some((r: any) => r.role === "ADMIN" || r.role === "MANAGER");
+
   const addTransaction = useMutation({
     mutationFn: async (data: any) => {
       const { error } = await supabase.from("cash_transactions").insert({
@@ -99,6 +110,32 @@ export default function CashRegisterPage() {
       toast.success("Zapisano operację kasową");
     },
     onError: () => toast.error("Błąd zapisu operacji"),
+  });
+
+  const reverseTransaction = useMutation({
+    mutationFn: async (tx: any) => {
+      const amount = Number(tx.display_amount || tx.gross_amount || tx.amount || 0);
+      if (amount <= 0) throw new Error("Nieprawidłowa kwota do korekty");
+      const { error } = await supabase.from("cash_transactions").insert({
+        transaction_type: tx.transaction_type === "IN" ? "OUT" : "IN",
+        source_type: "CORRECTION",
+        related_order_id: tx.related_order_id ?? null,
+        amount,
+        gross_amount: amount,
+        vat_amount: 0,
+        payment_method: tx.payment_method ?? "CASH",
+        description: `Korekta wpisu kasowego ${tx.id}`,
+        transaction_date: new Date().toISOString().split("T")[0],
+        user_id: user?.id,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cash_transactions"] });
+      toast.success("Dodano korektę wpisu kasowego");
+      setRevertTx(null);
+    },
+    onError: (err: any) => toast.error(err?.message || "Błąd korekty kasowej"),
   });
 
   return (
