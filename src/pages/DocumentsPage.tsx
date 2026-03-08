@@ -720,7 +720,7 @@ export default function DocumentsPage() {
                 </div>
                 <div>
                   <p className="text-muted-foreground">Kierunek</p>
-                  <p className="font-medium">{DIRECTION_LABELS[previewDoc.direction]}</p>
+                  <p className="font-medium">{DIRECTION_LABELS[(TYPE_CONFIG[previewDoc.document_type] || TYPE_CONFIG.OTHER).direction]}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Kontrahent</p>
