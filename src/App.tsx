@@ -53,6 +53,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<AuthPageWrapper />} />
+          <Route path="/status" element={<OrderStatusPage />} />
           <Route element={<ProtectedRoutes />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/clients" element={<ClientsPage />} />
