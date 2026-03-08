@@ -97,9 +97,9 @@ const TYPE_CONFIG: Record<string, {
   showInventoryType: boolean;
   showPayment: boolean;
 }> = {
-  PURCHASE_INVOICE: { contractorLabel: "Dostawca", dateLabel: "Data zakupu", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje zakupu", direction: "EXPENSE", showInventoryType: true, showPayment: true },
-  SALES_INVOICE: { contractorLabel: "Klient", dateLabel: "Data sprzedaży", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje sprzedaży", direction: "INCOME", showInventoryType: true, showPayment: true },
-  PROFORMA: { contractorLabel: "Klient", dateLabel: "Data wystawienia", dueDateLabel: "Termin ważności", itemsLabel: "Pozycje", direction: "INCOME", showInventoryType: true, showPayment: false },
+  PURCHASE_INVOICE: { contractorLabel: "Sprzedawca", dateLabel: "Data zakupu", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje zakupu", direction: "EXPENSE", showInventoryType: true, showPayment: true },
+  SALES_INVOICE: { contractorLabel: "Nabywca", dateLabel: "Data sprzedaży", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje sprzedaży", direction: "INCOME", showInventoryType: true, showPayment: true },
+  PROFORMA: { contractorLabel: "Nabywca", dateLabel: "Data wystawienia", dueDateLabel: "Termin ważności", itemsLabel: "Pozycje", direction: "INCOME", showInventoryType: true, showPayment: false },
   CORRECTION: { contractorLabel: "Kontrahent", dateLabel: "Data wystawienia", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje korekty", direction: "INCOME", showInventoryType: true, showPayment: true },
   RECEIPT: { contractorLabel: "Kontrahent", dateLabel: "Data wystawienia", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje", direction: "INCOME", showInventoryType: true, showPayment: true },
   OTHER: { contractorLabel: "Kontrahent", dateLabel: "Data wystawienia", dueDateLabel: "Termin płatności", itemsLabel: "Pozycje", direction: "INCOME", showInventoryType: true, showPayment: true },
