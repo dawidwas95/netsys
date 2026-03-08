@@ -353,13 +353,7 @@ export async function generateIntakePDF({ order }: { order: any }) {
         break;
       }
 
-      case "lock_code":
-        if (!order.lock_code) break;
-        b.drawSectionTitle("Hasło / kod dostępu");
-        b.setFont("bold", 10, DARK);
-        doc.text(order.lock_code, b.ml + 2, b.y);
-        b.y += 7;
-        break;
+      // lock_code removed — internal field, never printed in customer documents
 
       case "terms":
         b.drawSectionTitle("Warunki serwisu");
