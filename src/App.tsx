@@ -17,6 +17,7 @@ import ITWorkPage from "@/pages/ITWorkPage";
 import MyOrdersPage from "@/pages/MyOrdersPage";
 import MobileHomePage from "@/pages/MobileHomePage";
 import InventoryPage from "@/pages/InventoryPage";
+import PurchaseListPage from "@/pages/PurchaseListPage";
 import OffersPage from "@/pages/OffersPage";
 import CashRegisterPage from "@/pages/CashRegisterPage";
 import ITDocsPage from "@/pages/ITDocsPage";
