@@ -193,6 +193,11 @@ function TeamManagement() {
       if (editForm.role && editForm.role !== editUser.role) {
         updates.role = editForm.role;
       }
+      // Save default_department directly to profiles
+      await supabase.from("profiles").update({
+        default_department: editForm.default_department || null,
+      } as any).eq("user_id", editUser.user_id);
+
       await manageUser.mutateAsync({
         action: "update_profile",
         target_user_id: editUser.user_id,
