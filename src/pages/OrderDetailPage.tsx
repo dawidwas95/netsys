@@ -920,7 +920,7 @@ export default function OrderDetailPage() {
           />
 
           {/* Purchase Requests */}
-          <OrderPurchaseRequests orderId={id!} />
+          <OrderPurchaseRequests orderId={id!} repairApprovalStatus={(order as any).repair_approval_status} />
 
           {editDirty && (
             <Button className="w-full" onClick={handleSave} disabled={updateOrder.isPending}>
