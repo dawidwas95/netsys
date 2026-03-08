@@ -267,7 +267,7 @@ export default function DocumentsPage() {
       const payload: Record<string, unknown> = {
         document_number: values.document_number.trim() || "TEMP",
         document_type: values.document_type,
-        direction: values.direction,
+        direction: (TYPE_CONFIG[values.document_type] || TYPE_CONFIG.OTHER).direction,
         client_id: values.client_id || null,
         contractor_name: values.contractor_name || null,
         contractor_nip: values.contractor_nip || null,
@@ -469,7 +469,8 @@ export default function DocumentsPage() {
     setLineItems(updated);
   }
 
-  const relevantClients = form.direction === "EXPENSE" ? supplierClients : customerClients;
+  const derivedDirection = (TYPE_CONFIG[form.document_type] || TYPE_CONFIG.OTHER).direction;
+  const relevantClients = derivedDirection === "EXPENSE" ? supplierClients : customerClients;
   const clientOptions = relevantClients.map((c: any) => {
     const name = c.display_name || c.company_name || [c.first_name, c.last_name].filter(Boolean).join(" ") || "—";
     const details = [c.nip ? `NIP: ${c.nip}` : "", c.address_city, c.phone].filter(Boolean).join(" · ");
@@ -499,8 +500,9 @@ export default function DocumentsPage() {
     return true;
   });
 
-  const totalIncome = docs.filter(d => d.direction === "INCOME").reduce((s, d) => s + d.gross_amount, 0);
-  const totalExpense = docs.filter(d => d.direction === "EXPENSE").reduce((s, d) => s + d.gross_amount, 0);
+  const getDirection = (d: Document) => (TYPE_CONFIG[d.document_type] || TYPE_CONFIG.OTHER).direction;
+  const totalIncome = docs.filter(d => getDirection(d) === "INCOME").reduce((s, d) => s + d.gross_amount, 0);
+  const totalExpense = docs.filter(d => getDirection(d) === "EXPENSE").reduce((s, d) => s + d.gross_amount, 0);
   const totalUnpaid = docs.filter(d => d.payment_status === "UNPAID" || d.payment_status === "OVERDUE").reduce((s, d) => s + (d.gross_amount - d.paid_amount), 0);
 
   // Preview: find related doc for correction
@@ -718,7 +720,7 @@ export default function DocumentsPage() {
                 </div>
                 <div>
                   <p className="text-muted-foreground">Kierunek</p>
-                  <p className="font-medium">{DIRECTION_LABELS[previewDoc.direction]}</p>
+                  <p className="font-medium">{DIRECTION_LABELS[(TYPE_CONFIG[previewDoc.document_type] || TYPE_CONFIG.OTHER).direction]}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Kontrahent</p>
@@ -834,16 +836,7 @@ export default function DocumentsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>Kierunek</Label>
-                <Select value={form.direction} onValueChange={v => setForm({ ...form, direction: v as DocDirection })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="INCOME">Przychód</SelectItem>
-                    <SelectItem value="EXPENSE">Wydatek</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Direction auto-derived from document type */}
               <div>
                 <Label>Numer dokumentu</Label>
                 <Input value={form.document_number} onChange={e => setForm({ ...form, document_number: e.target.value })} placeholder="np. FV/12/03/2026" />
