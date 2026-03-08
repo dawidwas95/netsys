@@ -49,6 +49,7 @@ import {
 import { OrderPhotoGallery } from "@/components/OrderPhotoGallery";
 import { cn } from "@/lib/utils";
 import { OrderItemsSection } from "@/components/order/OrderItemsSection";
+import CustomerMessagesStaff from "@/components/CustomerMessagesStaff";
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(v);
