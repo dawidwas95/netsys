@@ -415,12 +415,36 @@ export default function DocumentsPage() {
       } as any).then();
       toast.success(editId ? "Zaktualizowano dokument" : "Dodano dokument");
 
-      // Check if purchase invoice with product items → show PZ created toast
-      if (values.document_type === "PURCHASE_INVOICE") {
+      // Check if purchase invoice with product items → ask user about PZ
+      if (values.document_type === "PURCHASE_INVOICE" && docId) {
         const productItems = lineItems.filter(i => i.item_type === "PRODUCT" && i.name.trim());
         if (productItems.length > 0) {
-          qc.invalidateQueries({ queryKey: ["warehouse-documents"] });
-          toast.success(`Automatycznie utworzono PZ dla ${productItems.length} pozycji magazynowych`);
+          // Check if PZ already exists for this invoice
+          (supabase.from("warehouse_documents") as any)
+            .select("id")
+            .eq("linked_invoice_id", docId)
+            .then(({ data: existingPz }: any) => {
+              if (!existingPz || existingPz.length === 0) {
+                setPzPendingData({
+                  docId: docId!,
+                  values: { ...values },
+                  productItems: lineItems.filter(i => i.item_type === "PRODUCT" && i.name.trim()).map((item, idx) => {
+                    const qty = parseFloat(item.quantity) || 1;
+                    const unitNet = parseFloat(item.unit_net) || 0;
+                    const vatR = parseFloat(item.vat_rate) || 23;
+                    const totalNet = qty * unitNet;
+                    const totalVat = totalNet * (vatR / 100);
+                    const totalGross = totalNet + totalVat;
+                    return {
+                      document_id: docId!, name: item.name, quantity: qty, unit: item.unit || "szt.",
+                      unit_net: unitNet, vat_rate: vatR, total_net: totalNet, total_vat: totalVat, total_gross: totalGross,
+                      sort_order: idx, item_type: item.item_type, inventory_item_id: item.inventory_item_id || null,
+                    };
+                  }),
+                });
+                setPzConfirmOpen(true);
+              }
+            });
         }
       }
 
