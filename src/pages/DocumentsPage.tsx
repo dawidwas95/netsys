@@ -267,7 +267,7 @@ export default function DocumentsPage() {
       const payload: Record<string, unknown> = {
         document_number: values.document_number.trim() || "TEMP",
         document_type: values.document_type,
-        direction: values.direction,
+        direction: (TYPE_CONFIG[values.document_type] || TYPE_CONFIG.OTHER).direction,
         client_id: values.client_id || null,
         contractor_name: values.contractor_name || null,
         contractor_nip: values.contractor_nip || null,
