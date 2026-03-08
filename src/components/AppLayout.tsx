@@ -2,21 +2,25 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Outlet } from "react-router-dom";
 import { GlobalSearch } from "@/components/GlobalSearch";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { RedirectMobile } from "@/components/RedirectMobile";
 
 export default function AppLayout() {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <RedirectMobile />
+      <div className="min-h-screen flex w-full pb-[56px] md:pb-0">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <header className="h-14 flex items-center border-b bg-card px-4 gap-4 shrink-0">
             <SidebarTrigger />
             <GlobalSearch />
           </header>
-          <main className="flex-1 overflow-auto p-6">
+          <main className="flex-1 overflow-auto p-4 md:p-6">
             <Outlet />
           </main>
         </div>
+        <MobileBottomNav />
       </div>
     </SidebarProvider>
   );
