@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -18,28 +18,55 @@ import {
   KANBAN_COLUMNS,
   ORDER_PRIORITY_LABELS,
   SERVICE_TYPE_LABELS,
+  DEPARTMENT_LABELS,
+  DEPARTMENT_ICONS,
   type OrderStatus,
   type ServiceOrderWithRelations,
 } from "@/types/database";
 import { OrderStatusBadge } from "@/pages/DashboardPage";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Search, Calendar, User, Monitor, AlertTriangle, CheckCircle, UserPlus } from "lucide-react";
+import { Search, Calendar, User, Monitor, AlertTriangle, CheckCircle, UserPlus, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { TechnicianBadges, QuickAssignButton } from "@/components/TechnicianAssignment";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function KanbanPage() {
   const [search, setSearch] = useState("");
+  const [deptFilter, setDeptFilter] = useState<string>("all");
   const [activeOrder, setActiveOrder] = useState<ServiceOrderWithRelations | null>(null);
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  // Load user's default department
+  const { data: myProfile } = useQuery({
+    queryKey: ["my-profile-dept", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase.from("profiles").select("default_department").eq("user_id", user.id).maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const [deptInitialized, setDeptInitialized] = useState(false);
+  useEffect(() => {
+    if (!deptInitialized && myProfile?.default_department) {
+      setDeptFilter(myProfile.default_department);
+      setDeptInitialized(true);
+    }
+  }, [myProfile, deptInitialized]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
   const { data: orders = [] } = useQuery({
-    queryKey: ["kanban-orders", search],
+    queryKey: ["kanban-orders", search, deptFilter],
     queryFn: async () => {
       let query = supabase
         .from("service_orders")
@@ -47,6 +74,7 @@ export default function KanbanPage() {
         .not("status", "in", '("ARCHIVED","CANCELLED")')
         .order("received_at", { ascending: false });
 
+      if (deptFilter !== "all") query = query.eq("service_type", deptFilter as any);
       if (search) {
         query = query.or(
           `order_number.ilike.%${search}%,problem_description.ilike.%${search}%`
@@ -112,6 +140,15 @@ export default function KanbanPage() {
               className="pl-9 w-64"
             />
           </div>
+          <Select value={deptFilter} onValueChange={setDeptFilter}>
+            <SelectTrigger className="w-52"><SelectValue placeholder="Dział serwisu" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Wszystkie działy</SelectItem>
+              {Object.entries(DEPARTMENT_LABELS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{DEPARTMENT_ICONS[k]} {v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Link to="/orders" className="text-sm text-muted-foreground hover:text-primary">
             Widok listy →
           </Link>
@@ -233,8 +270,13 @@ function KanbanCardContent({
         </span>
       </div>
 
-      <div className="text-sm font-medium mb-1 truncate">
-        {(order as any).clients?.display_name ?? "—"}
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-sm font-medium truncate">
+          {(order as any).clients?.display_name ?? "—"}
+        </span>
+        <span className="text-[10px] text-muted-foreground shrink-0 ml-1">
+          {DEPARTMENT_ICONS[order.service_type]}
+        </span>
       </div>
 
       {(order as any).devices && (

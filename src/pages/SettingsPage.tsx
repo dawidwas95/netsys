@@ -193,6 +193,11 @@ function TeamManagement() {
       if (editForm.role && editForm.role !== editUser.role) {
         updates.role = editForm.role;
       }
+      // Save default_department directly to profiles
+      await supabase.from("profiles").update({
+        default_department: editForm.default_department || null,
+      } as any).eq("user_id", editUser.user_id);
+
       await manageUser.mutateAsync({
         action: "update_profile",
         target_user_id: editUser.user_id,
@@ -245,6 +250,7 @@ function TeamManagement() {
       email: u.email ?? "",
       role: u.role ?? "EMPLOYEE",
       is_active: u.is_active ? "true" : "false",
+      default_department: u.default_department ?? "",
     });
   };
 
@@ -494,6 +500,20 @@ function TeamManagement() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Domyślny dział serwisu</Label>
+              <Select
+                value={editForm.default_department ?? ""}
+                onValueChange={(v) => setEditForm((p) => ({ ...p, default_department: v }))}
+              >
+                <SelectTrigger><SelectValue placeholder="Wszystkie działy" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Wszystkie działy</SelectItem>
+                  <SelectItem value="COMPUTER_SERVICE">💻 Serwis komputerów</SelectItem>
+                  <SelectItem value="PHONE_SERVICE">📱 Serwis telefonów</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>

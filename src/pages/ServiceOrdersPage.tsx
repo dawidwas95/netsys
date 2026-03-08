@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,6 +20,7 @@ import { Link } from "react-router-dom";
 import { TechnicianBadges, QuickAssignButton } from "@/components/TechnicianAssignment";
 import {
   ORDER_STATUS_LABELS, ORDER_PRIORITY_LABELS, SERVICE_TYPE_LABELS,
+  DEPARTMENT_LABELS, DEPARTMENT_ICONS,
   type OrderStatus, type OrderPriority, type ServiceType,
   type ServiceOrderInsert,
 } from "@/types/database";
@@ -32,9 +33,30 @@ export default function ServiceOrdersPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [techFilter, setTechFilter] = useState<string>("all");
+  const [deptFilter, setDeptFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const queryClient = useQueryClient();
   const { user } = useAuth();
+
+  // Load user's default department
+  const { data: myProfile } = useQuery({
+    queryKey: ["my-profile-dept", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase.from("profiles").select("default_department").eq("user_id", user.id).maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Set default dept filter from profile on first load
+  const [deptInitialized, setDeptInitialized] = useState(false);
+  useEffect(() => {
+    if (!deptInitialized && myProfile?.default_department) {
+      setDeptFilter(myProfile.default_department);
+      setDeptInitialized(true);
+    }
+  }, [myProfile, deptInitialized]);
 
   const { data: staffUsers = [] } = useQuery({
     queryKey: ["all-staff-users"],
@@ -51,7 +73,7 @@ export default function ServiceOrdersPage() {
   });
 
   const { data: orders, isLoading } = useQuery({
-    queryKey: ["service-orders", search, statusFilter, techFilter],
+    queryKey: ["service-orders", search, statusFilter, techFilter, deptFilter],
     queryFn: async () => {
       // If filtering by technician, first get matching order IDs
       let techOrderIds: string[] | null = null;
@@ -68,6 +90,7 @@ export default function ServiceOrdersPage() {
           .select("*, clients(display_name), devices(manufacturer, model)")
           .order("received_at", { ascending: false });
         if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
+        if (deptFilter !== "all") query = query.eq("service_type", deptFilter as any);
         if (search) query = query.or(`order_number.ilike.%${search}%,problem_description.ilike.%${search}%`);
         const { data, error } = await query;
         if (error) throw error;
@@ -89,6 +112,7 @@ export default function ServiceOrdersPage() {
         .order("received_at", { ascending: false });
 
       if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
+      if (deptFilter !== "all") query = query.eq("service_type", deptFilter as any);
       if (search) query = query.or(`order_number.ilike.%${search}%,problem_description.ilike.%${search}%`);
       if (techOrderIds) query = query.in("id", techOrderIds);
 
@@ -174,6 +198,15 @@ export default function ServiceOrdersPage() {
             ))}
           </SelectContent>
          </Select>
+         <Select value={deptFilter} onValueChange={setDeptFilter}>
+           <SelectTrigger className="w-full sm:w-52 min-h-[44px]"><SelectValue placeholder="Dział serwisu" /></SelectTrigger>
+           <SelectContent>
+             <SelectItem value="all">Wszystkie działy</SelectItem>
+             {Object.entries(DEPARTMENT_LABELS).map(([k, v]) => (
+               <SelectItem key={k} value={k}>{DEPARTMENT_ICONS[k]} {v}</SelectItem>
+             ))}
+           </SelectContent>
+         </Select>
          <Select value={techFilter} onValueChange={setTechFilter}>
            <SelectTrigger className="w-full sm:w-48 min-h-[44px]"><SelectValue placeholder="Technik" /></SelectTrigger>
            <SelectContent>
@@ -201,6 +234,10 @@ export default function ServiceOrdersPage() {
                   <ScheduleBadge date={(order as any).planned_execution_date} time={(order as any).planned_execution_time} />
                   <OrderStatusBadge status={order.status} />
                 </div>
+              </div>
+              <div className="mobile-card-row">
+                <span className="mobile-card-label">Dział</span>
+                <span className="text-sm">{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || "—"}</span>
               </div>
               <div className="mobile-card-row">
                 <span className="mobile-card-label">Klient</span>
@@ -233,7 +270,7 @@ export default function ServiceOrdersPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Nr zlecenia</TableHead>
-              <TableHead>Typ</TableHead>
+              <TableHead>Dział</TableHead>
               <TableHead>Klient</TableHead>
               <TableHead>Urządzenie</TableHead>
               <TableHead>Technik</TableHead>
@@ -258,7 +295,7 @@ export default function ServiceOrdersPage() {
                       <ScheduleBadge date={(order as any).planned_execution_date} time={(order as any).planned_execution_time} />
                     </div>
                   </TableCell>
-                  <TableCell className="text-xs">{SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</TableCell>
+                  <TableCell className="text-xs">{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</TableCell>
                   <TableCell>{order.clients?.display_name}</TableCell>
                   <TableCell className="text-sm">
                     {order.devices ? `${order.devices.manufacturer} ${order.devices.model}` : "—"}

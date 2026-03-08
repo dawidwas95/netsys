@@ -83,7 +83,7 @@ export default function PurchaseRequestsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("purchase_requests")
-        .select("*, service_orders!inner(order_number, clients(display_name))")
+        .select("*, service_orders!inner(order_number, service_type, clients(display_name))")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -251,6 +251,7 @@ export default function PurchaseRequestsPage() {
                 <TableHead className="text-center">Ilość</TableHead>
                 <TableHead>Kategoria</TableHead>
                 <TableHead>Zlecenie</TableHead>
+                <TableHead>Dział</TableHead>
                 <TableHead>Klient</TableHead>
                 <TableHead>Technik</TableHead>
                 <TableHead>Pilność</TableHead>
@@ -262,9 +263,9 @@ export default function PurchaseRequestsPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={13} className="text-center text-muted-foreground py-8">Ładowanie...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={14} className="text-center text-muted-foreground py-8">Ładowanie...</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={13} className="text-center text-muted-foreground py-8">Brak zapotrzebowań</TableCell></TableRow>
+                <TableRow><TableCell colSpan={14} className="text-center text-muted-foreground py-8">Brak zapotrzebowań</TableCell></TableRow>
               ) : (
                 filtered.map((r: any) => (
                   <TableRow key={r.id}>
@@ -297,6 +298,10 @@ export default function PurchaseRequestsPage() {
                       <Link to={`/orders/${r.order_id}`} className="text-primary hover:underline text-xs font-mono flex items-center gap-1">
                         {r.service_orders?.order_number}<ExternalLink className="h-3 w-3" />
                       </Link>
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {r.service_orders?.service_type === "COMPUTER_SERVICE" ? "💻" : r.service_orders?.service_type === "PHONE_SERVICE" ? "📱" : ""}{" "}
+                      {r.service_orders?.service_type === "COMPUTER_SERVICE" ? "Komputery" : r.service_orders?.service_type === "PHONE_SERVICE" ? "Telefony" : "—"}
                     </TableCell>
                     <TableCell className="text-sm">{r.service_orders?.clients?.display_name || "—"}</TableCell>
                     <TableCell className="text-sm">{r.requested_by_name || "—"}</TableCell>

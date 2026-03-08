@@ -66,6 +66,16 @@ export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
   PHONE_SERVICE: "Serwis telefonów",
 };
 
+export const DEPARTMENT_LABELS: Record<string, string> = {
+  COMPUTER_SERVICE: "Serwis komputerów",
+  PHONE_SERVICE: "Serwis telefonów",
+};
+
+export const DEPARTMENT_ICONS: Record<string, string> = {
+  COMPUTER_SERVICE: "💻",
+  PHONE_SERVICE: "📱",
+};
+
 export const DEVICE_CATEGORY_LABELS: Record<DeviceCategory, string> = {
   DESKTOP: "Komputer stacjonarny",
   LAPTOP: "Laptop",
