@@ -163,7 +163,13 @@ export default function OrderStatusPage() {
   );
 }
 
-function OrderStatusView({ order, onBack }: { order: PublicOrderData; onBack: () => void }) {
+function OrderStatusView({ order, onBack, token, orderNumber, phone }: {
+  order: PublicOrderData;
+  onBack: () => void;
+  token?: string | null;
+  orderNumber?: string;
+  phone?: string;
+}) {
   const statusLabel = ORDER_STATUS_LABELS[order.status] || order.status;
   const statusColor = STATUS_COLORS[order.status] || "bg-muted text-foreground";
 
