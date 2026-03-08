@@ -375,6 +375,11 @@ export async function generateOrderPDF({ order, orderItems, financials }: OrderP
         if (company.nip) { doc.text(`NIP: ${company.nip}`, b.ml, b.y); b.y += 3.5; }
         if (company.website) { doc.text(company.website, b.ml, b.y); b.y += 3.5; }
 
+        // QR code top-right
+        if (qrDataUrl) {
+          try { doc.addImage(qrDataUrl, "PNG", b.mr - 24, 5, 22, 22); } catch {}
+        }
+
         // Separator under header
         b.y += 2;
         doc.setDrawColor(...PdfBuilder.PRIMARY);
