@@ -547,13 +547,13 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
               <TableRow className="bg-muted/30 font-medium">
                 <TableCell>Razem</TableCell>
                 <TableCell className="text-center tabular-nums">{orderItems.reduce((s, i) => s + i.quantity, 0)}</TableCell>
-                <TableCell className="text-right tabular-nums text-xs">{formatCurrency(orderItems.reduce((s, i) => s + i.total_purchase_net, 0))}</TableCell>
-                <TableCell className="text-right tabular-nums text-xs">{formatCurrency(orderItems.reduce((s, i) => s + i.total_sale_net, 0))}</TableCell>
+                <TableCell className="text-right tabular-nums text-xs">{formatCurrency(orderItems.reduce((s, i) => s + i.total_purchase_net * 1.23, 0))}</TableCell>
+                <TableCell className="text-right tabular-nums text-xs">{formatCurrency(orderItems.reduce((s, i) => s + i.total_sale_net * 1.23, 0))}</TableCell>
                 <TableCell className={cn(
                   "text-right tabular-nums text-xs",
-                  orderItems.reduce((s, i) => s + i.total_sale_net - i.total_purchase_net, 0) >= 0 ? "text-primary" : "text-destructive"
+                  orderItems.reduce((s, i) => s + (i.total_sale_net - i.total_purchase_net) * 1.23, 0) >= 0 ? "text-primary" : "text-destructive"
                 )}>
-                  {formatCurrency(orderItems.reduce((s, i) => s + i.total_sale_net - i.total_purchase_net, 0))}
+                  {formatCurrency(orderItems.reduce((s, i) => s + (i.total_sale_net - i.total_purchase_net) * 1.23, 0))}
                 </TableCell>
                 <TableCell></TableCell>
                 {!isCompleted && <TableCell></TableCell>}
