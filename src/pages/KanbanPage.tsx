@@ -37,15 +37,36 @@ import { useAuth } from "@/hooks/useAuth";
 
 export default function KanbanPage() {
   const [search, setSearch] = useState("");
+  const [deptFilter, setDeptFilter] = useState<string>("all");
   const [activeOrder, setActiveOrder] = useState<ServiceOrderWithRelations | null>(null);
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  // Load user's default department
+  const { data: myProfile } = useQuery({
+    queryKey: ["my-profile-dept", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase.from("profiles").select("default_department").eq("user_id", user.id).maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const [deptInitialized, setDeptInitialized] = useState(false);
+  useEffect(() => {
+    if (!deptInitialized && myProfile?.default_department) {
+      setDeptFilter(myProfile.default_department);
+      setDeptInitialized(true);
+    }
+  }, [myProfile, deptInitialized]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
   const { data: orders = [] } = useQuery({
-    queryKey: ["kanban-orders", search],
+    queryKey: ["kanban-orders", search, deptFilter],
     queryFn: async () => {
       let query = supabase
         .from("service_orders")
@@ -53,6 +74,7 @@ export default function KanbanPage() {
         .not("status", "in", '("ARCHIVED","CANCELLED")')
         .order("received_at", { ascending: false });
 
+      if (deptFilter !== "all") query = query.eq("service_type", deptFilter as any);
       if (search) {
         query = query.or(
           `order_number.ilike.%${search}%,problem_description.ilike.%${search}%`
