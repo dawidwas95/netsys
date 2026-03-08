@@ -535,13 +535,19 @@ export default function DocumentsPage() {
 
   const relatedDoc = form.related_document_id ? docs.find(d => d.id === form.related_document_id) : null;
 
+  /** Normalize NIP: strip "PL" prefix, dashes, spaces → digits only */
+  function normalizeNip(nip: string | null | undefined): string {
+    if (!nip) return "";
+    return nip.replace(/^PL/i, "").replace(/[\s\-]/g, "");
+  }
+
   function handleOcrData(data: OcrExtractedData) {
     const docType = (data.document_type as DocType) || "PURCHASE_INVOICE";
     const cfg = TYPE_CONFIG[docType] || TYPE_CONFIG.OTHER;
-
-    // For purchase invoices: seller = contractor (external party), buyer = our company
-    // For sales invoices: seller = our company, buyer = contractor (external party)
     const isPurchase = docType === "PURCHASE_INVOICE";
+
+    const rawContractorNip = isPurchase ? data.seller_nip : data.buyer_nip;
+    const contractorNip = normalizeNip(rawContractorNip);
 
     setForm({
       ...emptyForm,
@@ -551,12 +557,10 @@ export default function DocumentsPage() {
       issue_date: data.issue_date || new Date().toISOString().split("T")[0],
       sale_date: data.sale_date || "",
       due_date: data.due_date || "",
-      // For purchase: contractor = seller, buyer = nabywca
-      // For sales: contractor = buyer, buyer (our company) = seller
       contractor_name: isPurchase ? (data.seller_name || "") : (data.buyer_name || ""),
-      contractor_nip: isPurchase ? (data.seller_nip || "") : (data.buyer_nip || ""),
+      contractor_nip: contractorNip,
       buyer_name: isPurchase ? (data.buyer_name || "") : (data.seller_name || ""),
-      buyer_nip: isPurchase ? (data.buyer_nip || "") : (data.seller_nip || ""),
+      buyer_nip: normalizeNip(isPurchase ? data.buyer_nip : data.seller_nip),
       net_amount: data.net_amount != null ? data.net_amount.toString() : "",
       vat_rate: data.net_amount && data.vat_amount
         ? ((data.vat_amount / data.net_amount) * 100).toFixed(0)
@@ -566,17 +570,37 @@ export default function DocumentsPage() {
       paid_amount: "",
     });
 
-    // Match contractor by NIP (the external party)
-    const contractorNip = isPurchase ? data.seller_nip : data.buyer_nip;
+    // Match contractor by normalized NIP
     if (contractorNip) {
-      const match = clients.find((c: any) => c.nip === contractorNip);
+      const match = clients.find((c: any) => normalizeNip(c.nip) === contractorNip);
       if (match) {
         setForm(prev => ({
           ...prev,
           client_id: match.id,
           contractor_name: match.display_name || match.company_name || [match.first_name, match.last_name].filter(Boolean).join(" ") || prev.contractor_name,
         }));
-        toast.info(`Dopasowano kontrahenta: ${match.display_name || match.company_name}`);
+        toast.success(`Znaleziono kontrahenta na podstawie NIP: ${match.display_name || match.company_name}`, { duration: 5000 });
+      } else {
+        // NIP not found — offer to create new contractor
+        const ocrName = isPurchase ? data.seller_name : data.buyer_name;
+        toast.info(
+          `Nie znaleziono kontrahenta z NIP ${contractorNip}`,
+          {
+            duration: 8000,
+            action: {
+              label: "Dodaj kontrahenta",
+              onClick: () => {
+                setClientInitialData({
+                  client_type: "BUSINESS",
+                  business_role: isPurchase ? "SUPPLIER" : "CUSTOMER",
+                  company_name: ocrName || "",
+                  nip: contractorNip,
+                });
+                setClientDialogOpen(true);
+              },
+            },
+          }
+        );
       }
     }
 
@@ -585,7 +609,7 @@ export default function DocumentsPage() {
       setForm(prev => ({
         ...prev,
         buyer_name: companySettings.company_name || "",
-        buyer_nip: companySettings.nip || "",
+        buyer_nip: normalizeNip(companySettings.nip),
       }));
     }
 
@@ -603,9 +627,7 @@ export default function DocumentsPage() {
       setLineItems([{ ...emptyLineItem }]);
     }
 
-    // Store source file for auto-attachment
     setOcrSourceFile(data.sourceFile);
-
     setEditId(null);
     setFormOpen(true);
   }
