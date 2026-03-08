@@ -1842,7 +1842,13 @@ export type Database = {
       intake_channel: "PHONE" | "EMAIL" | "IN_PERSON" | "REMOTE" | "OTHER"
       it_doc_category: "PASSWORD" | "NETWORK" | "LICENSE" | "NOTE"
       movement_source: "PURCHASE" | "SERVICE_ORDER" | "IT_WORK" | "MANUAL"
-      movement_type: "IN" | "OUT" | "ADJUSTMENT" | "RESERVATION"
+      movement_type:
+        | "IN"
+        | "OUT"
+        | "ADJUSTMENT"
+        | "RESERVATION"
+        | "DAMAGE"
+        | "INTERNAL_USE"
       offer_item_type: "SERVICE" | "PRODUCT" | "CUSTOM"
       offer_status:
         | "DRAFT"
@@ -2034,7 +2040,14 @@ export const Constants = {
       intake_channel: ["PHONE", "EMAIL", "IN_PERSON", "REMOTE", "OTHER"],
       it_doc_category: ["PASSWORD", "NETWORK", "LICENSE", "NOTE"],
       movement_source: ["PURCHASE", "SERVICE_ORDER", "IT_WORK", "MANUAL"],
-      movement_type: ["IN", "OUT", "ADJUSTMENT", "RESERVATION"],
+      movement_type: [
+        "IN",
+        "OUT",
+        "ADJUSTMENT",
+        "RESERVATION",
+        "DAMAGE",
+        "INTERNAL_USE",
+      ],
       offer_item_type: ["SERVICE", "PRODUCT", "CUSTOM"],
       offer_status: [
         "DRAFT",
