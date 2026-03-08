@@ -84,6 +84,12 @@ export default function InventoryPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory_items"] });
       setAddOpen(false);
+      supabase.from("activity_logs").insert({
+        entity_type: "inventory_item", entity_id: "new", action_type: "CREATE",
+        user_id: user?.id,
+        // @ts-ignore
+        description: "Dodano pozycję magazynową",
+      }).then();
       toast.success("Dodano pozycję magazynową");
     },
     onError: () => toast.error("Błąd dodawania pozycji"),
