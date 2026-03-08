@@ -349,9 +349,12 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
                                       <div className="flex items-center justify-end gap-1">
                                         {isLow && <AlertTriangle className="h-3 w-3 text-amber-400" />}
                                         <span className={cn("font-medium", noStock && "text-destructive")}>
-                                          {item.stock_quantity} {item.unit}
+                                          {available} {item.unit}
                                         </span>
                                       </div>
+                                      {reserved > 0 && (
+                                        <div className="text-[10px] text-muted-foreground">rezerw: {reserved}</div>
+                                      )}
                                       {isLow && (
                                         <div className="text-[10px] text-amber-400">min: {item.minimum_quantity}</div>
                                       )}
