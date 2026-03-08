@@ -70,7 +70,7 @@ export const SERVICE_ORDER_SECTIONS: PdfSection[] = [
   { id: "diagnosis", label: "Diagnoza", enabled: true },
   { id: "repair_description", label: "Opis naprawy", enabled: true },
   { id: "financial", label: "Rozliczenie", enabled: true },
-  { id: "pickup_code", label: "Kod odbioru", enabled: true },
+  { id: "pickup_code", label: "Kod odbioru", enabled: false },
   { id: "internal_notes", label: "Notatki wewnętrzne", enabled: false },
   { id: "signatures", label: "Podpisy", enabled: true },
   { id: "footer", label: "Stopka", enabled: true },
