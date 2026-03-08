@@ -151,7 +151,7 @@ const PDF_VARS = [
   { var: "{{diagnosis}}", desc: "Diagnoza" },
   { var: "{{repair_description}}", desc: "Opis naprawy" },
   { var: "{{revenue_gross}}", desc: "Przychód brutto" },
-  { var: "{{pickup_code}}", desc: "Kod odbioru" },
+  { var: "{{pickup_code}}", desc: "Kod odbioru (losowy, nie hasło urządzenia)" },
   { var: "{{company_name}}", desc: "Nazwa firmy" },
   { var: "{{company_nip}}", desc: "NIP firmy" },
 ];
