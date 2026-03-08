@@ -1,0 +1,1 @@
+ALTER TYPE public.movement_source ADD VALUE IF NOT EXISTS 'DOCUMENT';

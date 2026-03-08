@@ -27,6 +27,7 @@ import DocumentsPage from "@/pages/DocumentsPage";
 import SystemLogsPage from "@/pages/SystemLogsPage";
 import DataManagementPage from "@/pages/DataManagementPage";
 import SettingsPage from "@/pages/SettingsPage";
+import WarehouseDocumentsPage from "@/pages/WarehouseDocumentsPage";
 import OrderStatusPage from "@/pages/OrderStatusPage";
 import ServiceBoardDisplay from "@/pages/ServiceBoardDisplay";
 import DailyPlanPage from "@/pages/DailyPlanPage";
@@ -78,6 +79,7 @@ const App = () => (
             {/* <Route path="/offers" element={<OffersPage />} /> */}
             {/* <Route path="/it-docs" element={<ITDocsPage />} /> */}
             <Route path="/inventory" element={<InventoryPage />} />
+            <Route path="/warehouse-documents" element={<WarehouseDocumentsPage />} />
             <Route path="/purchase-list" element={<PurchaseListPage />} />
             <Route path="/purchase-requests" element={<PurchaseRequestsPage />} />
             <Route path="/cash" element={<CashRegisterPage />} />
