@@ -949,8 +949,9 @@ export default function DocumentsPage() {
                     <Select value={item.item_type} onValueChange={v => updateLineItem(idx, "item_type", v)}>
                       <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="PRODUCT">Produkt mag.</SelectItem>
                         <SelectItem value="SERVICE">Usługa</SelectItem>
-                        <SelectItem value="PRODUCT">Produkt</SelectItem>
+                        <SelectItem value="INTERNAL_COST">Koszt wewn.</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
