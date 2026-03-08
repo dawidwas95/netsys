@@ -351,8 +351,8 @@ export default function InventoryPage() {
                               {Number(item.stock_quantity)} {item.unit}
                             </TableCell>
                             <TableCell className="text-right tabular-nums text-muted-foreground">{Number(item.minimum_quantity)}</TableCell>
-                            <TableCell className="text-right tabular-nums text-xs">{Number(item.purchase_net).toFixed(2)} zł</TableCell>
-                            <TableCell className="text-right tabular-nums text-xs">{Number(item.sale_net).toFixed(2)} zł</TableCell>
+                            <TableCell className="text-right tabular-nums text-xs">{(Number(item.purchase_net) * (1 + (Number(item.vat_rate) || 23) / 100)).toFixed(2)} zł</TableCell>
+                            <TableCell className="text-right tabular-nums text-xs">{(Number(item.sale_net) * (1 + (Number(item.vat_rate) || 23) / 100)).toFixed(2)} zł</TableCell>
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <div className="flex gap-1 flex-wrap">
                                 <Button size="sm" variant="ghost" className="h-7 px-2" title="Przyjęcie"
