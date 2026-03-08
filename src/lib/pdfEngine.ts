@@ -705,18 +705,10 @@ export async function generateOrderPDF({ order, orderItems, financials }: OrderP
 
       /* ═══════════════ SIGNATURES ═══════════════ */
       case "signatures": {
-        const minSigY = b.y + 10;
-        const preferredSigY = b.pageH - b.marginBottom - 30;
-        const sigY = Math.max(minSigY, Math.min(preferredSigY, 240));
-
-        if (sigY > b.pageH - b.marginBottom - 25) {
-          doc.addPage();
-          b.y = b.marginTop + 10;
-        } else {
-          b.y = sigY;
-        }
-
-        b.checkPage(28);
+        // Place signatures directly after content; only new page if truly no space
+        const sigNeeded = 28;
+        b.checkPage(sigNeeded);
+        b.y += 4;
 
         const boxW = 72;
         const boxLeft = b.ml;
