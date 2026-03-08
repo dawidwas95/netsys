@@ -905,23 +905,76 @@ export default function DocumentsPage() {
 
                   {/* Section: Contractor */}
                   <div>
-                    <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                      <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
                       {typeConfig.contractorLabel}
                     </h3>
-                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-5">
-                      <div className="space-y-3">
-                        <div className="space-y-1.5">
+                    <div className="space-y-4">
+                      <div className="flex items-end gap-3">
+                        <div className="flex-1 space-y-1.5">
                           <Label className="text-xs text-muted-foreground">{typeConfig.contractorLabel} z bazy</Label>
                           <SearchableSelect
                             options={clientOptions}
                             value={form.client_id}
                             onChange={onClientSelect}
-                            placeholder={`Szukaj ${derivedDirection === "EXPENSE" ? "dostawcy" : "klienta"}...`}
+                            placeholder={`Szukaj po nazwie, NIP, mieście...`}
                             onAddNew={() => setClientDialogOpen(true)}
                             addNewLabel={`+ Dodaj kontrahenta`}
                           />
                         </div>
+                      </div>
+
+                      {/* Contractor detail card */}
+                      {selectedClient ? (
+                        <div className="rounded-lg border-l-4 border-l-primary border border-border bg-muted/20 p-5">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                <Building2 className="h-5 w-5 text-primary" />
+                              </div>
+                              <div>
+                                <p className="font-semibold text-base">{selectedClient.display_name || selectedClient.company_name || [selectedClient.first_name, selectedClient.last_name].filter(Boolean).join(" ")}</p>
+                                {selectedClient.nip && (
+                                  <p className="text-sm text-muted-foreground font-mono flex items-center gap-1.5 mt-0.5">
+                                    <Hash className="h-3 w-3" />NIP: {selectedClient.nip}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setForm({ ...form, client_id: "", contractor_name: "", contractor_nip: "" })}>
+                              Zmień
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                            {getClientAddress(selectedClient) && (
+                              <div className="flex items-start gap-2 text-muted-foreground">
+                                <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                                <span>{getClientAddress(selectedClient)}</span>
+                              </div>
+                            )}
+                            {selectedClient.email && (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Mail className="h-3.5 w-3.5 shrink-0" />
+                                <span>{selectedClient.email}</span>
+                              </div>
+                            )}
+                            {selectedClient.phone && (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <PhoneIcon className="h-3.5 w-3.5 shrink-0" />
+                                <span>{selectedClient.phone}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border border-dashed border-border p-5 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                          <Building2 className="h-6 w-6 opacity-40" />
+                          <p className="text-sm">Wybierz kontrahenta z bazy lub wpisz dane ręcznie</p>
+                        </div>
+                      )}
+
+                      {/* Manual override fields */}
+                      {!selectedClient && (
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1.5">
                             <Label className="text-xs text-muted-foreground">Nazwa kontrahenta</Label>
@@ -931,29 +984,6 @@ export default function DocumentsPage() {
                             <Label className="text-xs text-muted-foreground">NIP</Label>
                             <Input value={form.contractor_nip} onChange={e => setForm({ ...form, contractor_nip: e.target.value })} placeholder="000-000-00-00" className="h-10 font-mono" />
                           </div>
-                        </div>
-                      </div>
-                      {/* Client detail card */}
-                      {selectedClient ? (
-                        <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
-                          <p className="font-semibold text-sm">{selectedClient.display_name || selectedClient.company_name || [selectedClient.first_name, selectedClient.last_name].filter(Boolean).join(" ")}</p>
-                          {selectedClient.nip && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <span className="text-muted-foreground text-xs">NIP</span>
-                              <span className="font-mono text-sm">{selectedClient.nip}</span>
-                            </div>
-                          )}
-                          {getClientAddress(selectedClient) && (
-                            <p className="text-sm text-muted-foreground">{getClientAddress(selectedClient)}</p>
-                          )}
-                          <div className="flex gap-4 text-xs text-muted-foreground pt-1">
-                            {selectedClient.email && <span>{selectedClient.email}</span>}
-                            {selectedClient.phone && <span>{selectedClient.phone}</span>}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="rounded-lg border border-dashed border-border p-4 flex items-center justify-center text-sm text-muted-foreground">
-                          Wybierz kontrahenta z bazy lub wpisz dane ręcznie
                         </div>
                       )}
                     </div>
