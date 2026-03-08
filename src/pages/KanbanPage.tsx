@@ -30,6 +30,10 @@ import { Search, Calendar, User, Monitor, AlertTriangle, CheckCircle, UserPlus, 
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { TechnicianBadges, QuickAssignButton } from "@/components/TechnicianAssignment";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function KanbanPage() {
   const [search, setSearch] = useState("");
