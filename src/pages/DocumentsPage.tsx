@@ -37,7 +37,7 @@ import { createWarehouseDocument } from "@/lib/warehouseDocuments";
 type DocType = "PURCHASE_INVOICE" | "SALES_INVOICE" | "RECEIPT" | "PROFORMA" | "CORRECTION" | "OTHER";
 type DocDirection = "INCOME" | "EXPENSE";
 type PaymentStatus = "UNPAID" | "PARTIALLY_PAID" | "PAID" | "OVERDUE";
-type DocItemType = "PRODUCT" | "SERVICE";
+type DocItemType = "PRODUCT" | "SERVICE" | "INTERNAL_COST";
 
 const DOC_TYPE_LABELS: Record<DocType, string> = {
   PURCHASE_INVOICE: "Faktura zakupowa",
