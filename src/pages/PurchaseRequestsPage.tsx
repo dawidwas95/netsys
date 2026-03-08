@@ -16,7 +16,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ShoppingCart, Search, Package, ExternalLink, CheckCircle2, Clock, XCircle, Pencil, Trash2 } from "lucide-react";
+import { ShoppingCart, Search, Package, ExternalLink, Pencil, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { PurchaseRequestFormDialog } from "@/components/order/PurchaseRequestFormDialog";
