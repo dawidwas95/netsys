@@ -691,7 +691,7 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
         </div>
       ) : (
         <p className="text-xs text-muted-foreground text-center py-4 border border-dashed rounded-md">
-          Brak pozycji — dodaj część z magazynu lub niestandardową
+          Brak pozycji — dodaj część z magazynu, usługę lub koszt wewnętrzny
         </p>
       )}
     </div>
