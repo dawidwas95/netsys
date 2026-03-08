@@ -19,6 +19,7 @@ import {
   Download,
   Tv,
   CalendarDays,
+  BarChart3,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -62,6 +63,7 @@ const serviceNav = [
 const financeNav = [
   { title: "Kasa gotówkowa", url: "/cash", icon: Wallet },
   { title: "Rejestr dokumentów", url: "/documents", icon: Receipt },
+  { title: "Statystyki techników", url: "/technician-stats", icon: BarChart3 },
 ];
 
 const systemNav = [
