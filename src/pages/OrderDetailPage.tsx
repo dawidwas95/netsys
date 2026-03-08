@@ -55,6 +55,7 @@ import CustomerMessagesStaff from "@/components/CustomerMessagesStaff";
 import { TechnicianAssignment } from "@/components/TechnicianAssignment";
 import { MobileQuickActions } from "@/components/MobileQuickActions";
 import { OrderPurchaseRequests } from "@/components/order/OrderPurchaseRequests";
+import { MentionTextarea, renderCommentWithMentions } from "@/components/MentionTextarea";
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(v);
@@ -847,19 +848,18 @@ export default function OrderDetailPage() {
                         </div>
                       </div>
                       <p className="text-sm ml-9">
-                        {c.comment.split(/(@\S+)/g).map((part: string, i: number) =>
-                          part.startsWith("@") ? (
-                            <span key={i} className="text-primary font-medium bg-primary/10 px-0.5 rounded">{part}</span>
-                          ) : (
-                            <span key={i}>{part}</span>
-                          )
-                        )}
+                        {renderCommentWithMentions(c.comment)}
                       </p>
                     </div>
                   ))}
-                  <div className="flex gap-2">
-                    <Textarea placeholder="Dodaj komentarz... Użyj @imię aby oznaczyć osobę" value={comment} onChange={(e) => setComment(e.target.value)} rows={2} className="flex-1" />
-                    <Button size="icon" onClick={() => addComment.mutate()} disabled={!comment.trim() || addComment.isPending}>
+                  <div className="flex gap-2 items-end">
+                    <MentionTextarea
+                      value={comment}
+                      onChange={setComment}
+                      placeholder="Dodaj komentarz... Wpisz @ aby oznaczyć osobę"
+                      rows={2}
+                    />
+                    <Button size="icon" className="shrink-0 mb-0" onClick={() => addComment.mutate()} disabled={!comment.trim() || addComment.isPending}>
                       <Send className="h-4 w-4" />
                     </Button>
                   </div>
