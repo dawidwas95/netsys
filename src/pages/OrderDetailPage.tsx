@@ -904,13 +904,16 @@ export default function OrderDetailPage() {
           <FinanceSection formData={currentForm} onChange={handleFieldChange} orderItems={orderItems} />
           <PaymentSection formData={currentForm} onChange={handleFieldChange} />
 
-          {/* Order Items - New Component */}
+          {/* Order Items */}
           <OrderItemsSection
             orderId={id!}
             orderItems={orderItems}
             isCompleted={isCompleted}
             onItemsChanged={handleItemsChanged}
           />
+
+          {/* Purchase Requests */}
+          <OrderPurchaseRequests orderId={id!} />
 
           {editDirty && (
             <Button className="w-full" onClick={handleSave} disabled={updateOrder.isPending}>

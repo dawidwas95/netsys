@@ -41,7 +41,8 @@ const mainNav = [
   { title: "Klienci", url: "/clients", icon: Users },
   { title: "Urządzenia", url: "/devices", icon: Monitor },
   { title: "Magazyn", url: "/inventory", icon: Package },
-  { title: "Zakupy", url: "/purchase-list", icon: ShoppingCart },
+  { title: "Niski stan", url: "/purchase-list", icon: ShoppingCart },
+  { title: "Zapotrzebowanie", url: "/purchase-requests", icon: ShoppingCart },
 ];
 
 const serviceNav = [
