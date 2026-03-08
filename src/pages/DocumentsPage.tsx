@@ -24,12 +24,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Plus, Search, FileText, ArrowDownCircle, ArrowUpCircle, Pencil, Trash2, Eye, X,
-  DollarSign,
+  DollarSign, Paperclip,
 } from "lucide-react";
 import { toast } from "sonner";
 import { SearchableSelect } from "@/components/SearchableSelect";
 import { ClientFormDialog } from "@/components/ClientFormDialog";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/types/database";
+import { DocumentAttachments } from "@/components/DocumentAttachments";
 
 type DocType = "PURCHASE_INVOICE" | "SALES_INVOICE" | "RECEIPT" | "PROFORMA" | "CORRECTION" | "OTHER";
 type DocDirection = "INCOME" | "EXPENSE";
