@@ -291,7 +291,6 @@ export const INTAKE_SECTIONS: PdfSection[] = [
   { id: "problem_description", label: "Opis usterki", enabled: true },
   { id: "visual_condition", label: "Stan wizualny", enabled: true },
   { id: "accessories", label: "Akcesoria", enabled: true },
-  { id: "lock_code", label: "Kod / hasło", enabled: true },
   { id: "terms", label: "Warunki serwisu", enabled: true },
   { id: "signatures", label: "Podpisy", enabled: true },
   { id: "footer", label: "Stopka", enabled: true },
@@ -354,13 +353,7 @@ export async function generateIntakePDF({ order }: { order: any }) {
         break;
       }
 
-      case "lock_code":
-        if (!order.lock_code) break;
-        b.drawSectionTitle("Hasło / kod dostępu");
-        b.setFont("bold", 10, DARK);
-        doc.text(order.lock_code, b.ml + 2, b.y);
-        b.y += 7;
-        break;
+      // lock_code removed — internal field, never printed in customer documents
 
       case "terms":
         b.drawSectionTitle("Warunki serwisu");

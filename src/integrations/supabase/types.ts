@@ -1641,6 +1641,7 @@ export type Database = {
           paid_at: string | null
           parts_net: number | null
           payment_method: Database["public"]["Enums"]["payment_method"] | null
+          pickup_code: string | null
           priority: Database["public"]["Enums"]["order_priority"]
           problem_description: string | null
           received_at: string
@@ -1689,6 +1690,7 @@ export type Database = {
           paid_at?: string | null
           parts_net?: number | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          pickup_code?: string | null
           priority?: Database["public"]["Enums"]["order_priority"]
           problem_description?: string | null
           received_at?: string
@@ -1737,6 +1739,7 @@ export type Database = {
           paid_at?: string | null
           parts_net?: number | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          pickup_code?: string | null
           priority?: Database["public"]["Enums"]["order_priority"]
           problem_description?: string | null
           received_at?: string

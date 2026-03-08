@@ -172,7 +172,9 @@ function NewOrderForm({ onSubmit, loading }: {
       toast.error("Wybierz klienta");
       return;
     }
-    onSubmit(formData as ServiceOrderInsert);
+    // Generate random 4-digit pickup code
+    const pickup_code = String(Math.floor(1000 + Math.random() * 9000));
+    onSubmit({ ...formData, pickup_code } as ServiceOrderInsert);
   };
 
   return (

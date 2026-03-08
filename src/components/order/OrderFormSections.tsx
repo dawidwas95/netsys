@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import {
 import {
   User, Monitor, ClipboardList, Wrench, DollarSign, CreditCard,
   Phone, Mail, MapPin, Info, TrendingUp, TrendingDown, Percent, Plus, X,
+  Eye, EyeOff, Shield,
 } from "lucide-react";
 import { SearchableSelect } from "@/components/SearchableSelect";
 import { ClientFormDialog } from "@/components/ClientFormDialog";
@@ -262,6 +264,38 @@ function AccessoryChecklist({ value, onChange }: { value: string; onChange: (v: 
   );
 }
 
+// ═══ LOCK CODE FIELD (internal, masked) ═══
+function LockCodeField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs flex items-center gap-1.5">
+        <Shield className="h-3 w-3 text-destructive" />
+        Kod odblokowania urządzenia
+        <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-1 border-destructive/30 text-destructive">tylko serwis</Badge>
+      </Label>
+      <div className="relative">
+        <Input
+          type={visible ? "text" : "password"}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="PIN, wzór, hasło urządzenia"
+          className="h-9 pr-9 font-mono"
+          autoComplete="off"
+        />
+        <button
+          type="button"
+          onClick={() => setVisible(!visible)}
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+        >
+          {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+      <p className="text-[10px] text-muted-foreground">Pole wewnętrzne — nie pojawia się na dokumentach klienta</p>
+    </div>
+  );
+}
+
 // ═══ DESCRIPTION SECTION ═══
 export function DescriptionSection({ formData, onChange }: { formData: Record<string, any>; onChange: (field: string, value: any) => void; }) {
   return (
@@ -280,7 +314,7 @@ export function DescriptionSection({ formData, onChange }: { formData: Record<st
           <div className="space-y-1"><Label className="text-xs">Stan wizualny</Label><Input value={formData.visual_condition ?? ""} onChange={(e) => onChange("visual_condition", e.target.value)} placeholder="np. zarysowania, pęknięcia" className="h-9" /></div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="space-y-1"><Label className="text-xs">Kod blokady / hasło</Label><Input value={formData.lock_code ?? ""} onChange={(e) => onChange("lock_code", e.target.value)} placeholder="PIN, wzór, hasło" className="h-9" /></div>
+          <LockCodeField value={formData.lock_code ?? ""} onChange={(v) => onChange("lock_code", v)} />
         </div>
         <div className="space-y-1"><Label className="text-xs">Notatki wewnętrzne</Label><Textarea rows={2} value={formData.internal_notes ?? ""} onChange={(e) => onChange("internal_notes", e.target.value)} placeholder="Notatki widoczne tylko dla serwisu" /></div>
       </div>

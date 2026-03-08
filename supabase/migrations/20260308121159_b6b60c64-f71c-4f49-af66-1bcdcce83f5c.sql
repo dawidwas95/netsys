@@ -1,0 +1,1 @@
+ALTER TABLE public.service_orders ADD COLUMN pickup_code text DEFAULT NULL;

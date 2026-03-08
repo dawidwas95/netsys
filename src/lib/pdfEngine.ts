@@ -70,7 +70,7 @@ export const SERVICE_ORDER_SECTIONS: PdfSection[] = [
   { id: "diagnosis", label: "Diagnoza", enabled: true },
   { id: "repair_description", label: "Opis naprawy", enabled: true },
   { id: "financial", label: "Rozliczenie", enabled: true },
-  { id: "pickup_code", label: "Kod odbioru", enabled: true },
+  { id: "pickup_code", label: "Kod odbioru", enabled: false },
   { id: "internal_notes", label: "Notatki wewnętrzne", enabled: false },
   { id: "signatures", label: "Podpisy", enabled: true },
   { id: "footer", label: "Stopka", enabled: true },
@@ -590,10 +590,10 @@ export async function generateOrderPDF({ order, orderItems, financials }: OrderP
 
       /* ═══════════════ PICKUP CODE ═══════════════ */
       case "pickup_code": {
-        if (!order.lock_code) break;
-        b.drawSectionHeader("Kod odbioru / hasło");
+        if (!order.pickup_code) break;
+        b.drawSectionHeader("Kod odbioru");
         b.setFont("bold", 10, PdfBuilder.DARK);
-        doc.text(order.lock_code, b.ml + 2, b.y);
+        doc.text(order.pickup_code, b.ml + 2, b.y);
         b.y += 7;
         break;
       }
