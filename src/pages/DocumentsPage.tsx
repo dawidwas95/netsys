@@ -231,7 +231,7 @@ export default function DocumentsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
   const [clientInitialData, setClientInitialData] = useState<Record<string, string> | null>(null);
-  const [pzPromptData, setPzPromptData] = useState<{ docId: string; docNumber: string; clientId: string | null; items: any[] } | null>(null);
+  const [_pzPromptLegacy, _setPzPromptLegacy] = useState<null>(null); // removed — PZ is now auto-created
   const attachmentsRef = useRef<DocumentAttachmentsHandle>(null);
   const [ocrOpen, setOcrOpen] = useState(false);
   const [ocrSourceFile, setOcrSourceFile] = useState<File | null>(null);
@@ -393,28 +393,70 @@ export default function DocumentsPage() {
           if (itemErr) throw itemErr;
 
           if (values.document_type === "PURCHASE_INVOICE") {
+            // Remove old inventory movements from direct purchase source (legacy cleanup)
             if (editId) {
               await supabase.from("inventory_movements").delete().eq("source_id", docId!).eq("source_type", "PURCHASE");
             }
-            for (const item of items) {
-              if (item.item_type === "PRODUCT") {
-                let invItemId = item.inventory_item_id;
+
+            // Auto-create/recreate PZ warehouse document
+            const productItems = items.filter(it => it.item_type === "PRODUCT");
+            if (productItems.length > 0) {
+              // Delete old linked PZ if editing
+              if (editId) {
+                const { data: oldPz } = await (supabase.from("warehouse_documents") as any)
+                  .select("id")
+                  .eq("linked_invoice_id", docId);
+                if (oldPz?.length) {
+                  for (const pz of oldPz) {
+                    // Delete movements linked to warehouse doc items
+                    const { data: pzItems } = await (supabase.from("warehouse_document_items") as any)
+                      .select("id")
+                      .eq("warehouse_document_id", pz.id);
+                    if (pzItems?.length) {
+                      for (const pi of pzItems) {
+                        await supabase.from("inventory_movements").delete().eq("source_id", pi.id).eq("source_type", "DOCUMENT");
+                      }
+                    }
+                    await (supabase.from("warehouse_document_items") as any).delete().eq("warehouse_document_id", pz.id);
+                    await (supabase.from("warehouse_documents") as any).delete().eq("id", pz.id);
+                  }
+                }
+              }
+
+              // Ensure each product item has an inventory_item_id
+              const pzItems = [];
+              for (const pi of productItems) {
+                let invItemId = pi.inventory_item_id;
                 if (!invItemId) {
-                  const { data: existing } = await supabase.from("inventory_items").select("id").eq("name", item.name).maybeSingle();
+                  const { data: existing } = await supabase.from("inventory_items").select("id").eq("name", pi.name).maybeSingle();
                   if (existing) { invItemId = existing.id; }
                   else {
-                    const { data: created } = await supabase.from("inventory_items").insert({ name: item.name, purchase_net: item.unit_net, unit: item.unit, vat_rate: item.vat_rate }).select("id").single();
+                    const { data: created } = await supabase.from("inventory_items").insert({ name: pi.name, purchase_net: pi.unit_net, unit: pi.unit, vat_rate: pi.vat_rate }).select("id").single();
                     if (created) invItemId = created.id;
                   }
                 }
                 if (invItemId) {
-                  await supabase.from("inventory_items").update({ purchase_net: item.unit_net }).eq("id", invItemId);
-                  await supabase.from("inventory_movements").insert({
-                    item_id: invItemId, movement_type: "IN", quantity: item.quantity,
-                    source_type: "PURCHASE", source_id: docId, purchase_net: item.unit_net,
-                    notes: `Faktura: ${values.document_number || "auto"}`, created_by: user?.id,
+                  // Update purchase price
+                  await supabase.from("inventory_items").update({ purchase_net: pi.unit_net }).eq("id", invItemId);
+                  pzItems.push({
+                    inventory_item_id: invItemId,
+                    quantity: pi.quantity,
+                    price_net: pi.unit_net,
+                    notes: pi.name,
                   });
                 }
+              }
+
+              if (pzItems.length > 0) {
+                await createWarehouseDocument({
+                  document_type: "PZ",
+                  document_date: values.issue_date,
+                  client_id: values.client_id || null,
+                  linked_invoice_id: docId!,
+                  notes: `Auto z faktury ${values.document_number || "auto"}`,
+                  created_by: user?.id || null,
+                  items: pzItems,
+                });
               }
             }
           }
@@ -433,26 +475,12 @@ export default function DocumentsPage() {
       } as any).then();
       toast.success(editId ? "Zaktualizowano dokument" : "Dodano dokument");
 
-      // Check if purchase invoice with product items → prompt PZ
-      if (values.document_type === "PURCHASE_INVOICE" && !editId) {
-        const productItems = lineItems.filter(i => i.item_type === "PRODUCT" && i.inventory_item_id);
+      // Check if purchase invoice with product items → show PZ created toast
+      if (values.document_type === "PURCHASE_INVOICE") {
+        const productItems = lineItems.filter(i => i.item_type === "PRODUCT" && i.name.trim());
         if (productItems.length > 0) {
-          // We need the saved doc id — fetch latest
-          supabase.from("documents").select("id, document_number").eq("created_by", user?.id).order("created_at", { ascending: false }).limit(1).single().then(({ data: latestDoc }) => {
-            if (latestDoc) {
-              setPzPromptData({
-                docId: latestDoc.id,
-                docNumber: latestDoc.document_number,
-                clientId: values.client_id || null,
-                items: productItems.map(i => ({
-                  inventory_item_id: i.inventory_item_id!,
-                  quantity: parseFloat(i.quantity) || 1,
-                  price_net: parseFloat(i.unit_net) || 0,
-                  notes: i.name,
-                })),
-              });
-            }
-          });
+          qc.invalidateQueries({ queryKey: ["warehouse-documents"] });
+          toast.success(`Automatycznie utworzono PZ dla ${productItems.length} pozycji magazynowych`);
         }
       }
 
@@ -541,10 +569,19 @@ export default function DocumentsPage() {
     setFormOpen(true);
   }
 
+  const [previewLinkedPz, setPreviewLinkedPz] = useState<any[]>([]);
+
   async function openPreview(doc: Document) {
     setPreviewDoc(doc);
     const { data } = await supabase.from("document_items").select("*").eq("document_id", doc.id).order("sort_order");
     setPreviewItems(data ?? []);
+
+    // Fetch linked PZ documents
+    const { data: pzDocs } = await (supabase.from("warehouse_documents") as any)
+      .select("id, document_number, document_date, document_type")
+      .eq("linked_invoice_id", doc.id);
+    setPreviewLinkedPz(pzDocs ?? []);
+
     setPreviewOpen(true);
   }
 
@@ -1034,6 +1071,30 @@ export default function DocumentsPage() {
 
               <Separator />
               <DocumentAttachments documentId={previewDoc.id} />
+
+              {/* Linked warehouse documents */}
+              {previewLinkedPz.length > 0 && (
+                <>
+                  <Separator />
+                  <div>
+                    <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      Powiązane dokumenty magazynowe
+                    </p>
+                    <div className="space-y-1.5">
+                      {previewLinkedPz.map((pz: any) => (
+                        <div key={pz.id} className="flex items-center justify-between text-sm border rounded-md px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/30 text-xs">{pz.document_type}</Badge>
+                            <span className="font-mono font-medium">{pz.document_number}</span>
+                          </div>
+                          <span className="text-muted-foreground text-xs">{pz.document_date}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => setPreviewOpen(false)}>Zamknij</Button>
@@ -1688,41 +1749,6 @@ export default function DocumentsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* PZ auto-create prompt */}
-      <AlertDialog open={!!pzPromptData} onOpenChange={v => { if (!v) setPzPromptData(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Utworzyć dokument PZ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Faktura zakupowa {pzPromptData?.docNumber} zawiera {pzPromptData?.items?.length} pozycji magazynowych.
-              Czy chcesz automatycznie utworzyć dokument PZ (Przyjęcie Zewnętrzne) dla tych pozycji?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPzPromptData(null)}>Nie, pomiń</AlertDialogCancel>
-            <AlertDialogAction onClick={async () => {
-              if (!pzPromptData) return;
-              try {
-                await createWarehouseDocument({
-                  document_type: "PZ",
-                  client_id: pzPromptData.clientId,
-                  linked_invoice_id: pzPromptData.docId,
-                  notes: `Auto z faktury ${pzPromptData.docNumber}`,
-                  created_by: user?.id || null,
-                  items: pzPromptData.items,
-                });
-                qc.invalidateQueries({ queryKey: ["warehouse-documents"] });
-                toast.success("Utworzono dokument PZ");
-              } catch (e) {
-                toast.error("Nie udało się utworzyć PZ");
-              }
-              setPzPromptData(null);
-            }}>
-              Tak, utwórz PZ
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* OCR Import Dialog */}
       <OcrImportDialog open={ocrOpen} onOpenChange={setOcrOpen} onDataExtracted={handleOcrData} />
