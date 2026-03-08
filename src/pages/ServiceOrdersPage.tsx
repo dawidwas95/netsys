@@ -121,8 +121,17 @@ export default function ServiceOrdersPage() {
               <SelectItem key={key} value={key}>{label}</SelectItem>
             ))}
           </SelectContent>
-        </Select>
-      </div>
+         </Select>
+         <Select value={techFilter} onValueChange={setTechFilter}>
+           <SelectTrigger className="w-48"><SelectValue placeholder="Technik" /></SelectTrigger>
+           <SelectContent>
+             <SelectItem value="all">Wszyscy technicy</SelectItem>
+             <SelectItem value="unassigned">Nieprzypisane</SelectItem>
+             {staffUsers.map((u) => (
+               <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+             ))}
+           </SelectContent>
+         </Select>
 
       <div className="data-table-wrapper">
         <Table>
