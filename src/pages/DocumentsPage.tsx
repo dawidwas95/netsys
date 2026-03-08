@@ -95,7 +95,7 @@ interface DocumentLineItem {
 const emptyLineItem: DocumentLineItem = { name: "", quantity: "1", unit: "szt.", unit_net: "0", vat_rate: "23" };
 
 const emptyForm = {
-  document_number: "TEMP",
+  document_number: "",
   document_type: "SALES_INVOICE" as DocType,
   direction: "INCOME" as DocDirection,
   client_id: "",
