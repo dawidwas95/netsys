@@ -325,7 +325,7 @@ export default function DocumentsPage() {
               await supabase.from("inventory_movements").delete().eq("source_id", docId!).eq("source_type", "PURCHASE");
             }
             for (const item of items) {
-              if (item.description === "PRODUCT") {
+              if (item.item_type === "PRODUCT") {
                 let invItemId = item.inventory_item_id;
                 if (!invItemId) {
                   const { data: existing } = await supabase.from("inventory_items").select("id").eq("name", item.name).maybeSingle();
