@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import {
   Users, Monitor, Wrench, KanbanSquare, FileText, Wallet,
-  Receipt, ScrollText, Database, Settings, BookOpen, LogOut, Download,
+  Receipt, ScrollText, Database, Settings, BookOpen, LogOut, Download, Tv,
 } from "lucide-react";
 
 const bottomTabs = [
