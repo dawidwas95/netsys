@@ -285,6 +285,8 @@ export default function OrderDetailPage() {
       toast.success("Zlecenie zaktualizowane");
     },
     onError: (err: any) => toast.error(err.message),
+  });
+
   const safeDeleteOrder = useMutation({
     mutationFn: async () => {
       const hasFinancialLinks = (linkedStats?.cashCount ?? 0) > 0 || (linkedStats?.docCount ?? 0) > 0;
