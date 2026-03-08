@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -15,9 +16,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ShoppingCart, Search, Package, ExternalLink, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { ShoppingCart, Search, Package, ExternalLink, CheckCircle2, Clock, XCircle, Pencil, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { PurchaseRequestFormDialog } from "@/components/order/PurchaseRequestFormDialog";
 
 const STATUS_LABELS: Record<string, string> = {
   NEW: "Nowe", TO_ORDER: "Do zamówienia", ORDERED: "Zamówione",
@@ -72,6 +74,9 @@ export default function PurchaseRequestsPage() {
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [approvalFilter, setApprovalFilter] = useState("ALL");
   const [confirmDialog, setConfirmDialog] = useState<{ id: string; status: string } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingRequest, setEditingRequest] = useState<any | null>(null);
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["purchase-requests-global"],
@@ -127,13 +132,31 @@ export default function PurchaseRequestsPage() {
     onError: () => toast.error("Błąd zmiany statusu akceptacji"),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("purchase_requests").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["purchase-requests-global"] });
+      queryClient.invalidateQueries({ queryKey: ["purchase-requests"] });
+      toast.success("Zapotrzebowanie usunięte");
+      setDeleteConfirm(null);
+    },
+    onError: () => toast.error("Nie udało się usunąć"),
+  });
+
   const handleStatusChange = (r: any, newStatus: string) => {
-    // Guard: warn if trying to order without client approval
     if (["TO_ORDER", "ORDERED"].includes(newStatus) && r.client_approval !== "APPROVED") {
       setConfirmDialog({ id: r.id, status: newStatus });
       return;
     }
     updateStatus.mutate({ id: r.id, status: newStatus });
+  };
+
+  const handleEdit = (r: any) => {
+    setEditingRequest(r);
+    setEditDialogOpen(true);
   };
 
   const filtered = requests.filter((r: any) => {
@@ -233,7 +256,7 @@ export default function PurchaseRequestsPage() {
                 <TableHead>Sklep / Link</TableHead>
                 <TableHead className="text-right">Koszt brutto</TableHead>
                 <TableHead>Data</TableHead>
-                <TableHead className="text-right">Zmień status</TableHead>
+                <TableHead className="text-right">Akcje</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -255,7 +278,12 @@ export default function PurchaseRequestsPage() {
                       </Select>
                     </TableCell>
                     <TableCell>
-                      <Badge className={`text-[10px] ${STATUS_COLORS[r.status] || ""}`} variant="outline">{STATUS_LABELS[r.status]}</Badge>
+                      <Select value={r.status} onValueChange={(v) => handleStatusChange(r, v)}>
+                        <SelectTrigger className="h-7 text-[10px] w-auto min-w-[100px] border-none p-0 gap-1">
+                          <Badge className={`text-[10px] ${STATUS_COLORS[r.status] || ""}`} variant="outline">{STATUS_LABELS[r.status]}</Badge>
+                        </SelectTrigger>
+                        <SelectContent>{ALL_STATUSES.map((s) => (<SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>))}</SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell>
                       <div className="font-medium">{r.item_name}</div>
@@ -276,10 +304,16 @@ export default function PurchaseRequestsPage() {
                     <TableCell className="text-right text-sm font-medium">{formatCurrency(r.estimated_gross) || "—"}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString("pl-PL")}</TableCell>
                     <TableCell className="text-right">
-                      <Select value={r.status} onValueChange={(v) => handleStatusChange(r, v)}>
-                        <SelectTrigger className="h-7 text-xs w-32"><SelectValue /></SelectTrigger>
-                        <SelectContent>{ALL_STATUSES.map((s) => (<SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>))}</SelectContent>
-                      </Select>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEdit(r)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        {["NEW", "CANCELLED"].includes(r.status) && (
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteConfirm(r.id)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -310,7 +344,12 @@ export default function PurchaseRequestsPage() {
                       {formatCurrency(r.estimated_gross) && <span className="font-medium text-foreground">{formatCurrency(r.estimated_gross)}</span>}
                     </div>
                   </div>
-                  <Badge className={`text-[10px] shrink-0 ${STATUS_COLORS[r.status] || ""}`} variant="outline">{STATUS_LABELS[r.status]}</Badge>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Badge className={`text-[10px] ${STATUS_COLORS[r.status] || ""}`} variant="outline">{STATUS_LABELS[r.status]}</Badge>
+                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleEdit(r)}>
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <ApprovalBadge status={r.client_approval} />
@@ -335,11 +374,26 @@ export default function PurchaseRequestsPage() {
                     <SelectContent>{ALL_STATUSES.map((s) => (<SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
+                {["NEW", "CANCELLED"].includes(r.status) && (
+                  <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive w-full" onClick={() => setDeleteConfirm(r.id)}>
+                    <Trash2 className="h-3 w-3 mr-1" /> Usuń
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ))
         )}
       </div>
+
+      {/* Edit dialog */}
+      {editingRequest && (
+        <PurchaseRequestFormDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          orderId={editingRequest.order_id}
+          editingRequest={editingRequest}
+        />
+      )}
 
       {/* Approval warning dialog */}
       <AlertDialog open={!!confirmDialog} onOpenChange={(open) => !open && setConfirmDialog(null)}>
@@ -358,6 +412,20 @@ export default function PurchaseRequestsPage() {
             }}>
               Kontynuuj mimo to
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Usunąć zapotrzebowanie?</AlertDialogTitle>
+            <AlertDialogDescription>Ta operacja jest nieodwracalna.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteConfirm && deleteMutation.mutate(deleteConfirm)}>Usuń</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
