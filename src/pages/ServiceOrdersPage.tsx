@@ -238,6 +238,7 @@ export default function ServiceOrdersPage() {
               <div className="mobile-card-row">
                 <span className="mobile-card-label">Dział</span>
                 <span className="text-sm">{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || "—"}</span>
+              </div>
               <div className="mobile-card-row">
                 <span className="mobile-card-label">Klient</span>
                 <span className="text-sm">{order.clients?.display_name || "—"}</span>
