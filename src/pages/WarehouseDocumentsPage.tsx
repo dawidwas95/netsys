@@ -406,9 +406,9 @@ export default function WarehouseDocumentsPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Ładowanie...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Ładowanie...</TableCell></TableRow>
               ) : !filtered.length ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Brak dokumentów</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Brak dokumentów</TableCell></TableRow>
               ) : filtered.map((d: any) => {
                 const tc = DOC_TYPE_CONFIG[d.document_type as WarehouseDocType];
                 return (
