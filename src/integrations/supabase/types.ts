@@ -427,6 +427,51 @@ export type Database = {
         }
         Relationships: []
       }
+      company_settings: {
+        Row: {
+          address_city: string | null
+          address_postal_code: string | null
+          address_street: string | null
+          company_name: string
+          email: string | null
+          id: string
+          logo_url: string | null
+          nip: string | null
+          phone: string | null
+          updated_at: string
+          updated_by: string | null
+          website: string | null
+        }
+        Insert: {
+          address_city?: string | null
+          address_postal_code?: string | null
+          address_street?: string | null
+          company_name?: string
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          nip?: string | null
+          phone?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          website?: string | null
+        }
+        Update: {
+          address_city?: string | null
+          address_postal_code?: string | null
+          address_street?: string | null
+          company_name?: string
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          nip?: string | null
+          phone?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
       devices: {
         Row: {
           asset_tag: string | null
@@ -1291,6 +1336,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pdf_templates: {
+        Row: {
+          config: Json
+          created_at: string
+          document_type: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          document_type: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          document_type?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
