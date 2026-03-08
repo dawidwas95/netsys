@@ -36,6 +36,7 @@ export default function ServiceOrdersPage() {
   const [techFilter, setTechFilter] = useState<string>("all");
   const [deptFilter, setDeptFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { unreadOrderIds } = useUnreadOrders();
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
