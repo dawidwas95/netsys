@@ -71,8 +71,6 @@ export default function OrderDetailPage() {
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
   const [editDirty, setEditDirty] = useState(false);
-
-  // Editable form state — synced from order data
   const [editForm, setEditForm] = useState<Record<string, any> | null>(null);
 
   const { data: order, isLoading } = useQuery({
@@ -89,7 +87,24 @@ export default function OrderDetailPage() {
     enabled: !!id,
   });
 
-  // Init edit form from order
+  // Profiles for comment authors
+  const { data: profiles = [] } = useQuery({
+    queryKey: ["profiles"],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("user_id, first_name, last_name, email");
+      return data ?? [];
+    },
+  });
+
+  const profileMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    profiles.forEach((p: any) => {
+      const name = [p.first_name, p.last_name].filter(Boolean).join(" ");
+      map[p.user_id] = name || p.email || "Użytkownik";
+    });
+    return map;
+  }, [profiles]);
+
   const currentForm = useMemo(() => {
     if (editForm) return editForm;
     if (!order) return {};
@@ -165,7 +180,6 @@ export default function OrderDetailPage() {
     enabled: !!id,
   });
 
-  // ── Financial calculations ──
   const financials = useMemo(() => {
     const laborNet = parseFloat(currentForm.labor_net) || 0;
     const partsCost = parseFloat(currentForm.parts_net) || 0;
@@ -183,17 +197,14 @@ export default function OrderDetailPage() {
     return { laborNet, partsCost, extraCost, totalCost, itemsRevenue, itemsCost, revenue, profit, margin, revenueGross, totalCostGross, profitGross };
   }, [currentForm, orderItems]);
 
-  // ── Save mutation ──
   const updateOrder = useMutation({
     mutationFn: async (updates: Record<string, any>) => {
       if (updates.status === "COMPLETED" && order?.status !== "COMPLETED") {
         updates.completed_at = new Date().toISOString();
       }
-
       const laborNet = parseFloat(updates.labor_net ?? currentForm.labor_net ?? 0) || 0;
       const itemsRevenue = orderItems.reduce((s, i) => s + i.total_sale_net, 0);
       const revenue = laborNet + itemsRevenue;
-
       updates.total_net = revenue;
       updates.total_gross = revenue * 1.23;
       updates.labor_net = parseFloat(updates.labor_net) || 0;
@@ -202,48 +213,31 @@ export default function OrderDetailPage() {
       if (updates.is_paid && !order?.paid_at) {
         updates.paid_at = new Date().toISOString();
       }
-
       const { error } = await supabase
         .from("service_orders")
         .update({ ...updates, updated_by: user?.id })
         .eq("id", id!);
       if (error) throw error;
-
       await supabase.from("activity_logs").insert({
-        entity_type: "service_order",
-        entity_id: id!,
-        action_type: "update",
-        new_value_json: updates,
-        user_id: user?.id,
+        entity_type: "service_order", entity_id: id!, action_type: "update",
+        new_value_json: updates, user_id: user?.id,
       });
-
-      // Cash entry on COMPLETED + CASH + is_paid
       const shouldCreateCash = updates.status === "COMPLETED" || (updates.is_paid && order?.status === "COMPLETED");
       if (shouldCreateCash) {
         const merged = { ...order, ...updates };
         if (merged.payment_method === "CASH" && merged.is_paid && revenue > 0) {
           const { data: existing } = await supabase
-            .from("cash_transactions")
-            .select("id")
-            .eq("related_order_id", id!)
-            .eq("source_type", "SERVICE_ORDER")
-            .limit(1);
-
+            .from("cash_transactions").select("id")
+            .eq("related_order_id", id!).eq("source_type", "SERVICE_ORDER").limit(1);
           const grossRevenue = revenue * 1.23;
           const vatAmount = revenue * 0.23;
-
           if (!existing?.length) {
             await supabase.from("cash_transactions").insert({
-              transaction_type: "IN" as any,
-              source_type: "SERVICE_ORDER" as any,
-              related_order_id: id!,
-              amount: grossRevenue,
-              gross_amount: grossRevenue,
-              vat_amount: vatAmount,
-              payment_method: "CASH",
+              transaction_type: "IN" as any, source_type: "SERVICE_ORDER" as any,
+              related_order_id: id!, amount: grossRevenue, gross_amount: grossRevenue,
+              vat_amount: vatAmount, payment_method: "CASH",
               description: `Zlecenie ${order?.order_number} — płatność gotówką`,
-              transaction_date: new Date().toISOString().split("T")[0],
-              user_id: user?.id,
+              transaction_date: new Date().toISOString().split("T")[0], user_id: user?.id,
             });
           }
         }
@@ -254,10 +248,6 @@ export default function OrderDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["order-logs", id] });
       queryClient.invalidateQueries({ queryKey: ["kanban-orders"] });
       queryClient.invalidateQueries({ queryKey: ["cash_transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-order-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-financial-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-cash-balance"] });
-      queryClient.invalidateQueries({ queryKey: ["recent-cash-ops"] });
       setEditForm(null);
       setEditDirty(false);
       toast.success("Zlecenie zaktualizowane");
@@ -265,54 +255,34 @@ export default function OrderDetailPage() {
     onError: (err: any) => toast.error(err.message),
   });
 
-  function handleSave() {
-    if (!editForm) return;
-    updateOrder.mutate(editForm);
-  }
+  function handleSave() { if (!editForm) return; updateOrder.mutate(editForm); }
 
   function handleCloseAndSettle() {
     if (!order) return;
     const errors: string[] = [];
     if (financials.revenue <= 0) errors.push("Brak ceny usługi lub pozycji");
     if (!currentForm.payment_method) errors.push("Nie wybrano formy płatności");
-    if (errors.length > 0) {
-      toast.error(`Nie można zamknąć zlecenia:\n${errors.join("\n")}`);
-      return;
-    }
+    if (errors.length > 0) { toast.error(`Nie można zamknąć zlecenia:\n${errors.join("\n")}`); return; }
     updateOrder.mutate({
-      ...currentForm,
-      status: "COMPLETED",
-      is_paid: true,
-      paid_at: new Date().toISOString(),
-      completed_at: new Date().toISOString(),
+      ...currentForm, status: "COMPLETED", is_paid: true,
+      paid_at: new Date().toISOString(), completed_at: new Date().toISOString(),
     });
     setCloseDialogOpen(false);
   }
 
-  // ── Items ──
   const addItemMutation = useMutation({
     mutationFn: async () => {
       const qty = parseFloat(newItem.quantity) || 1;
       const saleNet = parseFloat(newItem.sale_net) || 0;
       const purchaseNet = parseFloat(newItem.purchase_net) || 0;
       const { error } = await supabase.from("service_order_items").insert({
-        order_id: id!,
-        item_name_snapshot: newItem.name,
-        quantity: qty,
-        sale_net: saleNet,
-        purchase_net: purchaseNet,
-        total_sale_net: qty * saleNet,
-        total_purchase_net: qty * purchaseNet,
-        created_by: user?.id,
+        order_id: id!, item_name_snapshot: newItem.name, quantity: qty,
+        sale_net: saleNet, purchase_net: purchaseNet,
+        total_sale_net: qty * saleNet, total_purchase_net: qty * purchaseNet, created_by: user?.id,
       });
       if (error) throw error;
-
       const newRevenue = financials.revenue + qty * saleNet;
-      await supabase.from("service_orders").update({
-        total_net: newRevenue,
-        total_gross: newRevenue * 1.23,
-        updated_by: user?.id,
-      }).eq("id", id!);
+      await supabase.from("service_orders").update({ total_net: newRevenue, total_gross: newRevenue * 1.23, updated_by: user?.id }).eq("id", id!);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-items", id] });
@@ -375,7 +345,7 @@ export default function OrderDetailPage() {
 
   return (
     <div className="space-y-5">
-      {/* ═══ HEADER ═══ */}
+      {/* HEADER */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <Link to="/orders" className="text-muted-foreground hover:text-foreground">
@@ -416,9 +386,9 @@ export default function OrderDetailPage() {
                   <DialogHeader><DialogTitle>Zakończ i rozlicz zlecenie</DialogTitle></DialogHeader>
                   <div className="space-y-4">
                     <div className="rounded-lg border border-border p-4 space-y-2 text-sm">
-                      <div className="flex justify-between"><span>Przychód:</span><span className="font-mono font-medium">{formatCurrency(financials.revenue)}</span></div>
-                      <div className="flex justify-between"><span>Koszty:</span><span className="font-mono font-medium">{formatCurrency(financials.totalCost)}</span></div>
-                      <div className="flex justify-between border-t border-border pt-2"><span className="font-medium">Zysk:</span><span className={cn("font-mono font-medium", financials.profit >= 0 ? "text-primary" : "text-destructive")}>{formatCurrency(financials.profit)}</span></div>
+                      <div className="flex justify-between"><span>Przychód brutto:</span><span className="font-mono font-medium">{formatCurrency(financials.revenueGross)}</span></div>
+                      <div className="flex justify-between"><span>Koszty brutto:</span><span className="font-mono font-medium">{formatCurrency(financials.totalCostGross)}</span></div>
+                      <div className="flex justify-between border-t border-border pt-2"><span className="font-medium">Zysk brutto:</span><span className={cn("font-mono font-medium", financials.profitGross >= 0 ? "text-primary" : "text-destructive")}>{formatCurrency(financials.profitGross)}</span></div>
                       <div className="flex justify-between"><span>Forma płatności:</span><span>{currentForm.payment_method ? PAYMENT_METHOD_LABELS[currentForm.payment_method as PaymentMethod] : <span className="text-destructive flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Nie wybrano!</span>}</span></div>
                     </div>
                     {financials.revenue <= 0 && (
@@ -466,9 +436,9 @@ export default function OrderDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ═══ TWO-COLUMN LAYOUT ═══ */}
+      {/* TWO-COLUMN LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-5">
-        {/* ── LEFT COLUMN: Main content ── */}
+        {/* LEFT COLUMN */}
         <div className="space-y-5">
           <Tabs defaultValue="edit">
             <TabsList>
@@ -488,7 +458,6 @@ export default function OrderDetailPage() {
                 onChange={handleFieldChange}
                 onStatusChange={(v) => {
                   handleFieldChange("status", v);
-                  // Also immediately save status change
                   updateOrder.mutate({ status: v });
                 }}
               />
@@ -499,12 +468,20 @@ export default function OrderDetailPage() {
                 <CardContent className="pt-4 space-y-4">
                   {comments?.map((c: any) => (
                     <div key={c.id} className="border-b border-border pb-3 last:border-0">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                        <User className="h-3 w-3" />
-                        <Clock className="h-3 w-3" />
-                        {new Date(c.created_at).toLocaleString("pl-PL")}
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                          {(profileMap[c.user_id] || "?")[0].toUpperCase()}
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium">{profileMap[c.user_id] || "Użytkownik"}</span>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {new Date(c.created_at).toLocaleDateString("pl-PL", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                            {" "}
+                            {new Date(c.created_at).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
                       </div>
-                      <p className="text-sm">{c.comment}</p>
+                      <p className="text-sm ml-9">{c.comment}</p>
                     </div>
                   ))}
                   <div className="flex gap-2">
@@ -530,11 +507,6 @@ export default function OrderDetailPage() {
                           <div>
                             <div className="text-xs text-muted-foreground">{new Date(log.created_at).toLocaleString("pl-PL")}</div>
                             <Badge variant="outline" className="text-xs mt-0.5">{log.action_type}</Badge>
-                            {log.new_value_json && (
-                              <pre className="text-xs text-muted-foreground mt-1 bg-muted p-1 rounded overflow-x-auto max-w-full">
-                                {JSON.stringify(log.new_value_json, null, 2)}
-                              </pre>
-                            )}
                           </div>
                         </div>
                       ))}
@@ -548,12 +520,8 @@ export default function OrderDetailPage() {
               <Card>
                 <CardContent className="pt-4 space-y-3">
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
-                      <FileDown className="mr-1 h-4 w-4" /> Pobierz PDF
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={handlePrintPDF}>
-                      <Printer className="mr-1 h-4 w-4" /> Drukuj PDF
-                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleDownloadPDF}><FileDown className="mr-1 h-4 w-4" /> Pobierz PDF</Button>
+                    <Button variant="outline" size="sm" onClick={handlePrintPDF}><Printer className="mr-1 h-4 w-4" /> Drukuj PDF</Button>
                   </div>
                   <p className="text-xs text-muted-foreground">PDF generowany na żywo z aktualnych danych zlecenia.</p>
                 </CardContent>
@@ -562,7 +530,7 @@ export default function OrderDetailPage() {
           </Tabs>
         </div>
 
-        {/* ── RIGHT COLUMN: Finance + Payment + Items ── */}
+        {/* RIGHT COLUMN */}
         <div className="space-y-5">
           <FinanceSection formData={currentForm} onChange={handleFieldChange} orderItems={orderItems} />
           <PaymentSection formData={currentForm} onChange={handleFieldChange} />
@@ -587,15 +555,6 @@ export default function OrderDetailPage() {
                       <div><Label className="text-xs">Cena sprzedaży</Label><Input type="number" step="0.01" value={newItem.sale_net} onChange={(e) => setNewItem({ ...newItem, sale_net: e.target.value })} placeholder="0.00" /></div>
                       <div><Label className="text-xs">Cena zakupu</Label><Input type="number" step="0.01" value={newItem.purchase_net} onChange={(e) => setNewItem({ ...newItem, purchase_net: e.target.value })} placeholder="0.00" /></div>
                     </div>
-                    {(parseFloat(newItem.sale_net) > 0 || parseFloat(newItem.purchase_net) > 0) && (
-                      <div className="rounded-md bg-muted p-2.5 text-xs grid grid-cols-3 gap-2">
-                        <div>Sprzedaż: <span className="font-mono font-medium">{formatCurrency((parseFloat(newItem.quantity) || 1) * (parseFloat(newItem.sale_net) || 0))}</span></div>
-                        <div>Zakup: <span className="font-mono font-medium">{formatCurrency((parseFloat(newItem.quantity) || 1) * (parseFloat(newItem.purchase_net) || 0))}</span></div>
-                        <div>Zysk: <span className={cn("font-mono font-medium", ((parseFloat(newItem.sale_net) || 0) - (parseFloat(newItem.purchase_net) || 0)) >= 0 ? "text-primary" : "text-destructive")}>
-                          {formatCurrency((parseFloat(newItem.quantity) || 1) * ((parseFloat(newItem.sale_net) || 0) - (parseFloat(newItem.purchase_net) || 0)))}
-                        </span></div>
-                      </div>
-                    )}
                     <div className="flex justify-end gap-2">
                       <Button variant="outline" onClick={() => setItemDialogOpen(false)}>Anuluj</Button>
                       <Button onClick={() => addItemMutation.mutate()} disabled={!newItem.name || addItemMutation.isPending}>Dodaj</Button>
@@ -614,7 +573,7 @@ export default function OrderDetailPage() {
                       <div className="space-y-0.5 min-w-0 flex-1">
                         <div className="font-medium truncate">{item.item_name_snapshot}</div>
                         <div className="text-muted-foreground">
-                          {item.quantity}× · Sprzedaż: {formatCurrency(item.total_sale_net)} · Zakup: {formatCurrency(item.total_purchase_net)} · Zysk: <span className={cn("font-medium", itemProfit >= 0 ? "text-primary" : "text-destructive")}>{formatCurrency(itemProfit)}</span>
+                          {item.quantity}× · Sprzedaż: {formatCurrency(item.total_sale_net)} · Zakup: {formatCurrency(item.total_purchase_net)}
                         </div>
                       </div>
                       <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive shrink-0" onClick={() => deleteItemMutation.mutate(item.id)}>
@@ -623,19 +582,12 @@ export default function OrderDetailPage() {
                     </div>
                   );
                 })}
-                <div className="rounded-md bg-muted/50 p-2.5 text-xs flex justify-between font-medium">
-                  <span>Suma pozycji</span>
-                  <span>Sprzedaż: {formatCurrency(financials.itemsRevenue)} · Zakup: {formatCurrency(financials.itemsCost)} · Zysk: <span className={cn(financials.itemsRevenue - financials.itemsCost >= 0 ? "text-primary" : "text-destructive")}>{formatCurrency(financials.itemsRevenue - financials.itemsCost)}</span></span>
-                </div>
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground text-center py-4 border border-dashed border-border rounded-md">
-                Brak pozycji
-              </p>
+              <p className="text-xs text-muted-foreground text-center py-4 border border-dashed border-border rounded-md">Brak pozycji</p>
             )}
           </FormSection>
 
-          {/* Save button in sidebar */}
           {editDirty && (
             <Button className="w-full" onClick={handleSave} disabled={updateOrder.isPending}>
               <Save className="mr-1 h-4 w-4" /> {updateOrder.isPending ? "Zapisywanie..." : "Zapisz wszystkie zmiany"}
