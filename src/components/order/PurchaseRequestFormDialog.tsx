@@ -121,7 +121,7 @@ export function PurchaseRequestFormDialog({ open, onOpenChange, orderId, editing
         estimated_vat: vat,
         description: form.description || null,
         urgency: form.urgency as any,
-        client_approval: form.client_approval as any,
+        
         status: form.status as any,
       };
 
