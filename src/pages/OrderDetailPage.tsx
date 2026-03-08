@@ -828,6 +828,26 @@ export default function OrderDetailPage() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="signatures" className="mt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <SignatureCanvas
+                  title="Podpis klienta"
+                  existingUrl={order?.client_signature_url}
+                  signedAt={order?.client_signed_at}
+                  onSave={(dataUrl) => handleSaveSignature(dataUrl, "client")}
+                  onClear={() => handleClearSignature("client")}
+                />
+                <SignatureCanvas
+                  title="Podpis serwisanta"
+                  existingUrl={order?.technician_signature_url}
+                  signedAt={order?.technician_signed_at}
+                  onSave={(dataUrl) => handleSaveSignature(dataUrl, "technician")}
+                  onClear={() => handleClearSignature("technician")}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">Podpisy cyfrowe są automatycznie dołączane do generowanych dokumentów PDF.</p>
+            </TabsContent>
           </Tabs>
         </div>
 
