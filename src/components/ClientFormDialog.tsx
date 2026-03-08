@@ -169,107 +169,169 @@ export function ClientFormDialog({ onCreated, onUpdated, trigger, externalOpen, 
   };
 
   const dialogContent = (
-    <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto" onPointerDownOutside={(e) => e.preventDefault()}>
-      <DialogHeader>
-        <DialogTitle>{isEdit ? "Edytuj klienta" : "Nowy klient"}</DialogTitle>
-      </DialogHeader>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label>Typ klienta</Label>
-            <Select value={form.client_type} onValueChange={(v) => setForm({ ...form, client_type: v as ClientType })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {(Object.keys(CLIENT_TYPE_LABELS) as ClientType[]).map((k) => (
-                  <SelectItem key={k} value={k}>{CLIENT_TYPE_LABELS[k]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Rola biznesowa</Label>
-            <Select value={form.business_role} onValueChange={(v) => setForm({ ...form, business_role: v as BusinessRole })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {(Object.keys(BUSINESS_ROLE_LABELS) as BusinessRole[]).map((k) => (
-                  <SelectItem key={k} value={k}>{BUSINESS_ROLE_LABELS[k]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+    <DialogContent className="max-w-[800px] max-h-[90vh] overflow-hidden p-0" onPointerDownOutside={(e) => e.preventDefault()}>
+      <form onSubmit={handleSubmit} className="flex flex-col h-full max-h-[90vh]">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {form.client_type === "COMPANY" ? <Building2 className="h-5 w-5 text-muted-foreground" /> : <User className="h-5 w-5 text-muted-foreground" />}
+              {isEdit ? "Edytuj kontrahenta" : "Nowy kontrahent"}
+            </DialogTitle>
+          </DialogHeader>
         </div>
 
-        {form.client_type === "COMPANY" && (
-          <>
-            <div className="space-y-1.5">
-              <Label>Nazwa firmy *</Label>
-              <Input value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} required />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+          {/* Section: Basic info */}
+          <div>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Dane podstawowe</h3>
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>NIP</Label>
-                <Input value={form.nip} onChange={(e) => setForm({ ...form, nip: e.target.value })} />
+                <Label className="text-xs text-muted-foreground">Typ kontrahenta</Label>
+                <Select value={form.client_type} onValueChange={(v) => setForm({ ...form, client_type: v as ClientType })}>
+                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(CLIENT_TYPE_LABELS) as ClientType[]).map((k) => (
+                      <SelectItem key={k} value={k}>{CLIENT_TYPE_LABELS[k]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>REGON</Label>
-                <Input value={form.regon} onChange={(e) => setForm({ ...form, regon: e.target.value })} />
+                <Label className="text-xs text-muted-foreground">Rola biznesowa</Label>
+                <Select value={form.business_role} onValueChange={(v) => setForm({ ...form, business_role: v as BusinessRole })}>
+                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(BUSINESS_ROLE_LABELS) as BusinessRole[]).map((k) => (
+                      <SelectItem key={k} value={k}>{BUSINESS_ROLE_LABELS[k]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-          </>
-        )}
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label>{form.client_type === "COMPANY" ? "Imię kontaktowe" : "Imię *"}</Label>
-            <Input value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} />
           </div>
-          <div className="space-y-1.5">
-            <Label>{form.client_type === "COMPANY" ? "Nazwisko kontaktowe" : "Nazwisko *"}</Label>
-            <Input value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} />
+
+          {/* Company fields */}
+          {form.client_type === "COMPANY" && (
+            <>
+              <Separator />
+              <div>
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Dane firmy</h3>
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Nazwa firmy *</Label>
+                    <Input value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} className="h-10" required />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">NIP</Label>
+                      <Input value={form.nip} onChange={(e) => setForm({ ...form, nip: e.target.value })} placeholder="000-000-00-00" className="h-10 font-mono" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">REGON</Label>
+                      <Input value={form.regon} onChange={(e) => setForm({ ...form, regon: e.target.value })} className="h-10 font-mono" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          <Separator />
+
+          {/* Section: Person */}
+          <div>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-1.5">
+              <User className="h-3.5 w-3.5" />
+              {form.client_type === "COMPANY" ? "Osoba kontaktowa" : "Dane osobowe"}
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">{form.client_type === "COMPANY" ? "Imię" : "Imię *"}</Label>
+                <Input value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} className="h-10" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">{form.client_type === "COMPANY" ? "Nazwisko" : "Nazwisko *"}</Label>
+                <Input value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} className="h-10" />
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Section: Contact */}
+          <div>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-1.5">
+              <Phone className="h-3.5 w-3.5" />
+              Kontakt
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Telefon</Label>
+                <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+48..." className="h-10" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">E-mail</Label>
+                <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="h-10" />
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Section: Address */}
+          <div>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5" />
+              Adres
+            </h3>
+            <div className="space-y-4">
+              <div className="grid grid-cols-[1fr_100px_80px] gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Ulica</Label>
+                  <Input value={form.address_street} onChange={(e) => setForm({ ...form, address_street: e.target.value })} className="h-10" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Nr budynku</Label>
+                  <Input value={form.address_building} onChange={(e) => setForm({ ...form, address_building: e.target.value })} className="h-10" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Nr lokalu</Label>
+                  <Input value={form.address_local} onChange={(e) => setForm({ ...form, address_local: e.target.value })} className="h-10" />
+                </div>
+              </div>
+              <div className="grid grid-cols-[120px_1fr_1fr] gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Kod pocztowy</Label>
+                  <Input value={form.address_postal_code} onChange={(e) => setForm({ ...form, address_postal_code: e.target.value })} placeholder="00-000" className="h-10 font-mono" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Miasto</Label>
+                  <Input value={form.address_city} onChange={(e) => setForm({ ...form, address_city: e.target.value })} className="h-10" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Kraj</Label>
+                  <Input value={form.address_country} onChange={(e) => setForm({ ...form, address_country: e.target.value })} className="h-10" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Section: Notes */}
+          <div>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Uwagi</h3>
+            <Textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Dodatkowe informacje o kontrahencie..." />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label>Telefon</Label>
-            <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>E-mail</Label>
-            <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-3">
-          <div className="space-y-1.5 col-span-2">
-            <Label>Ulica</Label>
-            <Input value={form.address_street} onChange={(e) => setForm({ ...form, address_street: e.target.value })} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Kod pocztowy</Label>
-            <Input value={form.address_postal_code} onChange={(e) => setForm({ ...form, address_postal_code: e.target.value })} />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label>Miasto</Label>
-            <Input value={form.address_city} onChange={(e) => setForm({ ...form, address_city: e.target.value })} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Kraj</Label>
-            <Input value={form.address_country} onChange={(e) => setForm({ ...form, address_country: e.target.value })} />
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label>Uwagi</Label>
-          <Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-        </div>
-
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={() => setOpen(false)}>Anuluj</Button>
-          <Button type="submit" disabled={saveMutation.isPending}>
-            {saveMutation.isPending ? "Zapisywanie..." : isEdit ? "Zapisz zmiany" : "Dodaj klienta"}
+        {/* Footer - sticky */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-card">
+          <Button type="button" variant="outline" onClick={() => setOpen(false)} className="h-10 px-6">Anuluj</Button>
+          <Button type="submit" disabled={saveMutation.isPending} className="h-10 px-8">
+            {saveMutation.isPending ? "Zapisywanie..." : isEdit ? "Zapisz zmiany" : "Dodaj kontrahenta"}
           </Button>
         </div>
       </form>
