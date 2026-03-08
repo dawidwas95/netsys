@@ -192,6 +192,18 @@ export default function KanbanPage() {
               className="pl-9 w-64"
             />
           </div>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="min-h-[44px]"><Plus className="h-4 w-4 mr-1" /> Dodaj zlecenie</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto p-0">
+              <DialogHeader className="p-6 pb-0"><DialogTitle>Nowe zlecenie serwisowe</DialogTitle></DialogHeader>
+              <NewOrderForm
+                onSubmit={(data) => createOrder.mutate({ ...data, created_by: user?.id })}
+                loading={createOrder.isPending}
+              />
+            </DialogContent>
+          </Dialog>
           <Link to="/orders" className="text-sm text-muted-foreground hover:text-primary">
             Widok listy →
           </Link>
