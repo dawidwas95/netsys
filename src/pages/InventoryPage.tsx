@@ -73,6 +73,27 @@ export default function InventoryPage() {
     },
   });
 
+  // Fetch active reservations for available stock calculation
+  const { data: allReservations = [] } = useQuery({
+    queryKey: ["inventory-reservations-active"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("inventory_reservations" as any)
+        .select("id, inventory_item_id, quantity")
+        .eq("status", "RESERVED");
+      if (error) throw error;
+      return (data ?? []) as unknown as { id: string; inventory_item_id: string; quantity: number }[];
+    },
+  });
+
+  const reservedMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    allReservations.forEach((r) => {
+      map[r.inventory_item_id] = (map[r.inventory_item_id] || 0) + Number(r.quantity);
+    });
+    return map;
+  }, [allReservations]);
+
   const { data: movements = [] } = useQuery({
     queryKey: ["inventory_movements"],
     queryFn: async () => {
