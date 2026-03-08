@@ -35,6 +35,13 @@ const STATUS_COLORS: Record<string, string> = {
 const URGENCY_LABELS: Record<string, string> = { LOW: "Niski", NORMAL: "Normalny", HIGH: "Wysoki", URGENT: "Pilny" };
 const URGENCY_COLORS: Record<string, string> = { URGENT: "text-destructive font-semibold", HIGH: "text-orange-600 font-medium", NORMAL: "", LOW: "text-muted-foreground" };
 const ALL_STATUSES = ["NEW", "TO_ORDER", "ORDERED", "DELIVERED", "CANCELLED"];
+const APPROVAL_LABELS: Record<string, string> = { PENDING: "Oczekuje", APPROVED: "Zaakceptowane", REJECTED: "Odrzucone" };
+const APPROVAL_COLORS: Record<string, string> = {
+  PENDING: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
+  APPROVED: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+  REJECTED: "bg-destructive/10 text-destructive",
+};
+const ALL_APPROVALS = ["PENDING", "APPROVED", "REJECTED"];
 
 const formatCurrency = (v: number | null | undefined) => v && v > 0 ? `${Number(v).toFixed(2)} zł` : null;
 
@@ -101,7 +108,23 @@ export default function PurchaseRequestsPage() {
     onError: () => toast.error("Błąd aktualizacji statusu"),
   });
 
-  
+  const updateApproval = useMutation({
+    mutationFn: async ({ id, approval }: { id: string; approval: string }) => {
+      const { error } = await supabase.from("purchase_requests").update({
+        client_approval: approval as any,
+        client_approval_changed_by: user?.id,
+        client_approval_changed_at: new Date().toISOString(),
+      }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["purchase-requests-global"] });
+      queryClient.invalidateQueries({ queryKey: ["purchase-requests"] });
+      toast.success("Akceptacja zaktualizowana");
+    },
+    onError: () => toast.error("Błąd aktualizacji"),
+  });
+
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -205,8 +228,8 @@ export default function PurchaseRequestsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Status</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Status zamówienia</TableHead>
+                <TableHead>Akceptacja klienta</TableHead>
                 <TableHead>Nazwa części</TableHead>
                 <TableHead className="text-center">Ilość</TableHead>
                 <TableHead>Kategoria</TableHead>
@@ -238,11 +261,11 @@ export default function PurchaseRequestsPage() {
                       </Select>
                     </TableCell>
                     <TableCell>
-                      <Select value={r.status} onValueChange={(v) => handleStatusChange(r, v)}>
+                      <Select value={r.client_approval} onValueChange={(v) => updateApproval.mutate({ id: r.id, approval: v })}>
                         <SelectTrigger className="h-7 text-[10px] w-auto min-w-[100px] border-none p-0 gap-1">
-                          <Badge className={`text-[10px] ${STATUS_COLORS[r.status] || ""}`} variant="outline">{STATUS_LABELS[r.status]}</Badge>
+                          <Badge className={`text-[10px] ${APPROVAL_COLORS[r.client_approval] || ""}`} variant="outline">{APPROVAL_LABELS[r.client_approval] || r.client_approval}</Badge>
                         </SelectTrigger>
-                        <SelectContent>{ALL_STATUSES.map((s) => (<SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>))}</SelectContent>
+                        <SelectContent>{ALL_APPROVALS.map((s) => (<SelectItem key={s} value={s}>{APPROVAL_LABELS[s]}</SelectItem>))}</SelectContent>
                       </Select>
                     </TableCell>
                     <TableCell>
