@@ -22,10 +22,10 @@ export default defineConfig(({ mode }) => ({
       manifest: false, // We use public/manifest.json
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2,ttf}"],
-        navigateFallbackDenylist: [/^\/~oauth/, /^\/status/],
+        navigateFallbackDenylist: [/^\/~oauth/],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/btssgehetxllawrokaom\.supabase\.co\/.*/i,
+            urlPattern: /^https:\/\/.*supabase.*$/i,
             handler: "NetworkFirst",
             options: {
               cacheName: "supabase-api",
