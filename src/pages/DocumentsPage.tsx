@@ -196,6 +196,7 @@ export default function DocumentsPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
+  const [clientInitialData, setClientInitialData] = useState<Record<string, string> | null>(null);
   const [pzPromptData, setPzPromptData] = useState<{ docId: string; docNumber: string; clientId: string | null; items: any[] } | null>(null);
   const attachmentsRef = useRef<DocumentAttachmentsHandle>(null);
   const [ocrOpen, setOcrOpen] = useState(false);
