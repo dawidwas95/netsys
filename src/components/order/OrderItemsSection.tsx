@@ -264,7 +264,8 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
     },
   });
 
-  const stockWarning = selectedInvItem && parseFloat(invQuantity) > selectedInvItem.stock_quantity;
+  const availableStock = selectedInvItem ? getAvailableStock(selectedInvItem) : 0;
+  const stockWarning = selectedInvItem && parseFloat(invQuantity) > availableStock;
 
   return (
     <div className="space-y-3">
