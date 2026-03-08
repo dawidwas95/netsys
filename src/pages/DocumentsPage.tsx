@@ -293,31 +293,9 @@ export default function DocumentsPage() {
           if (values.document_type === "PURCHASE_INVOICE") {
             // When editing, first reverse old movements linked to this document
             if (editId) {
-              const { data: oldMovements } = await supabase
-                .from("inventory_movements")
-                .select("id, item_id, quantity, movement_type")
-                .eq("source_id", docId!)
-                .eq("source_type", "PURCHASE");
-              if (oldMovements && oldMovements.length > 0) {
-                // Reverse stock by deleting old movements (trigger will handle stock)
-                // We need to manually reverse since delete trigger doesn't exist
-                for (const om of oldMovements) {
-                  if (om.movement_type === "IN") {
-                    await supabase.from("inventory_items").update({
-                      stock_quantity: supabase.rpc ? undefined : 0, // handled below
-                    }).eq("id", om.item_id);
-                    // Manually decrease stock for the old IN movement
-                    const { data: curItem } = await supabase.from("inventory_items").select("stock_quantity").eq("id", om.item_id).single();
-                    if (curItem) {
-                      await supabase.from("inventory_items").update({
-                        stock_quantity: Math.max(0, Number(curItem.stock_quantity) - Number(om.quantity)),
-                      }).eq("id", om.item_id);
-                    }
-                  }
-                }
-                // Delete old movements
-                await supabase.from("inventory_movements").delete().eq("source_id", docId!).eq("source_type", "PURCHASE");
-              }
+              // Delete old movements — the DELETE trigger on inventory_movements
+              // will automatically reverse the stock changes
+              await supabase.from("inventory_movements").delete().eq("source_id", docId!).eq("source_type", "PURCHASE");
             }
 
             for (const item of items) {
