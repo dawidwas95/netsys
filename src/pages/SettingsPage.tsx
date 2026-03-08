@@ -124,9 +124,9 @@ function TeamManagement() {
 
       const { data: roles } = await supabase.from("user_roles").select("*");
       
-      return (profiles ?? []).map((p: any) => ({
+        return (profiles ?? []).map((p: any) => ({
         ...p,
-        role: (roles ?? []).find((r: any) => r.user_id === p.user_id)?.role ?? "EMPLOYEE",
+        role: (roles ?? []).find((r: any) => r.user_id === p.user_id)?.role ?? "SERWISANT",
       }));
     },
   });
