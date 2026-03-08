@@ -93,6 +93,7 @@ function buildPayload(form: typeof emptyForm) {
 }
 
 export function ClientFormDialog({ onCreated, onUpdated, trigger, externalOpen, onOpenChange, editClient, initialData }: ClientFormDialogProps) {
+  const { lookupNip, loading: gusLoading } = useGusLookup();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
   const setOpen = (v: boolean) => {
