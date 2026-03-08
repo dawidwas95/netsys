@@ -42,6 +42,7 @@ import {
   FormSection, ClientSection, DeviceSection, OrderDataSection,
   DescriptionSection, DiagnosisSection, FinanceSection, PaymentSection,
 } from "@/components/order/OrderFormSections";
+import { OrderPhotoGallery } from "@/components/OrderPhotoGallery";
 import { cn } from "@/lib/utils";
 
 function formatCurrency(v: number) {
@@ -639,6 +640,7 @@ export default function OrderDetailPage() {
           <Tabs defaultValue="edit">
             <TabsList>
               <TabsTrigger value="edit">Edycja</TabsTrigger>
+              <TabsTrigger value="photos">Zdjęcia</TabsTrigger>
               <TabsTrigger value="comments">Komentarze ({comments?.length ?? 0})</TabsTrigger>
               <TabsTrigger value="history">Historia</TabsTrigger>
               <TabsTrigger value="documents">Dokumenty</TabsTrigger>
@@ -657,6 +659,17 @@ export default function OrderDetailPage() {
                   updateOrder.mutate({ status: v });
                 }}
               />
+            </TabsContent>
+
+            <TabsContent value="photos" className="mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Zdjęcia urządzenia</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <OrderPhotoGallery orderId={id!} />
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="comments" className="mt-4">
