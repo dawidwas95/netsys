@@ -500,8 +500,9 @@ export default function DocumentsPage() {
     return true;
   });
 
-  const totalIncome = docs.filter(d => d.direction === "INCOME").reduce((s, d) => s + d.gross_amount, 0);
-  const totalExpense = docs.filter(d => d.direction === "EXPENSE").reduce((s, d) => s + d.gross_amount, 0);
+  const getDirection = (d: Document) => (TYPE_CONFIG[d.document_type] || TYPE_CONFIG.OTHER).direction;
+  const totalIncome = docs.filter(d => getDirection(d) === "INCOME").reduce((s, d) => s + d.gross_amount, 0);
+  const totalExpense = docs.filter(d => getDirection(d) === "EXPENSE").reduce((s, d) => s + d.gross_amount, 0);
   const totalUnpaid = docs.filter(d => d.payment_status === "UNPAID" || d.payment_status === "OVERDUE").reduce((s, d) => s + (d.gross_amount - d.paid_amount), 0);
 
   // Preview: find related doc for correction
