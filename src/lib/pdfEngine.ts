@@ -203,22 +203,22 @@ class PdfBuilder {
 
   // ── Section header with icon-like bar ──
   drawSectionHeader(title: string) {
-    this.checkPage(16);
-    this.y += this.spacing + 2;
+    this.checkPage(10);
+    this.y += this.spacing;
 
     // Accent bar on left
     this.doc.setFillColor(...PdfBuilder.PRIMARY);
-    this.doc.rect(this.ml, this.y - 4, 3, 7, "F");
+    this.doc.rect(this.ml, this.y - 3.5, 2.5, 6, "F");
 
     // Background bar
     if (this.showSeparators) {
       this.doc.setFillColor(...PdfBuilder.BG_SECTION);
-      this.doc.rect(this.ml + 3, this.y - 4, this.cw - 3, 7, "F");
+      this.doc.rect(this.ml + 2.5, this.y - 3.5, this.cw - 2.5, 6, "F");
     }
 
-    this.setFont("bold", 8.5, PdfBuilder.PRIMARY);
-    this.doc.text(title.toUpperCase(), this.ml + 7, this.y + 0.5);
-    this.y += 10;
+    this.setFont("bold", 7.5, PdfBuilder.PRIMARY);
+    this.doc.text(title.toUpperCase(), this.ml + 6, this.y + 0.5);
+    this.y += 7;
   }
 
   // ── Key-value field ──
