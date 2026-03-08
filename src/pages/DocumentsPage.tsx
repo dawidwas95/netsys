@@ -1167,15 +1167,16 @@ export default function DocumentsPage() {
                   </div>
 
                   {/* Section: Attachments */}
-                  {editId && (
-                    <>
-                      <Separator />
-                      <div>
-                        <h3 className="text-sm font-semibold text-foreground mb-3">Załączniki</h3>
-                        <DocumentAttachments documentId={editId} />
-                      </div>
-                    </>
-                  )}
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <Paperclip className="h-4 w-4 text-muted-foreground" />
+                        Załączniki
+                      </h3>
+                      <DocumentAttachments documentId={editId} />
+                    </div>
+                  </>
                 </div>
 
                 {/* RIGHT: Summary Panel */}
