@@ -46,6 +46,7 @@ const emptyForm = {
 function clientToForm(client: Client) {
   return {
     client_type: client.client_type as ClientType,
+    business_role: ((client as any).business_role ?? "CUSTOMER") as BusinessRole,
     first_name: client.first_name ?? "",
     last_name: client.last_name ?? "",
     company_name: client.company_name ?? "",
