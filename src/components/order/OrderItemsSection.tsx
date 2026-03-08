@@ -73,7 +73,7 @@ export function OrderItemsSection({ orderId, orderItems, isCompleted, onItemsCha
     queryFn: async () => {
       const { data, error } = await supabase
         .from("inventory_items")
-        .select("id, name, sku, manufacturer, model, stock_quantity, minimum_quantity, purchase_net, sale_net, unit, is_active")
+        .select("id, name, sku, manufacturer, model, stock_quantity, minimum_quantity, purchase_net, sale_net, unit, is_active, inventory_number, compatible_models, category")
         .eq("is_active", true)
         .eq("is_archived", false)
         .is("deleted_at", null)
