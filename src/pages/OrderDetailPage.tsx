@@ -53,6 +53,7 @@ import { OrderItemsSection } from "@/components/order/OrderItemsSection";
 import CustomerMessagesStaff from "@/components/CustomerMessagesStaff";
 import { TechnicianAssignment } from "@/components/TechnicianAssignment";
 import { MobileQuickActions } from "@/components/MobileQuickActions";
+import { OrderPurchaseRequests } from "@/components/order/OrderPurchaseRequests";
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(v);
@@ -903,13 +904,16 @@ export default function OrderDetailPage() {
           <FinanceSection formData={currentForm} onChange={handleFieldChange} orderItems={orderItems} />
           <PaymentSection formData={currentForm} onChange={handleFieldChange} />
 
-          {/* Order Items - New Component */}
+          {/* Order Items */}
           <OrderItemsSection
             orderId={id!}
             orderItems={orderItems}
             isCompleted={isCompleted}
             onItemsChanged={handleItemsChanged}
           />
+
+          {/* Purchase Requests */}
+          <OrderPurchaseRequests orderId={id!} />
 
           {editDirty && (
             <Button className="w-full" onClick={handleSave} disabled={updateOrder.isPending}>

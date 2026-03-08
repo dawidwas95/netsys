@@ -18,6 +18,7 @@ import MyOrdersPage from "@/pages/MyOrdersPage";
 import MobileHomePage from "@/pages/MobileHomePage";
 import InventoryPage from "@/pages/InventoryPage";
 import PurchaseListPage from "@/pages/PurchaseListPage";
+import PurchaseRequestsPage from "@/pages/PurchaseRequestsPage";
 import InstallPage from "@/pages/InstallPage";
 import OffersPage from "@/pages/OffersPage";
 import CashRegisterPage from "@/pages/CashRegisterPage";
@@ -71,6 +72,7 @@ const App = () => (
             <Route path="/it-work" element={<ITWorkPage />} />
             <Route path="/inventory" element={<InventoryPage />} />
             <Route path="/purchase-list" element={<PurchaseListPage />} />
+            <Route path="/purchase-requests" element={<PurchaseRequestsPage />} />
             <Route path="/offers" element={<OffersPage />} />
             <Route path="/cash" element={<CashRegisterPage />} />
             <Route path="/it-docs" element={<ITDocsPage />} />

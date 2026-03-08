@@ -188,6 +188,7 @@ export default function DashboardPage() {
       <TodaysScheduledOrders />
 
       <PurchaseListWidget />
+      <PurchaseRequestsWidget />
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 mb-6">
         <Card>
@@ -475,6 +476,39 @@ function PurchaseListWidget() {
         </div>
         <Button variant="outline" size="sm" asChild>
           <Link to="/purchase-list">Otwórz listę zakupów</Link>
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PurchaseRequestsWidget() {
+  const { data: count = 0 } = useQuery({
+    queryKey: ["dashboard-purchase-requests-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("purchase_requests")
+        .select("*", { count: "exact", head: true })
+        .in("status", ["NEW", "TO_ORDER"]);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
+  if (count === 0) return null;
+
+  return (
+    <Card className="mb-6 border-orange-200 bg-orange-50 dark:border-orange-900/30 dark:bg-orange-950/20">
+      <CardContent className="py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Package className="h-5 w-5 text-orange-600" />
+          <div>
+            <span className="font-medium">Zapotrzebowanie ze zleceń:</span>
+            <Badge variant="secondary" className="ml-2">{count}</Badge>
+          </div>
+        </div>
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/purchase-requests">Otwórz kolejkę</Link>
         </Button>
       </CardContent>
     </Card>

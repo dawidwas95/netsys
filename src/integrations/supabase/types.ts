@@ -1585,6 +1585,81 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_requests: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          inventory_item_id: string | null
+          item_name: string
+          manufacturer: string | null
+          model: string | null
+          order_id: string
+          quantity: number
+          requested_by: string | null
+          requested_by_name: string | null
+          status: Database["public"]["Enums"]["purchase_request_status"]
+          status_changed_at: string | null
+          status_changed_by: string | null
+          updated_at: string
+          urgency: Database["public"]["Enums"]["purchase_request_urgency"]
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          inventory_item_id?: string | null
+          item_name: string
+          manufacturer?: string | null
+          model?: string | null
+          order_id: string
+          quantity?: number
+          requested_by?: string | null
+          requested_by_name?: string | null
+          status?: Database["public"]["Enums"]["purchase_request_status"]
+          status_changed_at?: string | null
+          status_changed_by?: string | null
+          updated_at?: string
+          urgency?: Database["public"]["Enums"]["purchase_request_urgency"]
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          inventory_item_id?: string | null
+          item_name?: string
+          manufacturer?: string | null
+          model?: string | null
+          order_id?: string
+          quantity?: number
+          requested_by?: string | null
+          requested_by_name?: string | null
+          status?: Database["public"]["Enums"]["purchase_request_status"]
+          status_changed_at?: string | null
+          status_changed_by?: string | null
+          updated_at?: string
+          urgency?: Database["public"]["Enums"]["purchase_request_urgency"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_requests_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "service_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_categories: {
         Row: {
           created_at: string
@@ -2063,6 +2138,13 @@ export type Database = {
         | "ARCHIVED"
         | "CANCELLED"
       payment_method: "CASH" | "CARD" | "TRANSFER"
+      purchase_request_status:
+        | "NEW"
+        | "TO_ORDER"
+        | "ORDERED"
+        | "DELIVERED"
+        | "CANCELLED"
+      purchase_request_urgency: "LOW" | "NORMAL" | "HIGH" | "URGENT"
       sales_document_type: "RECEIPT" | "INVOICE" | "NONE"
       service_category:
         | "ADMINISTRATION"
@@ -2271,6 +2353,14 @@ export const Constants = {
         "CANCELLED",
       ],
       payment_method: ["CASH", "CARD", "TRANSFER"],
+      purchase_request_status: [
+        "NEW",
+        "TO_ORDER",
+        "ORDERED",
+        "DELIVERED",
+        "CANCELLED",
+      ],
+      purchase_request_urgency: ["LOW", "NORMAL", "HIGH", "URGENT"],
       sales_document_type: ["RECEIPT", "INVOICE", "NONE"],
       service_category: [
         "ADMINISTRATION",
