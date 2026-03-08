@@ -442,6 +442,7 @@ export default function InventoryPage() {
           </DialogHeader>
           <MovementForm
             type={moveOpen?.type || "IN"}
+            currentStock={moveOpen?.currentStock ?? 0}
             onSubmit={(d) => addMovement.mutate({ ...d, item_id: moveOpen?.itemId, movement_type: moveOpen?.type })}
             loading={addMovement.isPending}
           />
