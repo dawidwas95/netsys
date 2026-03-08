@@ -167,7 +167,7 @@ export default function DocumentsPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("clients")
-        .select("id, display_name, company_name, first_name, last_name, nip, business_role")
+        .select("id, display_name, company_name, first_name, last_name, nip, business_role, address_city, address_street, address_building, address_local, address_postal_code, email, phone")
         .eq("is_active", true)
         .order("display_name");
       return data ?? [];
