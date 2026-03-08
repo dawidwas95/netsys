@@ -83,17 +83,7 @@ interface TechnicianBadgesProps {
 export function TechnicianBadges({ orderId, compact }: TechnicianBadgesProps) {
   const { data: techs = [] } = useQuery({
     queryKey: ["order-technicians", orderId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("order_technicians")
-        .select("user_id, is_primary, profiles!inner(first_name, last_name, email)")
-        .eq("order_id", orderId) as any;
-      return (data ?? []).map((t: any) => ({
-        userId: t.user_id,
-        isPrimary: t.is_primary,
-        name: [t.profiles?.first_name, t.profiles?.last_name].filter(Boolean).join(" ") || t.profiles?.email || "?",
-      }));
-    },
+    queryFn: () => fetchOrderTechnicians(orderId),
   });
 
   if (!techs.length) return null;
