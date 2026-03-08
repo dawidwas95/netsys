@@ -257,18 +257,18 @@ class PdfBuilder {
   // ── Multi-line text block ──
   drawTextBlock(label: string, text: string | null | undefined) {
     if (!text) return;
-    this.checkPage(14);
+    this.checkPage(10);
     if (label) {
-      this.setFont("bold", 7.5, PdfBuilder.GRAY);
+      this.setFont("bold", 7, PdfBuilder.GRAY);
       this.doc.text(label, this.ml + 2, this.y);
-      this.y += 4;
+      this.y += 3.5;
     }
-    this.setFont("normal", 8.5, PdfBuilder.DARK);
+    this.setFont("normal", 8, PdfBuilder.DARK);
     const lines: string[] = this.doc.splitTextToSize(text, this.cw - 6);
     for (const line of lines) {
-      this.checkPage(4.5);
+      this.checkPage(3.8);
       this.doc.text(line, this.ml + 2, this.y);
-      this.y += 4;
+      this.y += 3.5;
     }
     this.y += 1;
   }
