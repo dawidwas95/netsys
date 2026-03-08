@@ -1125,6 +1125,31 @@ export default function DocumentsPage() {
                     </div>
                   </div>
 
+                  {/* Section: Nabywca (Buyer) */}
+                  <Separator />
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      Nabywca
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Nazwa nabywcy</Label>
+                        <Input value={form.buyer_name} onChange={e => setForm({ ...form, buyer_name: e.target.value })} placeholder="np. W3-Support" className="h-10" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">NIP nabywcy</Label>
+                        <Input value={form.buyer_nip} onChange={e => setForm({ ...form, buyer_nip: e.target.value })} placeholder="000-000-00-00" className="h-10 font-mono" />
+                      </div>
+                    </div>
+                    {companySettings && !form.buyer_name && (
+                      <Button type="button" variant="link" size="sm" className="text-xs mt-1 h-auto p-0"
+                        onClick={() => setForm({ ...form, buyer_name: companySettings.company_name || "", buyer_nip: companySettings.nip || "" })}>
+                        Użyj: {companySettings.company_name}
+                      </Button>
+                    )}
+                  </div>
+
                   <Separator />
 
                   {/* Section: Dates & Payment */}
