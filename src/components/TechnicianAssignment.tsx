@@ -337,7 +337,7 @@ export function TechnicianAssignment({ orderId, orderNumber }: TechnicianAssignm
   );
 }
 
-// Inline quick-assign button for lists/kanban
+// Inline quick-assign button for lists/kanban — with remove support
 export function QuickAssignButton({ orderId, orderNumber }: { orderId: string; orderNumber?: string }) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -368,75 +368,83 @@ export function QuickAssignButton({ orderId, orderNumber }: { orderId: string; o
   });
 
   const { data: assigned = [] } = useQuery({
-    queryKey: ["order-technician-ids", orderId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("order_technicians")
-        .select("user_id")
-        .eq("order_id", orderId) as any;
-      return (data ?? []).map((t: any) => t.user_id);
-    },
+    queryKey: ["order-technicians", orderId],
+    queryFn: () => fetchOrderTechnicians(orderId),
   });
+
+  const assignedIds = new Set(assigned.map((a) => a.userId));
+
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["order-technicians", orderId] });
+    queryClient.invalidateQueries({ queryKey: ["order-technician-ids", orderId] });
+    queryClient.invalidateQueries({ queryKey: ["service-orders"] });
+    queryClient.invalidateQueries({ queryKey: ["kanban-orders"] });
+  };
 
   const assignTech = useMutation({
     mutationFn: async (userId: string) => {
-      console.info("[QuickAssignButton] assign start", { orderId, userId });
-      if (assigned.includes(userId)) {
+      if (assignedIds.has(userId)) {
         throw new Error("Technik jest już przypisany do tego zlecenia");
       }
+      const isPrimary = assigned.length === 0;
       const { error } = await supabase.from("order_technicians").upsert({
         order_id: orderId,
         user_id: userId,
-        is_primary: true,
+        is_primary: isPrimary,
         assigned_by: user?.id,
       } as any, { onConflict: "order_id,user_id", ignoreDuplicates: true });
-      if (error) {
-        console.error("[QuickAssignButton] assign db error", { orderId, userId, error });
-        throw error;
-      }
-      console.info("[QuickAssignButton] assign success", { orderId, userId });
+      if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["order-technicians", orderId] });
-      queryClient.invalidateQueries({ queryKey: ["order-technician-ids", orderId] });
-      queryClient.invalidateQueries({ queryKey: ["service-orders"] });
-      queryClient.invalidateQueries({ queryKey: ["kanban-orders"] });
-      toast.success("Technik przypisany");
-      setOpen(false);
+    onSuccess: () => { invalidateAll(); toast.success("Technik przypisany"); setOpen(false); },
+    onError: (err: any) => toast.error(err?.message || "Błąd przypisywania technika"),
+  });
+
+  const removeTech = useMutation({
+    mutationFn: async (rowId: string) => {
+      const { error } = await supabase.from("order_technicians").delete().eq("id", rowId);
+      if (error) throw error;
     },
-    onError: (err: any) => {
-      console.error("[QuickAssignButton] assign failed", { orderId, error: err });
-      toast.error(err?.message || "Błąd przypisywania technika");
-    },
+    onSuccess: () => { invalidateAll(); toast.success("Technik usunięty"); },
+    onError: (err: any) => toast.error(err?.message || "Błąd usuwania technika"),
   });
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-6 w-6" title="Przypisz technika" onClick={(e) => e.stopPropagation()}>
+        <Button variant="ghost" size="icon" className="h-6 w-6" title="Zarządzaj technikami" onClick={(e) => e.stopPropagation()}>
           <UserPlus className="h-3 w-3" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="p-0 w-48" align="end" onClick={(e) => e.stopPropagation()}>
-        <Command>
+      <PopoverContent className="p-0 w-56" align="end" onClick={(e) => e.stopPropagation()}>
+        <Command shouldFilter={false}>
           <CommandInput placeholder="Szukaj..." />
           <CommandList>
-            <CommandEmpty>Brak</CommandEmpty>
-            <CommandGroup>
-              {allUsers.map((u) => (
+            {assigned.length > 0 && (
+              <CommandGroup heading="Przypisani — kliknij aby usunąć">
+                {assigned.map((t) => (
+                  <CommandItem
+                    key={`rm-${t.id}`}
+                    value={`remove-${t.name}`}
+                    onSelect={() => removeTech.mutate(t.id)}
+                  >
+                    <X className="mr-2 h-3 w-3 text-destructive" />
+                    <span className="text-xs flex-1">{t.name}</span>
+                    <span className="text-[10px] text-muted-foreground">Usuń</span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+            <CommandGroup heading="Przypisz">
+              {allUsers.filter((u) => !assignedIds.has(u.id)).length === 0 && (
+                <CommandItem disabled>Wszyscy przypisani</CommandItem>
+              )}
+              {allUsers.filter((u) => !assignedIds.has(u.id)).map((u) => (
                 <CommandItem
                   key={u.id}
                   value={u.name}
-                  disabled={assigned.includes(u.id)}
-                  onSelect={() => {
-                    if (assigned.includes(u.id)) {
-                      toast.error("Technik jest już przypisany do tego zlecenia");
-                      return;
-                    }
-                    assignTech.mutate(u.id);
-                  }}
+                  onSelect={() => assignTech.mutate(u.id)}
                 >
-                  <Check className={cn("mr-2 h-3 w-3", assigned.includes(u.id) ? "opacity-100" : "opacity-0")} />
+                  <Plus className="mr-2 h-3 w-3" />
                   <span className="text-xs">{u.name}</span>
                 </CommandItem>
               ))}
