@@ -23,18 +23,19 @@ import { PurchaseRequestFormDialog } from "@/components/order/PurchaseRequestFor
 
 const STATUS_LABELS: Record<string, string> = {
   NEW: "Nowe", TO_ORDER: "Do zamówienia", ORDERED: "Zamówione",
-  DELIVERED: "Dostarczone", CANCELLED: "Anulowane",
+  DELIVERED: "Dostarczone", INSTALLED: "Zamontowane", CANCELLED: "Anulowane",
 };
 const STATUS_COLORS: Record<string, string> = {
   NEW: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
   TO_ORDER: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
   ORDERED: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
   DELIVERED: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+  INSTALLED: "bg-primary/10 text-primary",
   CANCELLED: "bg-muted text-muted-foreground",
 };
 const URGENCY_LABELS: Record<string, string> = { LOW: "Niski", NORMAL: "Normalny", HIGH: "Wysoki", URGENT: "Pilny" };
 const URGENCY_COLORS: Record<string, string> = { URGENT: "text-destructive font-semibold", HIGH: "text-orange-600 font-medium", NORMAL: "", LOW: "text-muted-foreground" };
-const ALL_STATUSES = ["NEW", "TO_ORDER", "ORDERED", "DELIVERED", "CANCELLED"];
+const ALL_STATUSES = ["NEW", "TO_ORDER", "ORDERED", "DELIVERED", "INSTALLED", "CANCELLED"];
 const APPROVAL_LABELS: Record<string, string> = { PENDING: "Oczekuje", APPROVED: "Zaakceptowane", REJECTED: "Odrzucone" };
 const APPROVAL_COLORS: Record<string, string> = {
   PENDING: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",

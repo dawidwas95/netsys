@@ -20,7 +20,7 @@ const URGENCY_LABELS: Record<string, string> = {
 };
 const STATUS_LABELS: Record<string, string> = {
   NEW: "Nowe", TO_ORDER: "Do zamówienia", ORDERED: "Zamówione",
-  DELIVERED: "Dostarczone", CANCELLED: "Anulowane",
+  DELIVERED: "Dostarczone", INSTALLED: "Zamontowane", CANCELLED: "Anulowane",
 };
 
 interface PurchaseRequestFormData {
