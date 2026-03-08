@@ -45,7 +45,7 @@ export interface CompanyInfo {
 }
 
 export const DEFAULT_SETTINGS: PdfSettings = {
-  margins: { top: 15, right: 15, bottom: 20, left: 15 },
+  margins: { top: 12, right: 12, bottom: 12, left: 12 },
   fontScale: 1.0,
   showLogo: true,
   showCompanyData: true,
@@ -53,7 +53,7 @@ export const DEFAULT_SETTINGS: PdfSettings = {
   clientDeviceLayout: "side-by-side",
   showTableBorders: true,
   showSectionSeparators: true,
-  compactSpacing: false,
+  compactSpacing: true,
   footerText: "Dziękujemy za skorzystanie z usług naszego serwisu. Dokument wygenerowany elektronicznie.",
 };
 
