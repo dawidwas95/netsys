@@ -79,6 +79,8 @@ function buildPayload(form: typeof emptyForm) {
     nip: form.nip || null,
     regon: form.regon || null,
     address_street: form.address_street || null,
+    address_building: form.address_building || null,
+    address_local: form.address_local || null,
     address_city: form.address_city || null,
     address_postal_code: form.address_postal_code || null,
     address_country: form.address_country || null,
