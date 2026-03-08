@@ -292,8 +292,15 @@ function OrderStatusView({ order, onBack, token, orderNumber, phone }: {
         </CardContent>
       </Card>
 
+      {/* Customer messages */}
+      <CustomerMessagesPublic
+        token={token}
+        orderNumber={orderNumber}
+        phone={phone}
+      />
+
       <p className="text-center text-xs text-muted-foreground pt-4">
-        W razie pytań skontaktuj się z serwisem telefonicznie.
+        W razie pytań skontaktuj się z serwisem telefonicznie lub wyślij wiadomość powyżej.
       </p>
     </div>
   );
