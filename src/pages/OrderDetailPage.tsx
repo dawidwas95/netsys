@@ -450,41 +450,10 @@ export default function OrderDetailPage() {
     setCloseDialogOpen(false);
   }
 
-  const addItemMutation = useMutation({
-    mutationFn: async () => {
-      const qty = parseFloat(newItem.quantity) || 1;
-      const saleNet = parseFloat(newItem.sale_net) || 0;
-      const purchaseNet = parseFloat(newItem.purchase_net) || 0;
-      const { error } = await supabase.from("service_order_items").insert({
-        order_id: id!, item_name_snapshot: newItem.name, quantity: qty,
-        sale_net: saleNet, purchase_net: purchaseNet,
-        total_sale_net: qty * saleNet, total_purchase_net: qty * purchaseNet, created_by: user?.id,
-      });
-      if (error) throw error;
-      const newRevenue = financials.revenue + qty * saleNet;
-      await supabase.from("service_orders").update({ total_net: newRevenue, total_gross: newRevenue * 1.23, updated_by: user?.id }).eq("id", id!);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["order-items", id] });
-      queryClient.invalidateQueries({ queryKey: ["order", id] });
-      setNewItem({ name: "", quantity: "1", sale_net: "", purchase_net: "" });
-      setItemDialogOpen(false);
-      toast.success("Dodano pozycję");
-    },
-    onError: () => toast.error("Błąd dodawania pozycji"),
-  });
-
-  const deleteItemMutation = useMutation({
-    mutationFn: async (itemId: string) => {
-      const { error } = await supabase.from("service_order_items").delete().eq("id", itemId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["order-items", id] });
-      queryClient.invalidateQueries({ queryKey: ["order", id] });
-      toast.success("Usunięto pozycję");
-    },
-  });
+  function handleItemsChanged() {
+    queryClient.invalidateQueries({ queryKey: ["order-items", id] });
+    queryClient.invalidateQueries({ queryKey: ["order", id] });
+  }
 
   const addComment = useMutation({
     mutationFn: async () => {
