@@ -27,6 +27,7 @@ import {
   ArrowLeft, Send, Clock, User, Monitor, Plus, Trash2,
   DollarSign, TrendingUp, TrendingDown, Percent, FileDown, Printer,
   CheckCircle, AlertTriangle, Save, Archive, XCircle, PenLine, MessageSquare,
+  Camera, Wrench,
 } from "lucide-react";
 import { generateOrderPDF } from "@/lib/generateOrderPDF";
 import { generateIntakePDF, generatePickupPDF } from "@/lib/pdfProtocols";
