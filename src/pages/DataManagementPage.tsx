@@ -36,9 +36,40 @@ const SOFT_DELETE_TABLES = [
   { table: "devices", label: "Urządzenia", nameField: "model" },
 ] as const;
 
+function escapeSQL(val: any): string {
+  if (val === null || val === undefined) return "NULL";
+  if (typeof val === "boolean") return val ? "TRUE" : "FALSE";
+  if (typeof val === "number") return String(val);
+  if (Array.isArray(val)) return `'{${val.map((v: any) => `"${String(v).replace(/"/g, '\\"')}"`).join(",")}}'`;
+  if (typeof val === "object") return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
+  return `'${String(val).replace(/'/g, "''")}'`;
+}
+
+function rowsToSQL(tableName: string, rows: Record<string, any>[]): string {
+  if (!rows.length) return `-- No data in ${tableName}\n`;
+  const cols = Object.keys(rows[0]);
+  const header = `-- Export: ${tableName} (${rows.length} rows)\n-- Generated: ${new Date().toISOString()}\n\n`;
+  const inserts = rows.map((row) => {
+    const values = cols.map((c) => escapeSQL(row[c])).join(", ");
+    return `INSERT INTO public.${tableName} (${cols.join(", ")}) VALUES (${values});`;
+  });
+  return header + inserts.join("\n") + "\n";
+}
+
+function downloadFile(content: string, filename: string, mime: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function DataManagementPage() {
   const { user } = useAuth();
   const [exporting, setExporting] = useState<string | null>(null);
+  const [exportFormat, setExportFormat] = useState<"json" | "sql">("json");
   const [restoreItem, setRestoreItem] = useState<{ table: string; id: string; name: string } | null>(null);
 
   // Check admin role
