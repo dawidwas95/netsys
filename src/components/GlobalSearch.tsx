@@ -151,35 +151,40 @@ export function GlobalSearch() {
 
   const handleScan = useCallback(async (scannedValue: string) => {
     const cleaned = scannedValue.trim();
+    if (!cleaned) return;
 
-    const directOrderRoute = await resolveOrderRouteFromScan(cleaned);
-    if (directOrderRoute) {
-      navigate(directOrderRoute);
-      return;
-    }
+    try {
+      const directOrderRoute = await resolveOrderRouteFromScan(cleaned);
+      if (directOrderRoute) {
+        navigate(directOrderRoute);
+        return;
+      }
 
-    // Try exact match: inventory SKU or inventory_number
-    const { data: invMatch } = await supabase
-      .from("inventory_items")
-      .select("id")
-      .or(`sku.eq.${cleaned},inventory_number.eq.${cleaned}`)
-      .eq("is_archived", false)
-      .maybeSingle();
-    if (invMatch) {
-      navigate(`/inventory`);
-      return;
-    }
+      // Try exact match: inventory SKU or inventory_number
+      const { data: invMatch } = await supabase
+        .from("inventory_items")
+        .select("id")
+        .or(`sku.eq.${cleaned},inventory_number.eq.${cleaned}`)
+        .eq("is_archived", false)
+        .maybeSingle();
+      if (invMatch) {
+        navigate(`/inventory`);
+        return;
+      }
 
-    // Try exact match: device serial_number or imei
-    const { data: devMatch } = await supabase
-      .from("devices")
-      .select("id")
-      .or(`serial_number.eq.${cleaned},imei.eq.${cleaned},asset_tag.eq.${cleaned}`)
-      .eq("is_archived", false)
-      .maybeSingle();
-    if (devMatch) {
-      navigate(`/devices`);
-      return;
+      // Try exact match: device serial_number or imei
+      const { data: devMatch } = await supabase
+        .from("devices")
+        .select("id")
+        .or(`serial_number.eq.${cleaned},imei.eq.${cleaned},asset_tag.eq.${cleaned}`)
+        .eq("is_archived", false)
+        .maybeSingle();
+      if (devMatch) {
+        navigate(`/devices`);
+        return;
+      }
+    } catch (err) {
+      console.error("QR scan lookup error:", err);
     }
 
     // No exact match - open search with scanned value
