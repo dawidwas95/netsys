@@ -196,10 +196,20 @@ export default function DataManagementPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button onClick={exportAll} disabled={!!exporting} className="w-full sm:w-auto">
-            <Download className="h-4 w-4 mr-2" />
-            {exporting === "all" ? "Eksportowanie..." : "Pełny backup (JSON)"}
-          </Button>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <Tabs value={exportFormat} onValueChange={(v) => setExportFormat(v as "json" | "sql")}>
+              <TabsList>
+                <TabsTrigger value="json">JSON</TabsTrigger>
+                <TabsTrigger value="sql" className="gap-1">
+                  <FileCode className="h-3.5 w-3.5" /> SQL
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <Button onClick={exportAll} disabled={!!exporting} className="w-full sm:w-auto">
+              <Download className="h-4 w-4 mr-2" />
+              {exporting === "all" ? "Eksportowanie..." : `Pełny backup (${exportFormat.toUpperCase()})`}
+            </Button>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
             {ENTITY_TABLES.map((t) => (
               <Button
