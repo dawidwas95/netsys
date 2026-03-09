@@ -47,7 +47,12 @@ function ProtectedRoutes() {
     );
   }
 
-  if (!user) return <Navigate to="/auth" replace />;
+  if (!user) {
+    // Preserve current path so user returns after login
+    const currentPath = window.location.pathname + window.location.search;
+    const redirectParam = currentPath !== "/" ? `?redirect=${encodeURIComponent(currentPath)}` : "";
+    return <Navigate to={`/auth${redirectParam}`} replace />;
+  }
 
   return (
     <AppLayout />
@@ -102,7 +107,12 @@ const App = () => (
 function AuthPageWrapper() {
   const { user, loading } = useAuth();
   if (loading) return null;
-  if (user) return <Navigate to="/" replace />;
+  if (user) {
+    // Redirect back to the page user was trying to access (e.g. from QR scan)
+    const params = new URLSearchParams(window.location.search);
+    const redirectTo = params.get("redirect") || "/";
+    return <Navigate to={redirectTo} replace />;
+  }
   return <AuthPage />;
 }
 

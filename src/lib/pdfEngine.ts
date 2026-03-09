@@ -344,8 +344,7 @@ export async function generateOrderPDF({ order, orderItems, financials }: OrderP
   // Generate QR code
   let qrDataUrl: string | null = null;
   try {
-    const statusToken = (order as any).status_token || order.id;
-    const orderUrl = `${window.location.origin}/status?token=${statusToken}`;
+    const orderUrl = `${window.location.origin}/orders/${order.id}?scan=true`;
     qrDataUrl = await QRCode.toDataURL(orderUrl, { width: 200, margin: 1, errorCorrectionLevel: "M" });
   } catch {}
 
