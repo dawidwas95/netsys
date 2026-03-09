@@ -230,11 +230,8 @@ class DocBuilder {
   }
 
   drawSignatures(labels: string[], order?: any) {
-    const minY = this.y + 8;
-    const prefY = this.pageH - 38;
-    let sigY = Math.max(minY, Math.min(prefY, 240));
-    if (sigY > this.pageH - 35) { this.doc.addPage(); sigY = 25; }
-    this.y = sigY;
+    // Place signatures right after content with minimal gap — avoid pushing to next page
+    this.y += 4;
     this.checkPage(28);
 
     const boxW = Math.min(72, (this.cw - (labels.length - 1) * 8) / labels.length);
