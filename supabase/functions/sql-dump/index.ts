@@ -6,42 +6,16 @@ const corsHeaders = {
 };
 
 const ALLOWED_TABLES = [
-  "clients",
-  "client_contacts",
-  "service_orders",
-  "service_order_items",
-  "service_order_comments",
-  "order_technicians",
-  "documents",
-  "document_items",
-  "document_attachments",
-  "inventory_items",
-  "inventory_movements",
-  "inventory_reservations",
-  "inventory_categories",
-  "cash_transactions",
-  "it_work_entries",
-  "it_work_comments",
-  "devices",
-  "offers",
-  "offer_items",
-  "purchase_requests",
-  "purchase_categories",
-  "customer_messages",
-  "notification_templates",
-  "notification_log",
-  "notifications",
-  "company_settings",
-  "pdf_templates",
-  "profiles",
-  "user_roles",
-  "activity_logs",
-  "billing_batches",
-  "billing_batch_items",
-  "client_it_documents",
-  "network_devices",
-  "warehouse_documents",
-  "service_categories",
+  "clients", "client_contacts", "service_orders", "service_order_items",
+  "service_order_comments", "order_technicians", "documents", "document_items",
+  "document_attachments", "inventory_items", "inventory_movements",
+  "inventory_reservations", "inventory_categories", "cash_transactions",
+  "it_work_entries", "it_work_comments", "devices", "offers", "offer_items",
+  "purchase_requests", "purchase_categories", "customer_messages",
+  "notification_templates", "notification_log", "notifications",
+  "company_settings", "pdf_templates", "profiles", "user_roles",
+  "activity_logs", "billing_batches", "billing_batch_items",
+  "client_it_documents", "network_devices", "service_categories",
 ];
 
 Deno.serve(async (req) => {
@@ -53,112 +27,118 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify the user is authenticated and is ADMIN
+    // Verify user is ADMIN
     const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user }, error: authError } = await userClient.auth.getUser();
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Check admin role
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const { data: roleData } = await adminClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "ADMIN")
-      .maybeSingle();
+      .from("user_roles").select("role")
+      .eq("user_id", user.id).eq("role", "ADMIN").maybeSingle();
 
     if (!roleData) {
-      return new Response(JSON.stringify({ error: "Forbidden: ADMIN role required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { tables: requestedTables } = await req.json().catch(() => ({ tables: null }));
+    const body = await req.json().catch(() => ({}));
+    const requestedTables = body.tables as string[] | undefined;
     const tablesToExport = requestedTables?.length
-      ? (requestedTables as string[]).filter((t: string) => ALLOWED_TABLES.includes(t))
+      ? requestedTables.filter((t) => ALLOWED_TABLES.includes(t))
       : ALLOWED_TABLES;
 
-    let sql = `-- Full SQL Dump\n-- Generated: ${new Date().toISOString()}\n-- Tables: ${tablesToExport.length}\n\n`;
+    let sql = `-- =============================================\n`;
+    sql += `-- Full SQL Dump\n`;
+    sql += `-- Generated: ${new Date().toISOString()}\n`;
+    sql += `-- Tables: ${tablesToExport.length}\n`;
+    sql += `-- =============================================\n\n`;
+    sql += `SET statement_timeout = 0;\nSET lock_timeout = 0;\nSET client_encoding = 'UTF8';\n\n`;
 
     for (const tableName of tablesToExport) {
-      // Get column info from information_schema
-      const { data: columns, error: colErr } = await adminClient.rpc("", {}).maybeSingle();
-      // Use raw SQL via admin client
-      const { data: colData } = await adminClient
-        .from("information_schema.columns" as any)
-        .select("*")
-        .eq("table_schema", "public")
-        .eq("table_name", tableName);
+      // Get column definitions using the DB function
+      const { data: columns, error: colErr } = await adminClient
+        .rpc("get_table_columns", { p_table: tableName });
 
-      // Fallback: query columns via pg catalog
-      let columnDefs: { column_name: string; data_type: string; is_nullable: string; column_default: string | null }[] = [];
-
-      // Use direct SQL query
-      const { data: schemaRows } = await adminClient.rpc("get_table_schema" as any, { p_table: tableName }).catch(() => ({ data: null }));
-
-      if (!schemaRows) {
-        // Fallback: just get data and infer
-        const { data: rows } = await adminClient.from(tableName as any).select("*");
-        if (rows?.length) {
-          sql += `-- Table: ${tableName} (schema unavailable, data-only export)\n`;
-          sql += generateInserts(tableName, rows);
-        } else {
-          sql += `-- Table: ${tableName} (empty)\n`;
-        }
-        sql += "\n";
+      if (colErr || !columns?.length) {
+        sql += `-- Table: ${tableName} (schema not found, skipping)\n\n`;
         continue;
       }
 
-      // Generate CREATE TABLE
       sql += `-- ============================================\n`;
-      sql += `-- Table: ${tableName}\n`;
+      sql += `-- Table: public.${tableName}\n`;
       sql += `-- ============================================\n`;
       sql += `DROP TABLE IF EXISTS public.${tableName} CASCADE;\n`;
       sql += `CREATE TABLE public.${tableName} (\n`;
-      const colLines = schemaRows.map((col: any) => {
-        let line = `  ${col.column_name} ${col.data_type}`;
+
+      const colLines = (columns as any[]).map((col) => {
+        // Map data type
+        let dtype = col.data_type;
+        if (dtype === "USER-DEFINED") dtype = col.udt_name;
+        else if (dtype === "ARRAY") dtype = col.udt_name;
+        else if (dtype === "character varying") dtype = "varchar";
+        else if (dtype === "timestamp with time zone") dtype = "timestamptz";
+        else if (dtype === "timestamp without time zone") dtype = "timestamp";
+
+        let line = `  "${col.column_name}" ${dtype}`;
         if (col.is_nullable === "NO") line += " NOT NULL";
         if (col.column_default) line += ` DEFAULT ${col.column_default}`;
         return line;
       });
-      sql += colLines.join(",\n");
-      sql += "\n);\n\n";
 
-      // Get data
-      const { data: rows } = await adminClient.from(tableName as any).select("*");
-      if (rows?.length) {
-        sql += generateInserts(tableName, rows);
+      sql += colLines.join(",\n");
+      sql += `\n);\n\n`;
+
+      // Get all data (paginated to handle >1000 rows)
+      let allRows: any[] = [];
+      let offset = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data: rows } = await adminClient
+          .from(tableName as any).select("*")
+          .range(offset, offset + pageSize - 1);
+        if (!rows?.length) break;
+        allRows = allRows.concat(rows);
+        if (rows.length < pageSize) break;
+        offset += pageSize;
       }
-      sql += "\n";
+
+      if (allRows.length) {
+        sql += `-- Data: ${allRows.length} rows\n`;
+        const cols = Object.keys(allRows[0]);
+        for (const row of allRows) {
+          const values = cols.map((c) => escapeSQL(row[c])).join(", ");
+          sql += `INSERT INTO public.${tableName} (${cols.map(c => `"${c}"`).join(", ")}) VALUES (${values});\n`;
+        }
+      } else {
+        sql += `-- (empty table)\n`;
+      }
+      sql += `\n`;
     }
 
     return new Response(sql, {
       headers: {
         ...corsHeaders,
         "Content-Type": "text/sql; charset=utf-8",
-        "Content-Disposition": `attachment; filename="dump_${new Date().toISOString().slice(0, 10)}.sql"`,
       },
     });
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
@@ -172,15 +152,4 @@ function escapeSQL(val: any): string {
   if (typeof val === "object")
     return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
   return `'${String(val).replace(/'/g, "''")}'`;
-}
-
-function generateInserts(tableName: string, rows: Record<string, any>[]): string {
-  if (!rows.length) return "";
-  const cols = Object.keys(rows[0]);
-  let out = "";
-  for (const row of rows) {
-    const values = cols.map((c) => escapeSQL(row[c])).join(", ");
-    out += `INSERT INTO public.${tableName} (${cols.join(", ")}) VALUES (${values});\n`;
-  }
-  return out;
 }
