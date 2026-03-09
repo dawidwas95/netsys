@@ -114,14 +114,13 @@ export default function DataManagementPage() {
     try {
       const { data, error } = await supabase.from(tableKey as any).select("*");
       if (error) throw error;
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${tableKey}_${format(new Date(), "yyyy-MM-dd_HHmm")}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success(`Wyeksportowano: ${label}`);
+      const ts = format(new Date(), "yyyy-MM-dd_HHmm");
+      if (exportFormat === "sql") {
+        downloadFile(rowsToSQL(tableKey, data ?? []), `${tableKey}_${ts}.sql`, "text/sql");
+      } else {
+        downloadFile(JSON.stringify(data, null, 2), `${tableKey}_${ts}.json`, "application/json");
+      }
+      toast.success(`Wyeksportowano: ${label} (${exportFormat.toUpperCase()})`);
     } catch {
       toast.error("Błąd eksportu");
     } finally {
@@ -132,20 +131,24 @@ export default function DataManagementPage() {
   async function exportAll() {
     setExporting("all");
     try {
-      const allData: Record<string, any> = {};
-      for (const t of ENTITY_TABLES) {
-        const { data } = await supabase.from(t.table as any).select("*");
-        allData[t.key] = data ?? [];
+      const ts = format(new Date(), "yyyy-MM-dd_HHmm");
+      if (exportFormat === "sql") {
+        let sql = `-- Full backup\n-- Generated: ${new Date().toISOString()}\n\n`;
+        for (const t of ENTITY_TABLES) {
+          const { data } = await supabase.from(t.table as any).select("*");
+          sql += rowsToSQL(t.table, data ?? []) + "\n";
+        }
+        downloadFile(sql, `full_backup_${ts}.sql`, "text/sql");
+      } else {
+        const allData: Record<string, any> = {};
+        for (const t of ENTITY_TABLES) {
+          const { data } = await supabase.from(t.table as any).select("*");
+          allData[t.key] = data ?? [];
+        }
+        allData._exported_at = new Date().toISOString();
+        downloadFile(JSON.stringify(allData, null, 2), `full_backup_${ts}.json`, "application/json");
       }
-      allData._exported_at = new Date().toISOString();
-      const blob = new Blob([JSON.stringify(allData, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `full_backup_${format(new Date(), "yyyy-MM-dd_HHmm")}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success("Pełny backup wyeksportowany");
+      toast.success(`Pełny backup wyeksportowany (${exportFormat.toUpperCase()})`);
     } catch {
       toast.error("Błąd eksportu");
     } finally {
