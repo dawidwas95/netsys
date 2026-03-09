@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Camera, CameraOff, X } from "lucide-react";
+import { Camera, CameraOff } from "lucide-react";
 
 interface QRScannerProps {
   open: boolean;
@@ -14,7 +14,14 @@ export function QRScanner({ open, onOpenChange, onScan }: QRScannerProps) {
   const [error, setError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
-  const containerRef = useRef<string>("qr-reader-" + Math.random().toString(36).slice(2));
+  const containerId = useRef("qr-reader-" + Math.random().toString(36).slice(2));
+  const hasScannedRef = useRef(false);
+
+  // Use refs for callbacks to avoid stale closures & unnecessary effect restarts
+  const onScanRef = useRef(onScan);
+  onScanRef.current = onScan;
+  const onOpenChangeRef = useRef(onOpenChange);
+  onOpenChangeRef.current = onOpenChange;
 
   const stopScanner = useCallback(async () => {
     if (scannerRef.current?.isScanning) {
@@ -30,39 +37,58 @@ export function QRScanner({ open, onOpenChange, onScan }: QRScannerProps) {
 
   const startScanner = useCallback(async () => {
     setError(null);
+    hasScannedRef.current = false;
 
-    // Wait for DOM element
-    await new Promise((r) => setTimeout(r, 300));
-    const el = document.getElementById(containerRef.current);
+    // Wait for DOM element to be rendered
+    await new Promise((r) => setTimeout(r, 400));
+    const el = document.getElementById(containerId.current);
     if (!el) return;
 
     try {
-      const scanner = new Html5Qrcode(containerRef.current);
+      const scanner = new Html5Qrcode(containerId.current);
       scannerRef.current = scanner;
 
       await scanner.start(
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText) => {
-          onScan(decodedText);
-          stopScanner();
-          onOpenChange(false);
+        async (decodedText) => {
+          // Guard against double-fire
+          if (hasScannedRef.current) return;
+          hasScannedRef.current = true;
+
+          // Stop scanner FIRST to prevent re-fires
+          if (scannerRef.current?.isScanning) {
+            try {
+              await scannerRef.current.stop();
+            } catch {
+              // ignore
+            }
+          }
+          scannerRef.current = null;
+          setScanning(false);
+
+          // Close dialog
+          onOpenChangeRef.current(false);
+
+          // Then process the scanned value
+          onScanRef.current(decodedText);
         },
         () => {
-          // ignore scan failures
+          // ignore scan failures (no code detected yet)
         }
       );
       setScanning(true);
     } catch (err: any) {
-      if (err?.toString?.().includes("NotAllowedError") || err?.toString?.().includes("Permission")) {
+      const msg = err?.toString?.() ?? "";
+      if (msg.includes("NotAllowedError") || msg.includes("Permission")) {
         setError("Brak dostępu do kamery. Zezwól na dostęp w ustawieniach przeglądarki.");
-      } else if (err?.toString?.().includes("NotFoundError")) {
+      } else if (msg.includes("NotFoundError")) {
         setError("Nie znaleziono kamery na tym urządzeniu.");
       } else {
         setError("Nie udało się uruchomić skanera. Sprawdź uprawnienia kamery.");
       }
     }
-  }, [onScan, onOpenChange, stopScanner]);
+  }, [stopScanner]);
 
   useEffect(() => {
     if (open) {
@@ -72,11 +98,6 @@ export function QRScanner({ open, onOpenChange, onScan }: QRScannerProps) {
       stopScanner();
     };
   }, [open, startScanner, stopScanner]);
-
-  const handleClose = () => {
-    stopScanner();
-    onOpenChange(false);
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -100,7 +121,7 @@ export function QRScanner({ open, onOpenChange, onScan }: QRScannerProps) {
           ) : (
             <>
               <div
-                id={containerRef.current}
+                id={containerId.current}
                 className="w-full rounded-lg overflow-hidden bg-black aspect-square"
               />
               {scanning && (

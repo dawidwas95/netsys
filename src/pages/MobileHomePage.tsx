@@ -65,22 +65,27 @@ export default function MobileHomePage() {
   const handleScan = async (value: string) => {
     const cleaned = value.trim();
     setScannerOpen(false);
+    if (!cleaned) return;
 
-    const directOrderRoute = await resolveOrderRouteFromScan(cleaned);
-    if (directOrderRoute) {
-      navigate(directOrderRoute);
-      return;
-    }
+    try {
+      const directOrderRoute = await resolveOrderRouteFromScan(cleaned);
+      if (directOrderRoute) {
+        navigate(directOrderRoute);
+        return;
+      }
 
-    // Try inventory
-    const { data: invItem } = await supabase
-      .from("inventory_items")
-      .select("id")
-      .or(`sku.eq.${cleaned},inventory_number.eq.${cleaned}`)
-      .maybeSingle();
-    if (invItem) {
-      navigate(`/inventory`);
-      return;
+      // Try inventory
+      const { data: invItem } = await supabase
+        .from("inventory_items")
+        .select("id")
+        .or(`sku.eq.${cleaned},inventory_number.eq.${cleaned}`)
+        .maybeSingle();
+      if (invItem) {
+        navigate(`/inventory`);
+        return;
+      }
+    } catch (err) {
+      console.error("QR scan lookup error:", err);
     }
 
     navigate(`/orders?search=${encodeURIComponent(cleaned)}`);
