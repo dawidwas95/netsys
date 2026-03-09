@@ -9,6 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { QRScanner } from "@/components/QRScanner";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { resolveOrderRouteFromScan } from "@/lib/qrScanRouting";
 
 interface SearchResult {
   id: string;
