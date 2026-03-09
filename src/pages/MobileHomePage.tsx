@@ -11,6 +11,7 @@ import { QRScanner } from "@/components/QRScanner";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { resolveOrderRouteFromScan } from "@/lib/qrScanRouting";
+import { toast } from "sonner";
 
 export default function MobileHomePage() {
   const { user } = useAuth();
