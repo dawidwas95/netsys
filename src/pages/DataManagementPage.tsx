@@ -14,7 +14,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { Download, Database, RotateCcw, Trash2, Archive } from "lucide-react";
+import { Download, Database, RotateCcw, Trash2, Archive, FileCode } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ENTITY_TABLES = [
   { key: "clients", label: "Klienci", table: "clients" },
@@ -35,9 +36,40 @@ const SOFT_DELETE_TABLES = [
   { table: "devices", label: "Urządzenia", nameField: "model" },
 ] as const;
 
+function escapeSQL(val: any): string {
+  if (val === null || val === undefined) return "NULL";
+  if (typeof val === "boolean") return val ? "TRUE" : "FALSE";
+  if (typeof val === "number") return String(val);
+  if (Array.isArray(val)) return `'{${val.map((v: any) => `"${String(v).replace(/"/g, '\\"')}"`).join(",")}}'`;
+  if (typeof val === "object") return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
+  return `'${String(val).replace(/'/g, "''")}'`;
+}
+
+function rowsToSQL(tableName: string, rows: Record<string, any>[]): string {
+  if (!rows.length) return `-- No data in ${tableName}\n`;
+  const cols = Object.keys(rows[0]);
+  const header = `-- Export: ${tableName} (${rows.length} rows)\n-- Generated: ${new Date().toISOString()}\n\n`;
+  const inserts = rows.map((row) => {
+    const values = cols.map((c) => escapeSQL(row[c])).join(", ");
+    return `INSERT INTO public.${tableName} (${cols.join(", ")}) VALUES (${values});`;
+  });
+  return header + inserts.join("\n") + "\n";
+}
+
+function downloadFile(content: string, filename: string, mime: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function DataManagementPage() {
   const { user } = useAuth();
   const [exporting, setExporting] = useState<string | null>(null);
+  const [exportFormat, setExportFormat] = useState<"json" | "sql">("json");
   const [restoreItem, setRestoreItem] = useState<{ table: string; id: string; name: string } | null>(null);
 
   // Check admin role
@@ -82,14 +114,13 @@ export default function DataManagementPage() {
     try {
       const { data, error } = await supabase.from(tableKey as any).select("*");
       if (error) throw error;
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${tableKey}_${format(new Date(), "yyyy-MM-dd_HHmm")}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success(`Wyeksportowano: ${label}`);
+      const ts = format(new Date(), "yyyy-MM-dd_HHmm");
+      if (exportFormat === "sql") {
+        downloadFile(rowsToSQL(tableKey, data ?? []), `${tableKey}_${ts}.sql`, "text/sql");
+      } else {
+        downloadFile(JSON.stringify(data, null, 2), `${tableKey}_${ts}.json`, "application/json");
+      }
+      toast.success(`Wyeksportowano: ${label} (${exportFormat.toUpperCase()})`);
     } catch {
       toast.error("Błąd eksportu");
     } finally {
@@ -100,20 +131,24 @@ export default function DataManagementPage() {
   async function exportAll() {
     setExporting("all");
     try {
-      const allData: Record<string, any> = {};
-      for (const t of ENTITY_TABLES) {
-        const { data } = await supabase.from(t.table as any).select("*");
-        allData[t.key] = data ?? [];
+      const ts = format(new Date(), "yyyy-MM-dd_HHmm");
+      if (exportFormat === "sql") {
+        let sql = `-- Full backup\n-- Generated: ${new Date().toISOString()}\n\n`;
+        for (const t of ENTITY_TABLES) {
+          const { data } = await supabase.from(t.table as any).select("*");
+          sql += rowsToSQL(t.table, data ?? []) + "\n";
+        }
+        downloadFile(sql, `full_backup_${ts}.sql`, "text/sql");
+      } else {
+        const allData: Record<string, any> = {};
+        for (const t of ENTITY_TABLES) {
+          const { data } = await supabase.from(t.table as any).select("*");
+          allData[t.key] = data ?? [];
+        }
+        allData._exported_at = new Date().toISOString();
+        downloadFile(JSON.stringify(allData, null, 2), `full_backup_${ts}.json`, "application/json");
       }
-      allData._exported_at = new Date().toISOString();
-      const blob = new Blob([JSON.stringify(allData, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `full_backup_${format(new Date(), "yyyy-MM-dd_HHmm")}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success("Pełny backup wyeksportowany");
+      toast.success(`Pełny backup wyeksportowany (${exportFormat.toUpperCase()})`);
     } catch {
       toast.error("Błąd eksportu");
     } finally {
@@ -161,10 +196,20 @@ export default function DataManagementPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button onClick={exportAll} disabled={!!exporting} className="w-full sm:w-auto">
-            <Download className="h-4 w-4 mr-2" />
-            {exporting === "all" ? "Eksportowanie..." : "Pełny backup (JSON)"}
-          </Button>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <Tabs value={exportFormat} onValueChange={(v) => setExportFormat(v as "json" | "sql")}>
+              <TabsList>
+                <TabsTrigger value="json">JSON</TabsTrigger>
+                <TabsTrigger value="sql" className="gap-1">
+                  <FileCode className="h-3.5 w-3.5" /> SQL
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <Button onClick={exportAll} disabled={!!exporting} className="w-full sm:w-auto">
+              <Download className="h-4 w-4 mr-2" />
+              {exporting === "all" ? "Eksportowanie..." : `Pełny backup (${exportFormat.toUpperCase()})`}
+            </Button>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
             {ENTITY_TABLES.map((t) => (
               <Button
