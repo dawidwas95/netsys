@@ -109,15 +109,28 @@ export default function DataManagementPage() {
     enabled: isAdmin,
   });
 
+  async function exportSqlViaEdge(tables?: string[]) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error("No session");
+    const res = await supabase.functions.invoke("sql-dump", {
+      body: tables ? { tables } : {},
+    });
+    if (res.error) throw res.error;
+    // res.data is the SQL string
+    const text = typeof res.data === "string" ? res.data : await (res.data as Blob).text();
+    return text;
+  }
+
   async function exportTable(tableKey: string, label: string) {
     setExporting(tableKey);
     try {
-      const { data, error } = await supabase.from(tableKey as any).select("*");
-      if (error) throw error;
       const ts = format(new Date(), "yyyy-MM-dd_HHmm");
       if (exportFormat === "sql") {
-        downloadFile(rowsToSQL(tableKey, data ?? []), `${tableKey}_${ts}.sql`, "text/sql");
+        const sql = await exportSqlViaEdge([tableKey]);
+        downloadFile(sql, `${tableKey}_${ts}.sql`, "text/sql");
       } else {
+        const { data, error } = await supabase.from(tableKey as any).select("*");
+        if (error) throw error;
         downloadFile(JSON.stringify(data, null, 2), `${tableKey}_${ts}.json`, "application/json");
       }
       toast.success(`Wyeksportowano: ${label} (${exportFormat.toUpperCase()})`);
@@ -133,11 +146,7 @@ export default function DataManagementPage() {
     try {
       const ts = format(new Date(), "yyyy-MM-dd_HHmm");
       if (exportFormat === "sql") {
-        let sql = `-- Full backup\n-- Generated: ${new Date().toISOString()}\n\n`;
-        for (const t of ENTITY_TABLES) {
-          const { data } = await supabase.from(t.table as any).select("*");
-          sql += rowsToSQL(t.table, data ?? []) + "\n";
-        }
+        const sql = await exportSqlViaEdge();
         downloadFile(sql, `full_backup_${ts}.sql`, "text/sql");
       } else {
         const allData: Record<string, any> = {};
