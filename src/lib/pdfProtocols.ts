@@ -141,15 +141,15 @@ class DocBuilder {
   }
 
   drawSectionTitle(title: string) {
-    this.checkPage(14);
-    this.y += 3;
+    this.checkPage(12);
+    this.y += 2;
     this.doc.setFillColor(...PRIMARY);
     this.doc.rect(this.ml, this.y - 4, 3, 7, "F");
     this.doc.setFillColor(248, 249, 250);
     this.doc.rect(this.ml + 3, this.y - 4, this.cw - 3, 7, "F");
     this.setFont("bold", 8.5, PRIMARY);
     this.doc.text(title.toUpperCase(), this.ml + 7, this.y + 0.5);
-    this.y += 10;
+    this.y += 8;
   }
 
   drawField(label: string, value: string | null | undefined, x: number, width: number, labelW = 32) {
