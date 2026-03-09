@@ -150,39 +150,11 @@ export function GlobalSearch() {
   };
 
   const handleScan = useCallback(async (scannedValue: string) => {
-    // Try to extract meaningful value from QR URL (e.g. /status?token=xxx or /orders/uuid)
-    let searchValue = scannedValue;
-    try {
-      const url = new URL(scannedValue);
-      const token = url.searchParams.get("token");
-      if (token) {
-        // It's a status QR - find order by status_token
-        const { data } = await supabase
-          .from("service_orders")
-          .select("id")
-          .eq("status_token", token)
-          .maybeSingle();
-        if (data) {
-          navigate(`/orders/${data.id}`);
-          return;
-        }
-      }
-      // Check if path contains an order/inventory UUID
-      const pathParts = url.pathname.split("/").filter(Boolean);
-      const lastPart = pathParts[pathParts.length - 1];
-      if (lastPart) searchValue = lastPart;
-    } catch {
-      // Not a URL, use raw value
-    }
+    const cleaned = scannedValue.trim();
 
-    // Try exact match: order_number
-    const { data: orderMatch } = await supabase
-      .from("service_orders")
-      .select("id")
-      .eq("order_number", searchValue.toUpperCase())
-      .maybeSingle();
-    if (orderMatch) {
-      navigate(`/orders/${orderMatch.id}`);
+    const directOrderRoute = await resolveOrderRouteFromScan(cleaned);
+    if (directOrderRoute) {
+      navigate(directOrderRoute);
       return;
     }
 
@@ -190,7 +162,7 @@ export function GlobalSearch() {
     const { data: invMatch } = await supabase
       .from("inventory_items")
       .select("id")
-      .or(`sku.eq.${searchValue},inventory_number.eq.${searchValue}`)
+      .or(`sku.eq.${cleaned},inventory_number.eq.${cleaned}`)
       .eq("is_archived", false)
       .maybeSingle();
     if (invMatch) {
@@ -202,7 +174,7 @@ export function GlobalSearch() {
     const { data: devMatch } = await supabase
       .from("devices")
       .select("id")
-      .or(`serial_number.eq.${searchValue},imei.eq.${searchValue},asset_tag.eq.${searchValue}`)
+      .or(`serial_number.eq.${cleaned},imei.eq.${cleaned},asset_tag.eq.${cleaned}`)
       .eq("is_archived", false)
       .maybeSingle();
     if (devMatch) {
@@ -211,7 +183,7 @@ export function GlobalSearch() {
     }
 
     // No exact match - open search with scanned value
-    setQuery(searchValue);
+    setQuery(cleaned);
     setOpen(true);
   }, [navigate]);
 

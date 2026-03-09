@@ -63,31 +63,27 @@ export default function MobileHomePage() {
   const firstName = profile?.first_name || "Technik";
 
   const handleScan = async (value: string) => {
+    const cleaned = value.trim();
     setScannerOpen(false);
-    // Try to find order by token or number
-    const { data: orderByToken } = await supabase
-      .from("service_orders")
-      .select("id")
-      .eq("status_token", value)
-      .maybeSingle();
-    if (orderByToken) { navigate(`/orders/${orderByToken.id}`); return; }
 
-    const { data: orderByNumber } = await supabase
-      .from("service_orders")
-      .select("id")
-      .eq("order_number", value)
-      .maybeSingle();
-    if (orderByNumber) { navigate(`/orders/${orderByNumber.id}`); return; }
+    const directOrderRoute = await resolveOrderRouteFromScan(cleaned);
+    if (directOrderRoute) {
+      navigate(directOrderRoute);
+      return;
+    }
 
     // Try inventory
     const { data: invItem } = await supabase
       .from("inventory_items")
       .select("id")
-      .or(`sku.eq.${value},inventory_number.eq.${value}`)
+      .or(`sku.eq.${cleaned},inventory_number.eq.${cleaned}`)
       .maybeSingle();
-    if (invItem) { navigate(`/inventory`); return; }
+    if (invItem) {
+      navigate(`/inventory`);
+      return;
+    }
 
-    navigate(`/orders?search=${encodeURIComponent(value)}`);
+    navigate(`/orders?search=${encodeURIComponent(cleaned)}`);
   };
 
   const actions = [
