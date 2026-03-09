@@ -27,8 +27,11 @@ import {
   ArrowLeft, Send, Clock, User, Monitor, Plus, Trash2,
   DollarSign, TrendingUp, TrendingDown, Percent, FileDown, Printer,
   CheckCircle, AlertTriangle, Save, Archive, XCircle, PenLine, MessageSquare,
-  Camera, Wrench,
+  Camera, Wrench, ChevronDown,
 } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { generateOrderPDF } from "@/lib/generateOrderPDF";
 import { generateIntakePDF, generatePickupPDF } from "@/lib/pdfProtocols";
 import { sendOrderNotification } from "@/lib/notifications";
@@ -689,12 +692,21 @@ export default function OrderDetailPage() {
               <Save className="mr-1 h-4 w-4" /> {updateOrder.isPending ? "Zapis..." : "Zapisz zmiany"}
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
-            <FileDown className="mr-1 h-4 w-4" /> PDF
-          </Button>
-          <Button variant="outline" size="sm" onClick={handlePrintPDF}>
-            <Printer className="mr-1 h-4 w-4" /> Drukuj
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <FileDown className="mr-1 h-4 w-4" /> Dokumenty <ChevronDown className="ml-1 h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleIntakePDF}>
+                <FileDown className="mr-2 h-4 w-4" /> Protokół przyjęcia
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handlePickupPDF}>
+                <FileDown className="mr-2 h-4 w-4" /> Protokół odbioru
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           {!isCompleted && (
             <>
               <Button variant="outline" size="sm" onClick={() => setCancelDialogOpen(true)}>
