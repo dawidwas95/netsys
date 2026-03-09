@@ -227,6 +227,7 @@ class DocBuilder {
       }
     }
     this.y += 1;
+  }
 
   drawSignatures(labels: string[], order?: any) {
     // Place signatures right after content with minimal gap — avoid pushing to next page
