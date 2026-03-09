@@ -117,27 +117,27 @@ class DocBuilder {
     }
 
     // Separator
-    this.y += 3;
+    this.y += 2;
     this.doc.setDrawColor(...PRIMARY);
     this.doc.setLineWidth(0.5);
     this.doc.line(this.ml, this.y, this.mr, this.y);
-    this.y += 6;
+    this.y += 5;
 
     // Document title
-    this.setFont("bold", 14, DARK);
+    this.setFont("bold", 13, DARK);
     this.doc.text(title, this.ml, this.y);
-    this.y += 6;
+    this.y += 5;
 
     // Order info line
-    this.setFont("bold", 9.5, PRIMARY);
+    this.setFont("bold", 9, PRIMARY);
     this.doc.text(`Nr: ${orderNumber}`, this.ml, this.y);
     this.setFont("normal", 8, GRAY);
     this.doc.text(`${dateLabel}: ${dateValue}`, this.mr - 2, this.y, { align: "right" });
-    this.y += 4;
+    this.y += 3.5;
     this.doc.setDrawColor(...BORDER);
     this.doc.setLineWidth(0.15);
     this.doc.line(this.ml, this.y, this.mr, this.y);
-    this.y += 6;
+    this.y += 4;
   }
 
   drawSectionTitle(title: string) {
