@@ -27,8 +27,11 @@ import {
   ArrowLeft, Send, Clock, User, Monitor, Plus, Trash2,
   DollarSign, TrendingUp, TrendingDown, Percent, FileDown, Printer,
   CheckCircle, AlertTriangle, Save, Archive, XCircle, PenLine, MessageSquare,
-  Camera, Wrench,
+  Camera, Wrench, ChevronDown,
 } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { generateOrderPDF } from "@/lib/generateOrderPDF";
 import { generateIntakePDF, generatePickupPDF } from "@/lib/pdfProtocols";
 import { sendOrderNotification } from "@/lib/notifications";
