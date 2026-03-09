@@ -14,7 +14,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { Download, Database, RotateCcw, Trash2, Archive } from "lucide-react";
+import { Download, Database, RotateCcw, Trash2, Archive, FileCode } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ENTITY_TABLES = [
   { key: "clients", label: "Klienci", table: "clients" },
