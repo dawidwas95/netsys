@@ -11,6 +11,7 @@ import { QRScanner } from "@/components/QRScanner";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { resolveOrderRouteFromScan } from "@/lib/qrScanRouting";
+import { toast } from "sonner";
 
 export default function MobileHomePage() {
   const { user } = useAuth();
@@ -67,9 +68,12 @@ export default function MobileHomePage() {
     setScannerOpen(false);
     if (!cleaned) return;
 
+    console.log("[MobileHome] Processing scanned value:", cleaned);
+
     try {
       const directOrderRoute = await resolveOrderRouteFromScan(cleaned);
       if (directOrderRoute) {
+        console.log("[MobileHome] Navigating to order:", directOrderRoute);
         navigate(directOrderRoute);
         return;
       }
@@ -88,6 +92,11 @@ export default function MobileHomePage() {
       console.error("QR scan lookup error:", err);
     }
 
+    console.log("[MobileHome] No direct match, falling back to search");
+    toast.info("Nie znaleziono dokładnego dopasowania", {
+      description: "Przeszukuję zlecenia...",
+      duration: 2000,
+    });
     navigate(`/orders?search=${encodeURIComponent(cleaned)}`);
   };
 

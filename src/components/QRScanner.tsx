@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Camera, CameraOff } from "lucide-react";
+import { Camera, CameraOff, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface QRScannerProps {
   open: boolean;
@@ -13,9 +14,11 @@ interface QRScannerProps {
 export function QRScanner({ open, onOpenChange, onScan }: QRScannerProps) {
   const [error, setError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [starting, setStarting] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const containerId = useRef("qr-reader-" + Math.random().toString(36).slice(2));
   const hasScannedRef = useRef(false);
+  const mountedRef = useRef(true);
 
   // Use refs for callbacks to avoid stale closures & unnecessary effect restarts
   const onScanRef = useRef(onScan);
@@ -24,77 +27,145 @@ export function QRScanner({ open, onOpenChange, onScan }: QRScannerProps) {
   onOpenChangeRef.current = onOpenChange;
 
   const stopScanner = useCallback(async () => {
-    if (scannerRef.current?.isScanning) {
+    if (scannerRef.current) {
       try {
-        await scannerRef.current.stop();
+        if (scannerRef.current.isScanning) {
+          await scannerRef.current.stop();
+        }
+      } catch {
+        // ignore
+      }
+      try {
+        scannerRef.current.clear();
       } catch {
         // ignore
       }
     }
     scannerRef.current = null;
-    setScanning(false);
+    if (mountedRef.current) {
+      setScanning(false);
+      setStarting(false);
+    }
+  }, []);
+
+  const waitForElement = useCallback(async (id: string, maxWait = 2000): Promise<HTMLElement | null> => {
+    const start = Date.now();
+    while (Date.now() - start < maxWait) {
+      const el = document.getElementById(id);
+      if (el && el.offsetWidth > 0 && el.offsetHeight > 0) {
+        return el;
+      }
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    return document.getElementById(id);
   }, []);
 
   const startScanner = useCallback(async () => {
     setError(null);
+    setStarting(true);
     hasScannedRef.current = false;
 
-    // Wait for DOM element to be rendered
-    await new Promise((r) => setTimeout(r, 400));
-    const el = document.getElementById(containerId.current);
-    if (!el) return;
+    // Wait for DOM element to be rendered and have dimensions
+    const el = await waitForElement(containerId.current);
+    if (!el) {
+      if (mountedRef.current) {
+        setError("Nie udało się zainicjalizować skanera.");
+        setStarting(false);
+      }
+      return;
+    }
+
+    // Ensure previous instance is cleaned up
+    await stopScanner();
 
     try {
-      const scanner = new Html5Qrcode(containerId.current);
+      const scanner = new Html5Qrcode(containerId.current, { verbose: false });
       scannerRef.current = scanner;
 
       await scanner.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        {
+          fps: 15,
+          qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+            const size = Math.min(viewfinderWidth, viewfinderHeight) * 0.75;
+            const s = Math.max(150, Math.floor(size));
+            return { width: s, height: s };
+          },
+          aspectRatio: 1,
+        },
         async (decodedText) => {
           // Guard against double-fire
           if (hasScannedRef.current) return;
           hasScannedRef.current = true;
 
+          console.log("[QRScanner] Scanned value:", decodedText);
+
           // Stop scanner FIRST to prevent re-fires
-          if (scannerRef.current?.isScanning) {
+          if (scannerRef.current) {
             try {
-              await scannerRef.current.stop();
+              if (scannerRef.current.isScanning) {
+                await scannerRef.current.stop();
+              }
+              scannerRef.current.clear();
             } catch {
               // ignore
             }
           }
           scannerRef.current = null;
-          setScanning(false);
+
+          if (mountedRef.current) {
+            setScanning(false);
+            setStarting(false);
+          }
+
+          // Show feedback toast
+          toast.success("Kod zeskanowany", {
+            description: decodedText.length > 60 ? decodedText.slice(0, 60) + "…" : decodedText,
+            duration: 2000,
+          });
 
           // Close dialog
           onOpenChangeRef.current(false);
 
-          // Then process the scanned value
-          onScanRef.current(decodedText);
+          // Process scanned value after a brief delay for UI to settle
+          setTimeout(() => {
+            onScanRef.current(decodedText);
+          }, 100);
         },
         () => {
           // ignore scan failures (no code detected yet)
         }
       );
-      setScanning(true);
+
+      if (mountedRef.current) {
+        setScanning(true);
+        setStarting(false);
+      }
     } catch (err: any) {
+      console.error("[QRScanner] Start error:", err);
       const msg = err?.toString?.() ?? "";
-      if (msg.includes("NotAllowedError") || msg.includes("Permission")) {
-        setError("Brak dostępu do kamery. Zezwól na dostęp w ustawieniach przeglądarki.");
-      } else if (msg.includes("NotFoundError")) {
-        setError("Nie znaleziono kamery na tym urządzeniu.");
-      } else {
-        setError("Nie udało się uruchomić skanera. Sprawdź uprawnienia kamery.");
+      if (mountedRef.current) {
+        setStarting(false);
+        if (msg.includes("NotAllowedError") || msg.includes("Permission")) {
+          setError("Brak dostępu do kamery. Zezwól na dostęp w ustawieniach przeglądarki.");
+        } else if (msg.includes("NotFoundError") || msg.includes("Requested device not found")) {
+          setError("Nie znaleziono kamery na tym urządzeniu.");
+        } else if (msg.includes("NotReadableError") || msg.includes("Could not start video source")) {
+          setError("Kamera jest używana przez inną aplikację. Zamknij inne aplikacje i spróbuj ponownie.");
+        } else {
+          setError("Nie udało się uruchomić skanera. Sprawdź uprawnienia kamery.");
+        }
       }
     }
-  }, [stopScanner]);
+  }, [stopScanner, waitForElement]);
 
   useEffect(() => {
+    mountedRef.current = true;
     if (open) {
       startScanner();
     }
     return () => {
+      mountedRef.current = false;
       stopScanner();
     };
   }, [open, startScanner, stopScanner]);
@@ -122,8 +193,15 @@ export function QRScanner({ open, onOpenChange, onScan }: QRScannerProps) {
             <>
               <div
                 id={containerId.current}
-                className="w-full rounded-lg overflow-hidden bg-black aspect-square"
+                className="w-full rounded-lg overflow-hidden bg-black"
+                style={{ minHeight: 280 }}
               />
+              {starting && !scanning && (
+                <div className="flex items-center justify-center gap-2 py-3">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground">Uruchamianie kamery...</p>
+                </div>
+              )}
               {scanning && (
                 <p className="text-xs text-muted-foreground text-center mt-2">
                   Skieruj kamerę na kod QR lub kreskowy
