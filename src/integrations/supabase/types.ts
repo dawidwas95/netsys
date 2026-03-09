@@ -2440,6 +2440,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_table_columns: {
+        Args: { p_table: string }
+        Returns: {
+          column_default: string
+          column_name: string
+          data_type: string
+          is_nullable: string
+          udt_name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
