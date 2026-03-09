@@ -692,12 +692,21 @@ export default function OrderDetailPage() {
               <Save className="mr-1 h-4 w-4" /> {updateOrder.isPending ? "Zapis..." : "Zapisz zmiany"}
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
-            <FileDown className="mr-1 h-4 w-4" /> PDF
-          </Button>
-          <Button variant="outline" size="sm" onClick={handlePrintPDF}>
-            <Printer className="mr-1 h-4 w-4" /> Drukuj
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <FileDown className="mr-1 h-4 w-4" /> Dokumenty <ChevronDown className="ml-1 h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleIntakePDF}>
+                <FileDown className="mr-2 h-4 w-4" /> Protokół przyjęcia
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handlePickupPDF}>
+                <FileDown className="mr-2 h-4 w-4" /> Protokół odbioru
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           {!isCompleted && (
             <>
               <Button variant="outline" size="sm" onClick={() => setCancelDialogOpen(true)}>
