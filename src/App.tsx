@@ -47,7 +47,12 @@ function ProtectedRoutes() {
     );
   }
 
-  if (!user) return <Navigate to="/auth" replace />;
+  if (!user) {
+    // Preserve current path so user returns after login
+    const currentPath = window.location.pathname + window.location.search;
+    const redirectParam = currentPath !== "/" ? `?redirect=${encodeURIComponent(currentPath)}` : "";
+    return <Navigate to={`/auth${redirectParam}`} replace />;
+  }
 
   return (
     <AppLayout />
