@@ -117,39 +117,39 @@ class DocBuilder {
     }
 
     // Separator
-    this.y += 3;
+    this.y += 2;
     this.doc.setDrawColor(...PRIMARY);
     this.doc.setLineWidth(0.5);
     this.doc.line(this.ml, this.y, this.mr, this.y);
-    this.y += 6;
+    this.y += 5;
 
     // Document title
-    this.setFont("bold", 14, DARK);
+    this.setFont("bold", 13, DARK);
     this.doc.text(title, this.ml, this.y);
-    this.y += 6;
+    this.y += 5;
 
     // Order info line
-    this.setFont("bold", 9.5, PRIMARY);
+    this.setFont("bold", 9, PRIMARY);
     this.doc.text(`Nr: ${orderNumber}`, this.ml, this.y);
     this.setFont("normal", 8, GRAY);
     this.doc.text(`${dateLabel}: ${dateValue}`, this.mr - 2, this.y, { align: "right" });
-    this.y += 4;
+    this.y += 3.5;
     this.doc.setDrawColor(...BORDER);
     this.doc.setLineWidth(0.15);
     this.doc.line(this.ml, this.y, this.mr, this.y);
-    this.y += 6;
+    this.y += 4;
   }
 
   drawSectionTitle(title: string) {
-    this.checkPage(14);
-    this.y += 3;
+    this.checkPage(12);
+    this.y += 2;
     this.doc.setFillColor(...PRIMARY);
     this.doc.rect(this.ml, this.y - 4, 3, 7, "F");
     this.doc.setFillColor(248, 249, 250);
     this.doc.rect(this.ml + 3, this.y - 4, this.cw - 3, 7, "F");
     this.setFont("bold", 8.5, PRIMARY);
     this.doc.text(title.toUpperCase(), this.ml + 7, this.y + 0.5);
-    this.y += 10;
+    this.y += 8;
   }
 
   drawField(label: string, value: string | null | undefined, x: number, width: number, labelW = 32) {
@@ -226,15 +226,12 @@ class DocBuilder {
         this.y += 4;
       }
     }
-    this.y += 2;
+    this.y += 1;
   }
 
   drawSignatures(labels: string[], order?: any) {
-    const minY = this.y + 8;
-    const prefY = this.pageH - 38;
-    let sigY = Math.max(minY, Math.min(prefY, 240));
-    if (sigY > this.pageH - 35) { this.doc.addPage(); sigY = 25; }
-    this.y = sigY;
+    // Place signatures right after content with minimal gap — avoid pushing to next page
+    this.y += 4;
     this.checkPage(28);
 
     const boxW = Math.min(72, (this.cw - (labels.length - 1) * 8) / labels.length);
@@ -445,66 +442,39 @@ export async function generatePickupPDF({ order, orderItems, financials }: Order
         break;
 
       case "financial": {
-        b.drawSectionTitle("Rozliczenie finansowe");
-        b.checkPage(50);
+        const totalGross = order.total_gross ?? (financials.revenue * 1.23);
+        if (!totalGross || totalGross <= 0) break;
 
-        // Items table
-        if (orderItems.length > 0) {
-          const cols = { name: b.ml + 2, qty: b.ml + 90, unit: b.ml + 115, total: b.mr - 2 };
-          doc.setFillColor(...PRIMARY);
-          doc.rect(b.ml, b.y - 3.5, b.cw, 7, "F");
-          b.setFont("bold", 7.5, WHITE);
-          doc.text("Pozycja", cols.name, b.y);
-          doc.text("Ilość", cols.qty, b.y, { align: "right" });
-          doc.text("Cena jedn.", cols.unit, b.y, { align: "right" });
-          doc.text("Wartość netto", cols.total, b.y, { align: "right" });
-          b.y += 6;
+        b.drawSectionTitle("Koszt naprawy");
+        b.checkPage(16);
 
-          orderItems.forEach((item: any, idx: number) => {
-            b.checkPage(6);
-            if (idx % 2 === 0) { doc.setFillColor(248, 249, 250); doc.rect(b.ml, b.y - 3.5, b.cw, 6, "F"); }
-            doc.setDrawColor(233, 236, 239); doc.setLineWidth(0.15); doc.line(b.ml, b.y + 2.5, b.mr, b.y + 2.5);
-            b.setFont("normal", 8, DARK);
-            doc.text(item.item_name_snapshot, cols.name, b.y);
-            doc.text(item.quantity.toString(), cols.qty, b.y, { align: "right" });
-            doc.text(formatCurrency(item.sale_net), cols.unit, b.y, { align: "right" });
-            doc.text(formatCurrency(item.total_sale_net), cols.total, b.y, { align: "right" });
-            b.y += 6;
-          });
-          b.y += 3;
+        // Single clean cost box
+        const boxX = b.ml;
+        const boxW2 = b.cw;
+        doc.setFillColor(248, 249, 250);
+        doc.setDrawColor(...BORDER);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(boxX, b.y - 2, boxW2, 14, 2, 2, "FD");
+
+        b.setFont("bold", 9, DARK);
+        doc.text("Koszt naprawy (brutto):", boxX + 6, b.y + 6);
+        b.setFont("bold", 12, PRIMARY);
+        doc.text(formatCurrency(totalGross), boxX + boxW2 - 6, b.y + 6, { align: "right" });
+
+        b.y += 18;
+
+        // Payment info
+        if (order.payment_method || order.is_paid !== undefined) {
+          b.setFont("normal", 7.5, GRAY);
+          const payInfo = [
+            order.payment_method ? `Płatność: ${PAYMENT_METHOD_LABELS[order.payment_method as PaymentMethod] ?? order.payment_method}` : null,
+            order.is_paid !== undefined ? `Status: ${order.is_paid ? "✓ Opłacone" : "Nieopłacone"}` : null,
+          ].filter(Boolean).join("   |   ");
+          doc.text(payInfo, boxX + 6, b.y);
+          b.y += 5;
         }
 
-        // Summary
-        b.checkPage(40);
-        const boxY = b.y;
-        const halfW = b.cw / 2 - 2;
-
-        // Left - breakdown
-        doc.setFillColor(248, 249, 250);
-        doc.setDrawColor(...BORDER); doc.setLineWidth(0.3);
-        doc.roundedRect(b.ml, boxY, halfW, 32, 2, 2, "FD");
-        let iy = boxY + 6;
-        b.setFont("normal", 7.5, GRAY); doc.text("Usługa (netto):", b.ml + 4, iy);
-        b.setFont("normal", 8.5, DARK); doc.text(formatCurrency(financials.laborNet), b.ml + 42, iy); iy += 5.5;
-        b.setFont("normal", 7.5, GRAY); doc.text("Części (netto):", b.ml + 4, iy);
-        b.setFont("normal", 8.5, DARK); doc.text(formatCurrency(financials.partsCost), b.ml + 42, iy); iy += 5.5;
-        b.setFont("normal", 7.5, GRAY); doc.text("Koszty dodatkowe:", b.ml + 4, iy);
-        b.setFont("normal", 8.5, DARK); doc.text(formatCurrency(financials.extraCost), b.ml + 42, iy); iy += 7;
-        doc.setDrawColor(...BORDER); doc.line(b.ml + 4, iy - 2.5, b.ml + halfW - 6, iy - 2.5);
-        b.setFont("bold", 8.5, DARK); doc.text("Razem netto:", b.ml + 4, iy);
-        b.setFont("bold", 9, DARK); doc.text(formatCurrency(financials.revenue), b.ml + 42, iy);
-
-        // Right - total
-        const rx = b.ml + halfW + 4;
-        doc.setFillColor(...PRIMARY);
-        doc.roundedRect(rx, boxY, halfW, 32, 2, 2, "F");
-        b.setFont("normal", 8, WHITE); doc.text("DO ZAPŁATY (brutto):", rx + 6, boxY + 9);
-        b.setFont("bold", 18, WHITE); doc.text(formatCurrency(financials.revenue * 1.23), rx + 6, boxY + 20);
-        b.setFont("normal", 7.5, [200, 210, 230] as [number, number, number]);
-        if (order.payment_method) doc.text(`Płatność: ${PAYMENT_METHOD_LABELS[order.payment_method as PaymentMethod] ?? order.payment_method}`, rx + 6, boxY + 27);
-        doc.text(`Status: ${order.is_paid ? "✓ Opłacone" : "Nieopłacone"}`, rx + 6, boxY + 31);
-
-        b.y = boxY + 37;
+        b.y += 2;
         break;
       }
 
