@@ -308,8 +308,7 @@ export async function generateIntakePDF({ order }: { order: any }) {
   const ff = hasFont ? "Roboto" : "helvetica";
   const b = new DocBuilder(doc, ff, config.settings.margins.left, doc.internal.pageSize.getWidth() - config.settings.margins.right, config.settings.fontScale);
 
-  const statusToken = (order as any).status_token || order.id;
-  const qr = await generateQRDataURL(`${window.location.origin}/status?token=${statusToken}`);
+  const qr = await generateQRDataURL(`${window.location.origin}/orders/${order.id}?scan=true`);
 
   for (const sec of config.sections) {
     if (!sec.enabled) continue;
