@@ -1,79 +1,110 @@
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import {
-  Wrench, CheckCircle, AlertCircle, Users, TrendingUp, TrendingDown,
-  Clock, DollarSign, Wallet, Percent, AlertTriangle, Package, ShoppingCart, CalendarDays,
+  CheckCircle, AlertCircle, Users, TrendingUp, TrendingDown,
+  Clock, DollarSign, Wallet, Percent, AlertTriangle, Package, ShoppingCart, CalendarDays, Filter,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
+import { ORDER_STATUS_LABELS, type OrderStatus } from "@/types/database";
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(v);
 }
 
+type PeriodPreset = "today" | "week" | "month" | "quarter" | "year" | "custom";
+
+function usePeriodRange() {
+  const [preset, setPreset] = useState<PeriodPreset>("month");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+
+  const range = useMemo(() => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    switch (preset) {
+      case "today":
+        return { from: todayStart, to: now };
+      case "week": {
+        const d = new Date(todayStart);
+        d.setDate(d.getDate() - d.getDay() + (d.getDay() === 0 ? -6 : 1));
+        return { from: d, to: now };
+      }
+      case "month":
+        return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: now };
+      case "quarter": {
+        const qm = Math.floor(now.getMonth() / 3) * 3;
+        return { from: new Date(now.getFullYear(), qm, 1), to: now };
+      }
+      case "year":
+        return { from: new Date(now.getFullYear(), 0, 1), to: now };
+      case "custom": {
+        const f = customFrom ? new Date(customFrom) : new Date(now.getFullYear(), now.getMonth(), 1);
+        const t = customTo ? new Date(customTo + "T23:59:59") : now;
+        return { from: f, to: t };
+      }
+    }
+  }, [preset, customFrom, customTo]);
+
+  return { preset, setPreset, customFrom, setCustomFrom, customTo, setCustomTo, range };
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
+  const period = usePeriodRange();
+  const { range } = period;
+
+  const periodLabel = {
+    today: "dziś",
+    week: "tydzień",
+    month: "miesiąc",
+    quarter: "kwartał",
+    year: "rok",
+    custom: "okres",
+  }[period.preset];
 
   const { data: orderStats } = useQuery({
-    queryKey: ["dashboard-order-stats"],
+    queryKey: ["dashboard-order-stats", range.from.toISOString(), range.to.toISOString()],
     queryFn: async () => {
       const { data: orders } = await supabase
         .from("service_orders")
-        .select("status, created_at, completed_at, labor_net, parts_net, extra_cost_net, total_net, total_gross, is_paid, payment_method");
+        .select("status, created_at, completed_at");
 
-      const { data: items } = await supabase
-        .from("service_order_items")
-        .select("order_id, total_sale_net, total_purchase_net");
+      const newInPeriod = orders?.filter((o) => {
+        const d = new Date(o.created_at);
+        return d >= range.from && d <= range.to;
+      }).length ?? 0;
 
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
-      const newToday = orders?.filter((o) => new Date(o.created_at) >= today).length ?? 0;
       const active = orders?.filter((o) => !["COMPLETED", "ARCHIVED", "CANCELLED"].includes(o.status)).length ?? 0;
 
-      // Completed this month
-      const completedMonth = orders?.filter(
-        (o) => o.status === "COMPLETED" && o.completed_at && new Date(o.completed_at) >= monthStart
+      const completedPeriod = orders?.filter(
+        (o) => o.status === "COMPLETED" && o.completed_at && new Date(o.completed_at) >= range.from && new Date(o.completed_at) <= range.to
       ) ?? [];
 
-      // Build items map by order (for completed orders)
-      const itemsByOrder = new Map<string, { saleTotal: number; costTotal: number }>();
-      // We don't have order_id→status mapping from items query, so we calculate globally
-
-      // Financial stats from completed & paid orders this month
-      let revenueMonth = 0;
-      let costMonth = 0;
-
-      const completedOrderIds = new Set<string>();
-      const allCompletedPaid = orders?.filter((o) => o.status === "COMPLETED" && o.is_paid && o.completed_at && new Date(o.completed_at) >= monthStart) ?? [];
-
-      // We need order IDs but service_orders select doesn't include id. Let's re-query with id.
-      // Actually, let me fix - we need id in the select
-      return { newToday, active, completedMonthCount: completedMonth.length, allCompletedPaid };
+      return { newInPeriod, active, completedPeriodCount: completedPeriod.length };
     },
   });
 
-  // Separate query with IDs for financial calculations
   const { data: financialStats } = useQuery({
-    queryKey: ["dashboard-financial-stats"],
+    queryKey: ["dashboard-financial-stats", range.from.toISOString(), range.to.toISOString()],
     queryFn: async () => {
-      const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
       const { data: completedOrders } = await supabase
         .from("service_orders")
         .select("id, labor_net, parts_net, extra_cost_net, total_net, total_gross, is_paid, payment_method, completed_at")
         .eq("status", "COMPLETED")
         .eq("is_paid", true)
-        .gte("completed_at", monthStart.toISOString());
+        .gte("completed_at", range.from.toISOString())
+        .lte("completed_at", range.to.toISOString());
 
       if (!completedOrders?.length) return { revenue: 0, cost: 0, profit: 0, margin: 0, revenueGross: 0, costGross: 0, profitGross: 0 };
 
@@ -136,26 +167,61 @@ export default function DashboardPage() {
   });
 
   const kpis = [
-    { label: "Nowe dziś", value: orderStats?.newToday ?? 0, icon: AlertCircle, color: "text-destructive" },
+    { label: `Nowe (${periodLabel})`, value: orderStats?.newInPeriod ?? 0, icon: AlertCircle, color: "text-destructive" },
     { label: "Aktywne zlecenia", value: orderStats?.active ?? 0, icon: Clock, color: "text-primary" },
-    { label: "Zakończone (mies.)", value: orderStats?.completedMonthCount ?? 0, icon: CheckCircle, color: "text-primary" },
+    { label: `Zakończone (${periodLabel})`, value: orderStats?.completedPeriodCount ?? 0, icon: CheckCircle, color: "text-primary" },
     { label: "Aktywni klienci", value: clientCount ?? 0, icon: Users, color: "text-muted-foreground" },
   ];
 
   const finKpis = [
-    { label: "Przychód brutto (mies.)", value: formatCurrency(financialStats?.revenueGross ?? 0), icon: TrendingUp, color: "text-primary" },
-    { label: "Koszty brutto (mies.)", value: formatCurrency(financialStats?.costGross ?? 0), icon: TrendingDown, color: "text-destructive" },
-    { label: "Zysk brutto (mies.)", value: formatCurrency(financialStats?.profitGross ?? 0), icon: DollarSign, color: (financialStats?.profitGross ?? 0) >= 0 ? "text-primary" : "text-destructive" },
+    { label: "Przychód brutto", value: formatCurrency(financialStats?.revenueGross ?? 0), icon: TrendingUp, color: "text-primary" },
+    { label: "Koszty brutto", value: formatCurrency(financialStats?.costGross ?? 0), icon: TrendingDown, color: "text-destructive" },
+    { label: "Zysk brutto", value: formatCurrency(financialStats?.profitGross ?? 0), icon: DollarSign, color: (financialStats?.profitGross ?? 0) >= 0 ? "text-primary" : "text-destructive" },
     { label: "Marża", value: `${(financialStats?.margin ?? 0).toFixed(1)}%`, icon: Percent, color: "text-muted-foreground" },
     { label: "Stan kasy", value: formatCurrency(cashBalance ?? 0), icon: Wallet, color: "text-primary" },
   ];
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground text-sm">Przegląd systemu</p>
+        </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={period.preset} onValueChange={(v) => period.setPreset(v as PeriodPreset)}>
+              <SelectTrigger className="w-[160px] h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">Dziś</SelectItem>
+                <SelectItem value="week">Ten tydzień</SelectItem>
+                <SelectItem value="month">Ten miesiąc</SelectItem>
+                <SelectItem value="quarter">Ten kwartał</SelectItem>
+                <SelectItem value="year">Ten rok</SelectItem>
+                <SelectItem value="custom">Własny zakres</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {period.preset === "custom" && (
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                value={period.customFrom}
+                onChange={(e) => period.setCustomFrom(e.target.value)}
+                className="h-9 w-[140px]"
+              />
+              <span className="text-muted-foreground text-sm">—</span>
+              <Input
+                type="date"
+                value={period.customTo}
+                onChange={(e) => period.setCustomTo(e.target.value)}
+                className="h-9 w-[140px]"
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -184,9 +250,7 @@ export default function DashboardPage() {
       </div>
 
       <LowStockAlerts />
-
       <TodaysScheduledOrders />
-
       <PurchaseListWidget />
       <PurchaseRequestsWidget />
 
@@ -231,7 +295,7 @@ function RecentOrders() {
           <div className="flex items-center gap-2">
             {Number(order.total_gross || 0) > 0 && (
               <span className="font-mono text-xs text-muted-foreground">
-                {new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(Number(order.total_gross))}
+                {formatCurrency(Number(order.total_gross))}
               </span>
             )}
             <OrderStatusBadge status={order.status} />
@@ -272,7 +336,7 @@ function RecentCashOps() {
           </div>
           <span className={`font-mono font-medium ${t.transaction_type === "IN" ? "text-primary" : "text-destructive"}`}>
             {t.transaction_type === "IN" ? "+" : "-"}
-            {new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(Number(t.gross_amount || t.amount))}
+            {formatCurrency(Number(t.gross_amount || t.amount))}
           </span>
         </div>
       ))}
@@ -333,8 +397,6 @@ function LowStockAlerts() {
   );
 }
 
-import { ORDER_STATUS_LABELS, type OrderStatus } from "@/types/database";
-
 function TodaysScheduledOrders() {
   const { user } = useAuth();
   const { isAdmin, isKierownik, isSerwisant } = useUserRole();
@@ -344,7 +406,6 @@ function TodaysScheduledOrders() {
   const { data: orders = [] } = useQuery({
     queryKey: ["dashboard-todays-schedule", user?.id, isAdmin, isKierownik],
     queryFn: async () => {
-      // Fetch orders with planned_execution_date = today or overdue (past dates, not completed)
       let query = supabase
         .from("service_orders")
         .select("id, order_number, status, priority, planned_execution_date, planned_execution_time, appointment_note, clients(display_name), devices(manufacturer, model)")
@@ -358,7 +419,6 @@ function TodaysScheduledOrders() {
 
       let result = (data ?? []) as any[];
 
-      // Filter by technician assignment if serwisant (not admin/kierownik)
       if (isSerwisant && user?.id) {
         const { data: assignments } = await supabase
           .from("order_technicians")
@@ -368,7 +428,6 @@ function TodaysScheduledOrders() {
         result = result.filter((o: any) => assignedIds.has(o.id));
       }
 
-      // Sort: today first, then overdue; within each group sort by time
       return result.sort((a: any, b: any) => {
         const aToday = a.planned_execution_date === today;
         const bToday = b.planned_execution_date === today;
