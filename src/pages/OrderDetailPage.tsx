@@ -870,7 +870,7 @@ export default function OrderDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* TWO-COLUMN LAYOUT */}
+      {/* TWO-COLUMN LAYOUT: Left = content tabs, Right = comments (permanent) */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-5">
         {/* LEFT COLUMN */}
         <div className="space-y-5">
@@ -885,11 +885,10 @@ export default function OrderDetailPage() {
               <TabsTrigger value="documents" className="min-h-[40px] px-3 text-xs whitespace-nowrap shrink-0">Dokumenty</TabsTrigger>
               <TabsTrigger value="signatures" className="min-h-[40px] px-3 text-xs whitespace-nowrap shrink-0">Podpisy</TabsTrigger>
             </TabsList>
-            {/* Desktop: normal tab bar */}
+            {/* Desktop: tab bar without comments tab (comments are always visible on right) */}
             <TabsList className="hidden md:inline-flex">
               <TabsTrigger value="edit">Edycja</TabsTrigger>
               <TabsTrigger value="photos">Zdjęcia</TabsTrigger>
-              <TabsTrigger value="comments">Komentarze ({comments?.length ?? 0})</TabsTrigger>
               <TabsTrigger value="customer-messages">
                 <MessageSquare className="mr-1 h-3 w-3" />Wiadomości klienta
               </TabsTrigger>
@@ -899,8 +898,11 @@ export default function OrderDetailPage() {
             </TabsList>
 
             <TabsContent value="edit" className="mt-4 space-y-5">
-              <ClientSection clientId={currentForm.client_id} onChange={(v) => { handleFieldChange("client_id", v); handleFieldChange("device_id", undefined); }} />
-              <DeviceSection clientId={currentForm.client_id} deviceId={currentForm.device_id} onChange={(v) => handleFieldChange("device_id", v)} />
+              {/* Client + Device side by side */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ClientSection clientId={currentForm.client_id} onChange={(v) => { handleFieldChange("client_id", v); handleFieldChange("device_id", undefined); }} />
+                <DeviceSection clientId={currentForm.client_id} deviceId={currentForm.device_id} onChange={(v) => handleFieldChange("device_id", v)} />
+              </div>
               <OrderDataSection formData={currentForm} onChange={handleFieldChange} />
               <DescriptionSection formData={currentForm} onChange={handleFieldChange} />
               <DiagnosisSection
@@ -911,6 +913,47 @@ export default function OrderDetailPage() {
                   updateOrder.mutate({ status: v });
                 }}
               />
+
+              {/* Finance, Payment, Items, Cost — moved from right column */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FinanceSection formData={currentForm} onChange={handleFieldChange} orderItems={orderItems} />
+                <PaymentSection formData={currentForm} onChange={handleFieldChange} />
+              </div>
+
+              <OrderItemsSection
+                orderId={id!}
+                orderItems={orderItems}
+                isCompleted={isCompleted}
+                onItemsChanged={handleItemsChanged}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <OrderCostSummary
+                  orderId={id!}
+                  orderItems={orderItems}
+                  laborNet={parseFloat(currentForm.labor_net) || 0}
+                  partsNet={parseFloat(currentForm.parts_net) || 0}
+                  extraCostNet={parseFloat(currentForm.extra_cost_net) || 0}
+                />
+                <div className="space-y-4">
+                  <OrderQRCode
+                    orderId={order.id}
+                    orderNumber={order.order_number}
+                    clientName={(order.clients as any)?.display_name}
+                    deviceName={order.devices ? `${(order.devices as any).manufacturer || ""} ${(order.devices as any).model || ""}`.trim() || null : null}
+                    statusToken={(order as any).status_token}
+                  />
+                  <TechnicianAssignment orderId={id!} orderNumber={order.order_number} />
+                </div>
+              </div>
+
+              <OrderPurchaseRequests orderId={id!} repairApprovalStatus={(order as any).repair_approval_status} />
+
+              {editDirty && (
+                <Button className="w-full" onClick={handleSave} disabled={updateOrder.isPending}>
+                  <Save className="mr-1 h-4 w-4" /> {updateOrder.isPending ? "Zapisywanie..." : "Zapisz wszystkie zmiany"}
+                </Button>
+              )}
             </TabsContent>
 
             <TabsContent value="photos" className="mt-4">
@@ -924,42 +967,15 @@ export default function OrderDetailPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="comments" className="mt-4">
-              <Card>
-                <CardContent className="pt-4 space-y-4">
-                  {comments?.map((c: any) => (
-                    <div key={c.id} className="border-b border-border pb-3 last:border-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-                          {(profileMap[c.user_id] || "?")[0].toUpperCase()}
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium">{profileMap[c.user_id] || "Użytkownik"}</span>
-                          <span className="text-xs text-muted-foreground ml-2">
-                            {new Date(c.created_at).toLocaleDateString("pl-PL", { day: "2-digit", month: "2-digit", year: "numeric" })}
-                            {" "}
-                            {new Date(c.created_at).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                        </div>
-                      </div>
-                      <p className="text-sm ml-9">
-                        {renderCommentWithMentions(c.comment)}
-                      </p>
-                    </div>
-                  ))}
-                  <div className="flex gap-2 items-end">
-                    <MentionTextarea
-                      value={comment}
-                      onChange={setComment}
-                      placeholder="Dodaj komentarz... Wpisz @ aby oznaczyć osobę"
-                      rows={2}
-                    />
-                    <Button size="icon" className="shrink-0 mb-0" onClick={() => addComment.mutate()} disabled={!comment.trim() || addComment.isPending}>
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Mobile-only comments tab */}
+            <TabsContent value="comments" className="mt-4 lg:hidden">
+              <CommentsPanel
+                comments={comments ?? []}
+                profileMap={profileMap}
+                comment={comment}
+                setComment={setComment}
+                addComment={addComment}
+              />
             </TabsContent>
 
             <TabsContent value="customer-messages" className="mt-4">
@@ -1032,44 +1048,15 @@ export default function OrderDetailPage() {
           </Tabs>
         </div>
 
-        {/* RIGHT COLUMN */}
-        <div className="space-y-5">
-          <OrderQRCode
-            orderId={order.id}
-            orderNumber={order.order_number}
-            clientName={(order.clients as any)?.display_name}
-            deviceName={order.devices ? `${(order.devices as any).manufacturer || ""} ${(order.devices as any).model || ""}`.trim() || null : null}
-            statusToken={(order as any).status_token}
+        {/* RIGHT COLUMN — Comments (permanent, desktop only) */}
+        <div className="hidden lg:block sticky top-4 self-start">
+          <CommentsPanel
+            comments={comments ?? []}
+            profileMap={profileMap}
+            comment={comment}
+            setComment={setComment}
+            addComment={addComment}
           />
-          <TechnicianAssignment orderId={id!} orderNumber={order.order_number} />
-          <FinanceSection formData={currentForm} onChange={handleFieldChange} orderItems={orderItems} />
-          <PaymentSection formData={currentForm} onChange={handleFieldChange} />
-
-          {/* Order Items */}
-          <OrderItemsSection
-            orderId={id!}
-            orderItems={orderItems}
-            isCompleted={isCompleted}
-            onItemsChanged={handleItemsChanged}
-          />
-
-          {/* Cost Summary */}
-          <OrderCostSummary
-            orderId={id!}
-            orderItems={orderItems}
-            laborNet={parseFloat(currentForm.labor_net) || 0}
-            partsNet={parseFloat(currentForm.parts_net) || 0}
-            extraCostNet={parseFloat(currentForm.extra_cost_net) || 0}
-          />
-
-          {/* Purchase Requests */}
-          <OrderPurchaseRequests orderId={id!} repairApprovalStatus={(order as any).repair_approval_status} />
-
-          {editDirty && (
-            <Button className="w-full" onClick={handleSave} disabled={updateOrder.isPending}>
-              <Save className="mr-1 h-4 w-4" /> {updateOrder.isPending ? "Zapisywanie..." : "Zapisz wszystkie zmiany"}
-            </Button>
-          )}
         </div>
       </div>
 
