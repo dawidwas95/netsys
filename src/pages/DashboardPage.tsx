@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,12 +8,55 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
   Wrench, CheckCircle, AlertCircle, Users, TrendingUp, TrendingDown,
-  Clock, DollarSign, Wallet, Percent, AlertTriangle, Package, ShoppingCart, CalendarDays,
+  Clock, DollarSign, Wallet, Percent, AlertTriangle, Package, ShoppingCart, CalendarDays, Filter,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
+
+type PeriodPreset = "today" | "week" | "month" | "quarter" | "year" | "custom";
+
+function usePeriodRange() {
+  const [preset, setPreset] = useState<PeriodPreset>("month");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+
+  const range = useMemo(() => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    switch (preset) {
+      case "today":
+        return { from: todayStart, to: now };
+      case "week": {
+        const d = new Date(todayStart);
+        d.setDate(d.getDate() - d.getDay() + (d.getDay() === 0 ? -6 : 1));
+        return { from: d, to: now };
+      }
+      case "month":
+        return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: now };
+      case "quarter": {
+        const qm = Math.floor(now.getMonth() / 3) * 3;
+        return { from: new Date(now.getFullYear(), qm, 1), to: now };
+      }
+      case "year":
+        return { from: new Date(now.getFullYear(), 0, 1), to: now };
+      case "custom": {
+        const f = customFrom ? new Date(customFrom) : new Date(now.getFullYear(), now.getMonth(), 1);
+        const t = customTo ? new Date(customTo + "T23:59:59") : now;
+        return { from: f, to: t };
+      }
+    }
+  }, [preset, customFrom, customTo]);
+
+  return { preset, setPreset, customFrom, setCustomFrom, customTo, setCustomTo, range };
+}
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(v);
