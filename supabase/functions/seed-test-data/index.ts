@@ -38,6 +38,8 @@ const intakeChannels = ["PHONE","EMAIL","IN_PERSON","REMOTE","OTHER"];
 const paymentMethods = ["CASH","CARD","TRANSFER"];
 const descriptions = ["Wymiana dysku SSD","Czyszczenie systemu","Naprawa zasilacza","Wymiana ekranu","Aktualizacja systemu","Usunięcie wirusów","Wymiana baterii","Naprawa klawiatury","Instalacja oprogramowania","Konfiguracja sieci","Wymiana matrycy","Rozbudowa RAM","Naprawa głośnika","Wymiana portu ładowania","Reinstalacja Windows","Odzyskiwanie danych","Konfiguracja serwera","Naprawa drukarki","Wymiana wentylatora","Diagnostyka sprzętu"];
 
+const RUN_ID = crypto.randomUUID().slice(0, 6);
+
 async function insertBatch(admin: any, table: string, rows: any[], chunkSize: number) {
   for (let c = 0; c < rows.length; c += chunkSize) {
     const chunk = rows.slice(c, c + chunkSize);
@@ -158,7 +160,7 @@ Deno.serve(async (req) => {
         const totalNet = rand(50, 3000);
         orderBatch.push({
           id: uuid(),
-          order_number: `SRV/SEED/${String(i + 1).padStart(5, "0")}`,
+          order_number: `SRV/${RUN_ID}/${String(i + 1).padStart(5, "0")}`,
           client_id: pick(clientIds),
           device_id: deviceIds.length > 0 ? pick(deviceIds) : null,
           service_type: pick(serviceTypes),
@@ -210,7 +212,7 @@ Deno.serve(async (req) => {
         const prefix = prefixMap[docType] || "DOC";
 
         docBatch.push({
-          document_number: `${prefix}/SEED/${String(i + 1).padStart(6, "0")}`,
+          document_number: `${prefix}/${RUN_ID}/${String(i + 1).padStart(6, "0")}`,
           document_type: docType,
           direction,
           client_id: cData.id,
