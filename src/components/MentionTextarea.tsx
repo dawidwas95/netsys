@@ -129,21 +129,29 @@ export function MentionTextarea({ value, onChange, placeholder, rows = 2, classN
   }, [value, mentionStart, onChange]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (mentionQuery === null || filteredUsers.length === 0) return;
-
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setSelectedIndex((i) => Math.min(i + 1, filteredUsers.length - 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setSelectedIndex((i) => Math.max(i - 1, 0));
-    } else if (e.key === "Enter" || e.key === "Tab") {
-      e.preventDefault();
-      insertMention(filteredUsers[selectedIndex]);
-    } else if (e.key === "Escape") {
-      setMentionQuery(null);
+    // If mention dropdown is open, handle dropdown navigation
+    if (mentionQuery !== null && filteredUsers.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedIndex((i) => Math.min(i + 1, filteredUsers.length - 1));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIndex((i) => Math.max(i - 1, 0));
+      } else if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        insertMention(filteredUsers[selectedIndex]);
+      } else if (e.key === "Escape") {
+        setMentionQuery(null);
+      }
+      return;
     }
-  }, [mentionQuery, filteredUsers, selectedIndex, insertMention]);
+
+    // Enter without Shift submits (calls onSubmit)
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      onSubmit?.();
+    }
+  }, [mentionQuery, filteredUsers, selectedIndex, insertMention, onSubmit]);
 
   // Close dropdown on outside click
   useEffect(() => {
