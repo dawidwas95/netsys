@@ -160,7 +160,7 @@ Deno.serve(async (req) => {
         const totalNet = rand(50, 3000);
         orderBatch.push({
           id: uuid(),
-          order_number: `SRV/SEED/${String(i + 1).padStart(5, "0")}`,
+          order_number: `SRV/${RUN_ID}/${String(i + 1).padStart(5, "0")}`,
           client_id: pick(clientIds),
           device_id: deviceIds.length > 0 ? pick(deviceIds) : null,
           service_type: pick(serviceTypes),
