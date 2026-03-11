@@ -1116,6 +1116,9 @@ export default function OrderDetailPage() {
             comment={comment}
             setComment={setComment}
             addComment={addComment}
+            readIds={commentReadIds}
+            onMarkRead={(cid) => markCommentRead.mutate(cid)}
+            onMarkUnread={(cid) => markCommentUnread.mutate(cid)}
           />
         </div>
       </div>
