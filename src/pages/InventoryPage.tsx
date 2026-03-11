@@ -394,8 +394,8 @@ export default function InventoryPage() {
                               <span className={available <= 0 ? "text-destructive" : ""}>{available} {item.unit}</span>
                             </TableCell>
                             <TableCell className="text-right tabular-nums text-muted-foreground">{Number(item.minimum_quantity)}</TableCell>
-                            <TableCell className="text-right tabular-nums text-xs">{(Number(item.purchase_net) * (1 + (Number(item.vat_rate) || 23) / 100)).toFixed(2)} zł</TableCell>
-                            <TableCell className="text-right tabular-nums text-xs">{(Number(item.sale_net) * (1 + (Number(item.vat_rate) || 23) / 100)).toFixed(2)} zł</TableCell>
+                            <TableCell className="text-right tabular-nums text-xs">{formatNumberPL(Number(item.purchase_net) * (1 + (Number(item.vat_rate) || 23) / 100))} zł</TableCell>
+                            <TableCell className="text-right tabular-nums text-xs">{formatNumberPL(Number(item.sale_net) * (1 + (Number(item.vat_rate) || 23) / 100))} zł</TableCell>
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <div className="flex gap-1 flex-wrap">
                                 <Button size="sm" variant="ghost" className="h-7 px-2" title="Przyjęcie"
