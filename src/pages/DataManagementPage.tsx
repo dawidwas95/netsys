@@ -71,6 +71,22 @@ export default function DataManagementPage() {
   const [exporting, setExporting] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState<"json" | "sql">("json");
   const [restoreItem, setRestoreItem] = useState<{ table: string; id: string; name: string } | null>(null);
+  const [seeding, setSeeding] = useState(false);
+
+  async function seedTestData() {
+    setSeeding(true);
+    try {
+      const res = await supabase.functions.invoke("seed-test-data", { body: {} });
+      if (res.error) throw res.error;
+      const data = res.data as any;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Dane testowe załadowane!", { description: data?.progress?.join(", ") });
+    } catch (e: any) {
+      toast.error("Błąd seedowania: " + (e?.message || "unknown"));
+    } finally {
+      setSeeding(false);
+    }
+  }
 
   // Check admin role
   const { data: myRoles = [] } = useQuery({
@@ -196,6 +212,23 @@ export default function DataManagementPage() {
         </h1>
         <p className="text-sm text-muted-foreground">Eksport danych, przywracanie usuniętych rekordów</p>
       </div>
+
+      {/* Seed Test Data */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            🧪 Dane testowe
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-3">
+            Wygeneruj ~1000 klientów, 1500 urządzeń, 1000 zleceń, 5000 dokumentów, 200 pozycji magazynowych, 500 transakcji kasowych i 300 dokumentów magazynowych.
+          </p>
+          <Button onClick={seedTestData} disabled={seeding} variant="destructive">
+            {seeding ? "Generowanie danych... (może potrwać ~1 min)" : "🚀 Załaduj dane testowe"}
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Export Section */}
       <Card>
