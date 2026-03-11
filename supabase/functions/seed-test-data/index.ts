@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
         first_name: fn,
         last_name: ln,
         company_name: isCompany ? `${pick(companyNames)} ${ln}` : null,
-        display_name: isCompany ? `${pick(companyNames)} ${ln}` : `${fn} ${ln}`,
+        
         email: `${fn.toLowerCase()}.${ln.toLowerCase()}${i}@example.pl`,
         phone: `+48${rand(500, 899)}${String(rand(100000, 999999))}`,
         nip: isCompany ? `${rand(100, 999)}${rand(100, 999)}${rand(10, 99)}${rand(10, 99)}` : null,
