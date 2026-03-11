@@ -38,7 +38,7 @@ const intakeChannels = ["PHONE","EMAIL","IN_PERSON","REMOTE","OTHER"];
 const paymentMethods = ["CASH","CARD","TRANSFER"];
 const descriptions = ["Wymiana dysku SSD","Czyszczenie systemu","Naprawa zasilacza","Wymiana ekranu","Aktualizacja systemu","Usunięcie wirusów","Wymiana baterii","Naprawa klawiatury","Instalacja oprogramowania","Konfiguracja sieci","Wymiana matrycy","Rozbudowa RAM","Naprawa głośnika","Wymiana portu ładowania","Reinstalacja Windows","Odzyskiwanie danych","Konfiguracja serwera","Naprawa drukarki","Wymiana wentylatora","Diagnostyka sprzętu"];
 
-const RUN_ID = crypto.randomUUID().slice(0, 6);
+// RUN_ID generated per-request inside handler
 
 async function insertBatch(admin: any, table: string, rows: any[], chunkSize: number) {
   for (let c = 0; c < rows.length; c += chunkSize) {
@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
 
     // Parse params
     const body = await req.json().catch(() => ({}));
+    const RUN_ID = body.runId || crypto.randomUUID().slice(0, 8);
     const phase = body.phase || "all";
     const progress: string[] = [];
 
