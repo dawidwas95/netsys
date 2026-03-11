@@ -23,7 +23,7 @@ interface MentionTextareaProps {
  * While editing, user sees: @Display Name
  * Autocomplete triggers on typing "@"
  */
-export function MentionTextarea({ value, onChange, placeholder, rows = 2, className }: MentionTextareaProps) {
+export function MentionTextarea({ value, onChange, onSubmit, placeholder, rows = 2, className }: MentionTextareaProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);

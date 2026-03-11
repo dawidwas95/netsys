@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MessageSquare, Check, Eye, EyeOff, Search, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { renderCommentWithMentions } from "@/components/MentionTextarea";
 
 export default function CommentsPage() {
   const { user } = useAuth();
@@ -18,25 +19,51 @@ export default function CommentsPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
 
-  // Fetch all comments with order info and author profile
+  // Fetch all comments
   const { data: comments = [], isLoading } = useQuery({
     queryKey: ["all-comments"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("service_order_comments")
-        .select(`
-          id, comment, created_at, user_id, order_id, is_internal,
-          service_orders!inner(order_number, deleted_at),
-          profiles!service_order_comments_user_id_fkey(first_name, last_name, email)
-        `)
+        .select("id, comment, created_at, user_id, order_id, is_internal")
         .is("deleted_at", null)
-        .is("service_orders.deleted_at", null)
         .order("created_at", { ascending: false })
         .limit(500);
       if (error) throw error;
-      return data as any[];
+      return data ?? [];
     },
     refetchInterval: 15000,
+  });
+
+  // Fetch order numbers for all orders referenced
+  const orderIds = useMemo(() => [...new Set(comments.map((c: any) => c.order_id))], [comments]);
+  const { data: ordersMap = {} } = useQuery({
+    queryKey: ["orders-map", orderIds],
+    queryFn: async () => {
+      if (orderIds.length === 0) return {};
+      const { data } = await supabase
+        .from("service_orders")
+        .select("id, order_number")
+        .in("id", orderIds)
+        .is("deleted_at", null);
+      const map: Record<string, string> = {};
+      (data ?? []).forEach((o: any) => { map[o.id] = o.order_number; });
+      return map;
+    },
+    enabled: orderIds.length > 0,
+  });
+
+  // Fetch profiles for authors
+  const { data: profileMap = {} } = useQuery({
+    queryKey: ["profiles-map"],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("user_id, first_name, last_name, email");
+      const map: Record<string, string> = {};
+      (data ?? []).forEach((p: any) => {
+        map[p.user_id] = [p.first_name, p.last_name].filter(Boolean).join(" ") || p.email || "Użytkownik";
+      });
+      return map;
+    },
   });
 
   // Fetch read statuses for current user
@@ -53,7 +80,6 @@ export default function CommentsPage() {
     enabled: !!user?.id,
   });
 
-  // Mark as read
   const markRead = useMutation({
     mutationFn: async (commentId: string) => {
       const { error } = await supabase.from("comment_reads" as any).insert({
@@ -62,12 +88,9 @@ export default function CommentsPage() {
       });
       if (error && !error.message.includes("duplicate")) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["comment-reads"] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["comment-reads"] }),
   });
 
-  // Mark as unread
   const markUnread = useMutation({
     mutationFn: async (commentId: string) => {
       const { error } = await supabase
@@ -77,12 +100,9 @@ export default function CommentsPage() {
         .eq("user_id", user!.id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["comment-reads"] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["comment-reads"] }),
   });
 
-  // Mark all visible as read
   const markAllRead = useMutation({
     mutationFn: async (ids: string[]) => {
       const toInsert = ids
@@ -98,20 +118,25 @@ export default function CommentsPage() {
     },
   });
 
-  const filtered = comments.filter((c: any) => {
+  // Filter only comments whose orders still exist (not deleted)
+  const visibleComments = useMemo(() => {
+    return comments.filter((c: any) => ordersMap[c.order_id]);
+  }, [comments, ordersMap]);
+
+  const filtered = visibleComments.filter((c: any) => {
     const isRead = readIds.has(c.id);
     if (filter === "unread" && isRead) return false;
     if (filter === "read" && !isRead) return false;
     if (search) {
       const q = search.toLowerCase();
-      const authorName = [c.profiles?.first_name, c.profiles?.last_name].filter(Boolean).join(" ").toLowerCase();
-      const orderNum = (c.service_orders?.order_number || "").toLowerCase();
+      const authorName = (profileMap[c.user_id] || "").toLowerCase();
+      const orderNum = (ordersMap[c.order_id] || "").toLowerCase();
       return c.comment.toLowerCase().includes(q) || authorName.includes(q) || orderNum.includes(q);
     }
     return true;
   });
 
-  const unreadCount = comments.filter((c: any) => !readIds.has(c.id)).length;
+  const unreadCount = visibleComments.filter((c: any) => !readIds.has(c.id)).length;
 
   return (
     <div className="space-y-4">
@@ -169,8 +194,8 @@ export default function CommentsPage() {
         <div className="space-y-2">
           {filtered.map((c: any) => {
             const isRead = readIds.has(c.id);
-            const authorName = [c.profiles?.first_name, c.profiles?.last_name].filter(Boolean).join(" ") || c.profiles?.email || "—";
-            const orderNumber = c.service_orders?.order_number || "—";
+            const authorName = profileMap[c.user_id] || "—";
+            const orderNumber = ordersMap[c.order_id] || "—";
 
             return (
               <Card
@@ -202,7 +227,9 @@ export default function CommentsPage() {
                           <Badge variant="destructive" className="text-[10px] px-1.5 py-0">nowy</Badge>
                         )}
                       </div>
-                      <p className="text-sm whitespace-pre-wrap break-words">{c.comment}</p>
+                      <div className="text-sm whitespace-pre-wrap break-words">
+                        {renderCommentWithMentions(c.comment)}
+                      </div>
                     </div>
                     <Button
                       size="icon"
