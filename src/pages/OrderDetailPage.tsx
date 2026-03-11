@@ -1039,6 +1039,7 @@ export default function OrderDetailPage() {
                 readIds={commentReadIds}
                 onMarkRead={(id) => markCommentRead.mutate(id)}
                 onMarkUnread={(id) => markCommentUnread.mutate(id)}
+                currentUserId={user?.id}
               />
             </TabsContent>
 
