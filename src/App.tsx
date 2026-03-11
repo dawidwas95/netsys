@@ -32,6 +32,7 @@ import OrderStatusPage from "@/pages/OrderStatusPage";
 import ServiceBoardDisplay from "@/pages/ServiceBoardDisplay";
 import DailyPlanPage from "@/pages/DailyPlanPage";
 import TechnicianStatsPage from "@/pages/TechnicianStatsPage";
+import CommentsPage from "@/pages/CommentsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
