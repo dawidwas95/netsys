@@ -71,6 +71,22 @@ export default function DataManagementPage() {
   const [exporting, setExporting] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState<"json" | "sql">("json");
   const [restoreItem, setRestoreItem] = useState<{ table: string; id: string; name: string } | null>(null);
+  const [seeding, setSeeding] = useState(false);
+
+  async function seedTestData() {
+    setSeeding(true);
+    try {
+      const res = await supabase.functions.invoke("seed-test-data", { body: {} });
+      if (res.error) throw res.error;
+      const data = res.data as any;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Dane testowe załadowane!", { description: data?.progress?.join(", ") });
+    } catch (e: any) {
+      toast.error("Błąd seedowania: " + (e?.message || "unknown"));
+    } finally {
+      setSeeding(false);
+    }
+  }
 
   // Check admin role
   const { data: myRoles = [] } = useQuery({
