@@ -90,7 +90,7 @@ const ORDER_DETAIL_TABS = [
   { value: "signatures", label: "Podpisy" },
 ];
 
-function CommentsPanel({ comments, profileMap, comment, setComment, addComment, readIds, onMarkRead, onMarkUnread }: {
+function CommentsPanel({ comments, profileMap, comment, setComment, addComment, readIds, onMarkRead, onMarkUnread, currentUserId }: {
   comments: any[];
   profileMap: Record<string, string>;
   comment: string;
@@ -99,6 +99,7 @@ function CommentsPanel({ comments, profileMap, comment, setComment, addComment, 
   readIds: Set<string>;
   onMarkRead: (id: string) => void;
   onMarkUnread: (id: string) => void;
+  currentUserId?: string;
 }) {
   return (
     <Card className="h-full flex flex-col">
@@ -111,9 +112,10 @@ function CommentsPanel({ comments, profileMap, comment, setComment, addComment, 
         <div className="flex-1 overflow-y-auto space-y-3 mb-3 max-h-[calc(100vh-320px)]">
           {!comments?.length && <p className="text-sm text-muted-foreground">Brak komentarzy</p>}
           {comments?.map((c: any) => {
-            const isRead = readIds.has(c.id);
+            const isOwn = c.user_id === currentUserId;
+            const isRead = isOwn || readIds.has(c.id);
             return (
-              <div key={c.id} className={`border-b pb-3 last:border-0 rounded-md px-2 py-1 transition-colors ${!isRead ? "border-destructive/30 bg-destructive/5" : "border-border"}`}>
+              <div key={c.id} className={`border-b pb-3 last:border-0 rounded-md px-2 py-1 transition-colors ${isOwn ? "border-border" : !isRead ? "border-destructive/30 bg-destructive/5" : "border-border"}`}>
                 <div className="flex items-center gap-2 mb-1">
                   <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
                     {(profileMap[c.user_id] || "?")[0].toUpperCase()}
@@ -125,19 +127,21 @@ function CommentsPanel({ comments, profileMap, comment, setComment, addComment, 
                       {" "}
                       {new Date(c.created_at).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}
                     </span>
-                    {!isRead && (
+                    {!isOwn && !isRead && (
                       <Badge variant="destructive" className="text-[9px] px-1 py-0 ml-1">nowy</Badge>
                     )}
                   </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className={`h-6 w-6 shrink-0 ${isRead ? "text-green-600 hover:text-destructive" : "text-destructive hover:text-green-600"}`}
-                    onClick={() => isRead ? onMarkUnread(c.id) : onMarkRead(c.id)}
-                    title={isRead ? "Nieprzeczytany" : "Przeczytany"}
-                  >
-                    {isRead ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-                  </Button>
+                  {!isOwn && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className={`h-8 w-8 shrink-0 ${readIds.has(c.id) ? "text-green-600 hover:text-destructive" : "text-destructive hover:text-green-600"}`}
+                      onClick={() => readIds.has(c.id) ? onMarkUnread(c.id) : onMarkRead(c.id)}
+                      title={readIds.has(c.id) ? "Nieprzeczytany" : "Przeczytany"}
+                    >
+                      {readIds.has(c.id) ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
+                    </Button>
+                  )}
                 </div>
                 <div className="text-sm ml-8">
                   {renderCommentWithMentions(c.comment)}
@@ -1035,6 +1039,7 @@ export default function OrderDetailPage() {
                 readIds={commentReadIds}
                 onMarkRead={(id) => markCommentRead.mutate(id)}
                 onMarkUnread={(id) => markCommentUnread.mutate(id)}
+                currentUserId={user?.id}
               />
             </TabsContent>
 
@@ -1119,6 +1124,7 @@ export default function OrderDetailPage() {
             readIds={commentReadIds}
             onMarkRead={(cid) => markCommentRead.mutate(cid)}
             onMarkUnread={(cid) => markCommentUnread.mutate(cid)}
+            currentUserId={user?.id}
           />
         </div>
       </div>

@@ -7,9 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MessageSquare, Check, Eye, EyeOff, Search, ExternalLink } from "lucide-react";
+import { MessageSquare, Eye, EyeOff, Search, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 import { renderCommentWithMentions } from "@/components/MentionTextarea";
 
 export default function CommentsPage() {
@@ -19,7 +18,6 @@ export default function CommentsPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
 
-  // Fetch all comments
   const { data: comments = [], isLoading } = useQuery({
     queryKey: ["all-comments"],
     queryFn: async () => {
@@ -35,25 +33,24 @@ export default function CommentsPage() {
     refetchInterval: 15000,
   });
 
-  // Fetch order numbers for all orders referenced
+  // Fetch order info with client and device
   const orderIds = useMemo(() => [...new Set(comments.map((c: any) => c.order_id))], [comments]);
   const { data: ordersMap = {} } = useQuery({
-    queryKey: ["orders-map", orderIds],
+    queryKey: ["orders-map-full", orderIds],
     queryFn: async () => {
       if (orderIds.length === 0) return {};
       const { data } = await supabase
         .from("service_orders")
-        .select("id, order_number")
+        .select("id, order_number, clients(display_name, first_name, last_name, company_name, address_city, address_street), devices(manufacturer, model)")
         .in("id", orderIds)
         .is("deleted_at", null);
-      const map: Record<string, string> = {};
-      (data ?? []).forEach((o: any) => { map[o.id] = o.order_number; });
+      const map: Record<string, any> = {};
+      (data ?? []).forEach((o: any) => { map[o.id] = o; });
       return map;
     },
     enabled: orderIds.length > 0,
   });
 
-  // Fetch profiles for authors
   const { data: profileMap = {} } = useQuery({
     queryKey: ["profiles-map"],
     queryFn: async () => {
@@ -66,7 +63,6 @@ export default function CommentsPage() {
     },
   });
 
-  // Fetch read statuses for current user
   const { data: readIds = new Set<string>() } = useQuery({
     queryKey: ["comment-reads", user?.id],
     queryFn: async () => {
@@ -103,40 +99,27 @@ export default function CommentsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["comment-reads"] }),
   });
 
-  const markAllRead = useMutation({
-    mutationFn: async (ids: string[]) => {
-      const toInsert = ids
-        .filter((id) => !readIds.has(id))
-        .map((comment_id) => ({ comment_id, user_id: user!.id }));
-      if (toInsert.length === 0) return;
-      const { error } = await supabase.from("comment_reads" as any).insert(toInsert);
-      if (error && !error.message.includes("duplicate")) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["comment-reads"] });
-      toast.success("Wszystkie oznaczone jako przeczytane");
-    },
-  });
-
-  // Filter only comments whose orders still exist (not deleted)
   const visibleComments = useMemo(() => {
     return comments.filter((c: any) => ordersMap[c.order_id]);
   }, [comments, ordersMap]);
 
   const filtered = visibleComments.filter((c: any) => {
-    const isRead = readIds.has(c.id);
+    const isOwn = c.user_id === user?.id;
+    const isRead = isOwn || readIds.has(c.id);
     if (filter === "unread" && isRead) return false;
     if (filter === "read" && !isRead) return false;
     if (search) {
       const q = search.toLowerCase();
       const authorName = (profileMap[c.user_id] || "").toLowerCase();
-      const orderNum = (ordersMap[c.order_id] || "").toLowerCase();
-      return c.comment.toLowerCase().includes(q) || authorName.includes(q) || orderNum.includes(q);
+      const orderInfo = ordersMap[c.order_id];
+      const orderNum = (orderInfo?.order_number || "").toLowerCase();
+      const clientName = (orderInfo?.clients?.display_name || orderInfo?.clients?.company_name || "").toLowerCase();
+      return c.comment.toLowerCase().includes(q) || authorName.includes(q) || orderNum.includes(q) || clientName.includes(q);
     }
     return true;
   });
 
-  const unreadCount = visibleComments.filter((c: any) => !readIds.has(c.id)).length;
+  const unreadCount = visibleComments.filter((c: any) => c.user_id !== user?.id && !readIds.has(c.id)).length;
 
   return (
     <div className="space-y-4">
@@ -168,16 +151,6 @@ export default function CommentsPage() {
               <SelectItem value="read">Przeczytane</SelectItem>
             </SelectContent>
           </Select>
-          {unreadCount > 0 && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => markAllRead.mutate(filtered.map((c: any) => c.id))}
-            >
-              <Check className="h-4 w-4 mr-1" />
-              Oznacz wszystkie
-            </Button>
-          )}
         </div>
       </div>
 
@@ -193,37 +166,65 @@ export default function CommentsPage() {
       ) : (
         <div className="space-y-2">
           {filtered.map((c: any) => {
-            const isRead = readIds.has(c.id);
+            const isOwn = c.user_id === user?.id;
+            const isRead = isOwn || readIds.has(c.id);
             const authorName = profileMap[c.user_id] || "—";
-            const orderNumber = ordersMap[c.order_id] || "—";
+            const orderInfo = ordersMap[c.order_id];
+            const orderNumber = orderInfo?.order_number || "—";
+            const client = orderInfo?.clients;
+            const device = orderInfo?.devices;
+            const clientName = client?.display_name || client?.company_name || [client?.first_name, client?.last_name].filter(Boolean).join(" ") || "";
+            const clientAddress = [client?.address_street, client?.address_city].filter(Boolean).join(", ");
+            const deviceName = [device?.manufacturer, device?.model].filter(Boolean).join(" ");
 
             return (
               <Card
                 key={c.id}
-                className={`transition-colors ${!isRead ? "border-destructive/50 bg-destructive/5" : "border-green-500/30 bg-green-500/5"}`}
+                className={`transition-colors ${isOwn ? "border-border" : !isRead ? "border-destructive/50 bg-destructive/5" : "border-green-500/30 bg-green-500/5"}`}
               >
                 <CardContent className="py-3 px-4">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      {/* Order info row */}
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-sm">{authorName}</span>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-sm font-bold text-primary"
+                          onClick={() => navigate(`/orders/${c.order_id}`)}
+                        >
+                          {orderNumber}
+                          <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                        </Button>
+                        {clientName && (
+                          <>
+                            <span className="text-muted-foreground text-xs">·</span>
+                            <span className="text-xs font-medium">{clientName}</span>
+                          </>
+                        )}
+                        {clientAddress && (
+                          <>
+                            <span className="text-muted-foreground text-xs">·</span>
+                            <span className="text-xs text-muted-foreground">{clientAddress}</span>
+                          </>
+                        )}
+                        {deviceName && (
+                          <>
+                            <span className="text-muted-foreground text-xs">·</span>
+                            <span className="text-xs text-muted-foreground">{deviceName}</span>
+                          </>
+                        )}
+                      </div>
+                      {/* Author + date */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-medium text-muted-foreground">{authorName}</span>
                         <span className="text-muted-foreground text-xs">·</span>
                         <span className="text-xs text-muted-foreground">
                           {new Date(c.created_at).toLocaleDateString("pl-PL", { day: "2-digit", month: "2-digit", year: "numeric" })}
                           {" "}
                           {new Date(c.created_at).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}
                         </span>
-                        <span className="text-muted-foreground text-xs">·</span>
-                        <Button
-                          variant="link"
-                          size="sm"
-                          className="h-auto p-0 text-xs text-primary"
-                          onClick={() => navigate(`/orders/${c.order_id}`)}
-                        >
-                          {orderNumber}
-                          <ExternalLink className="h-3 w-3 ml-1" />
-                        </Button>
-                        {!isRead && (
+                        {!isOwn && !isRead && (
                           <Badge variant="destructive" className="text-[10px] px-1.5 py-0">nowy</Badge>
                         )}
                       </div>
@@ -231,15 +232,17 @@ export default function CommentsPage() {
                         {renderCommentWithMentions(c.comment)}
                       </div>
                     </div>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className={`shrink-0 h-8 w-8 ${isRead ? "text-green-600 hover:text-destructive" : "text-destructive hover:text-green-600"}`}
-                      onClick={() => isRead ? markUnread.mutate(c.id) : markRead.mutate(c.id)}
-                      title={isRead ? "Oznacz jako nieprzeczytany" : "Oznacz jako przeczytany"}
-                    >
-                      {isRead ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                    </Button>
+                    {!isOwn && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className={`shrink-0 h-10 w-10 ${isRead ? "text-green-600 hover:text-destructive" : "text-destructive hover:text-green-600"}`}
+                        onClick={() => readIds.has(c.id) ? markUnread.mutate(c.id) : markRead.mutate(c.id)}
+                        title={isRead ? "Oznacz jako nieprzeczytany" : "Oznacz jako przeczytany"}
+                      >
+                        {readIds.has(c.id) ? <Eye className="h-6 w-6" /> : <EyeOff className="h-6 w-6" />}
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
