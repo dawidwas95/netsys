@@ -46,6 +46,10 @@ const MOVEMENT_COLORS: Record<string, string> = {
   INTERNAL_USE: "bg-purple-500/20 text-purple-400 border-purple-500/30",
 };
 
+function formatNumberPL(n: number): string {
+  return n.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export default function InventoryPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
