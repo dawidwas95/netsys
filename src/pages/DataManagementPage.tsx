@@ -87,6 +87,7 @@ export default function DataManagementPage() {
   async function seedTestData() {
     setSeeding(true);
     const allProgress: string[] = [];
+    const runId = crypto.randomUUID().slice(0, 8);
     try {
       const phases = [
         { phase: "clients", label: "Generowanie 30 000 klientów..." },
@@ -101,7 +102,7 @@ export default function DataManagementPage() {
         { phase: "extras", label: "Generowanie kasy i magazynu..." },
       ];
       for (const p of phases) {
-        const result = await seedPhase(p.phase, p.label);
+        const result = await seedPhase(p.phase, p.label, runId);
         allProgress.push(...result);
         toast.success(result.join(", "));
       }
