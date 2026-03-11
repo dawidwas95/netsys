@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
 
     // Parse params
     const body = await req.json().catch(() => ({}));
-    const RUN_ID = crypto.randomUUID().slice(0, 8);
+    const RUN_ID = body.runId || crypto.randomUUID().slice(0, 8);
     const phase = body.phase || "all";
     const progress: string[] = [];
 
