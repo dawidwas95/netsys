@@ -75,9 +75,9 @@ export default function DataManagementPage() {
 
   const [seedProgress, setSeedProgress] = useState("");
 
-  async function seedPhase(phase: string, label: string) {
+  async function seedPhase(phase: string, label: string, runId: string) {
     setSeedProgress(label);
-    const res = await supabase.functions.invoke("seed-test-data", { body: { phase } });
+    const res = await supabase.functions.invoke("seed-test-data", { body: { phase, runId } });
     if (res.error) throw res.error;
     const data = res.data as any;
     if (data?.error) throw new Error(data.error);
