@@ -1123,6 +1123,7 @@ export default function OrderDetailPage() {
             readIds={commentReadIds}
             onMarkRead={(cid) => markCommentRead.mutate(cid)}
             onMarkUnread={(cid) => markCommentUnread.mutate(cid)}
+            currentUserId={user?.id}
           />
         </div>
       </div>
