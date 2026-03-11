@@ -12,6 +12,7 @@ interface MentionUser {
 interface MentionTextareaProps {
   value: string;
   onChange: (value: string) => void;
+  onSubmit?: () => void;
   placeholder?: string;
   rows?: number;
   className?: string;
