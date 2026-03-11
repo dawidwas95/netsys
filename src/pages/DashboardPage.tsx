@@ -268,31 +268,38 @@ export default function DashboardPage() {
   );
 }
 
-import { useQuery as useSupabaseQuery } from "@supabase/auth-helpers-react";
-import { format } from "date-fns";
-
 function RecentOrders() {
-  const { data } = useSupabaseQuery({
+  const { data: orders, isLoading } = useQuery({
     queryKey: ["recent-orders"],
     queryFn: async () => {
       const { data } = await supabase
         .from("service_orders")
-        .select("id, created_at, client_name, total_gross, status")
-        .order("created_at", { ascending: false })
+        .select("id, order_number, status, priority, total_gross, is_paid, received_at, clients(display_name)")
+        .order("received_at", { ascending: false })
         .limit(5);
       return data ?? [];
     },
   });
 
+  if (isLoading) return <p className="text-sm text-muted-foreground">Ładowanie...</p>;
+  if (!orders?.length) return <p className="text-sm text-muted-foreground">Brak zleceń</p>;
+
   return (
-    <div className="divide-y divide-border">
-      {data?.map((order: any) => (
-        <Link to={`/orders/${order.id}`} key={order.id} className="flex items-center justify-between p-3 hover:bg-accent rounded-md transition-colors">
+    <div className="space-y-3">
+      {orders.map((order: any) => (
+        <Link key={order.id} to={`/orders/${order.id}`} className="flex items-center justify-between text-sm border-b pb-2 last:border-0 hover:bg-muted/50 -mx-2 px-2 py-1 rounded transition-colors">
           <div>
-            <div className="font-medium text-sm">#{order.id} - {order.client_name}</div>
-            <div className="text-xs text-muted-foreground">{format(new Date(order.created_at), "dd.MM.yyyy HH:mm")}</div>
+            <span className="font-medium font-mono">{order.order_number}</span>
+            <span className="text-muted-foreground ml-2">{order.clients?.display_name}</span>
           </div>
-          <div className="font-bold text-sm">{formatCurrency(order.total_gross)}</div>
+          <div className="flex items-center gap-2">
+            {Number(order.total_gross || 0) > 0 && (
+              <span className="font-mono text-xs text-muted-foreground">
+                {formatCurrency(Number(order.total_gross))}
+              </span>
+            )}
+            <OrderStatusBadge status={order.status} />
+          </div>
         </Link>
       ))}
     </div>
@@ -300,29 +307,37 @@ function RecentOrders() {
 }
 
 function RecentCashOps() {
-  const { data } = useSupabaseQuery({
+  const { data: transactions, isLoading } = useQuery({
     queryKey: ["recent-cash-ops"],
     queryFn: async () => {
       const { data } = await supabase
         .from("cash_transactions")
-        .select("id, created_at, description, gross_amount, transaction_type")
+        .select("*, service_orders(order_number, clients(display_name))")
         .order("created_at", { ascending: false })
         .limit(5);
       return data ?? [];
     },
   });
 
+  if (isLoading) return <p className="text-sm text-muted-foreground">Ładowanie...</p>;
+  if (!transactions?.length) return <p className="text-sm text-muted-foreground">Brak operacji</p>;
+
   return (
-    <div className="divide-y divide-border">
-      {data?.map((op: any) => (
-        <div key={op.id} className="flex items-center justify-between p-3">
+    <div className="space-y-3">
+      {transactions.map((t: any) => (
+        <div key={t.id} className="flex items-center justify-between text-sm border-b pb-2 last:border-0">
           <div>
-            <div className="font-medium text-sm">{op.description}</div>
-            <div className="text-xs text-muted-foreground">{format(new Date(op.created_at), "dd.MM.yyyy HH:mm")}</div>
+            <span className="font-medium">{t.description || "Operacja kasowa"}</span>
+            <div className="text-xs text-muted-foreground">
+              {new Date(t.transaction_date).toLocaleDateString("pl-PL")}
+              {t.service_orders?.order_number && ` · ${t.service_orders.order_number}`}
+              {t.service_orders?.clients?.display_name && ` · ${t.service_orders.clients.display_name}`}
+            </div>
           </div>
-          <div className={`font-bold text-sm ${op.transaction_type === "IN" ? "text-emerald-500" : "text-destructive"}`}>
-            {formatCurrency(op.gross_amount)}
-          </div>
+          <span className={`font-mono font-medium ${t.transaction_type === "IN" ? "text-primary" : "text-destructive"}`}>
+            {t.transaction_type === "IN" ? "+" : "-"}
+            {formatCurrency(Number(t.gross_amount || t.amount))}
+          </span>
         </div>
       ))}
     </div>
@@ -330,138 +345,250 @@ function RecentCashOps() {
 }
 
 function LowStockAlerts() {
-  const { data } = useSupabaseQuery({
-    queryKey: ["low-stock-alerts"],
+  const { data: lowStockItems = [] } = useQuery({
+    queryKey: ["dashboard-low-stock"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("inventory_items")
-        .select("id, name, quantity, alert_quantity")
-        .lte("quantity", "alert_quantity");
-      return data ?? [];
+        .select("id, name, sku, stock_quantity, minimum_quantity, unit")
+        .eq("is_active", true)
+        .is("deleted_at", null)
+        .order("name");
+      if (error) throw error;
+      return (data ?? []).filter((i) => Number(i.stock_quantity) <= Number(i.minimum_quantity) && Number(i.minimum_quantity) > 0);
     },
   });
 
-  if (!data?.length) return null;
+  if (lowStockItems.length === 0) return null;
 
   return (
-    <Card className="bg-yellow-50/50 border-yellow-500/50">
-      <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-        <CardTitle className="text-sm font-medium">Niski stan magazynowy</CardTitle>
-        <AlertTriangle className="h-4 w-4 text-yellow-500" />
+    <Card className="mb-6 border-amber-500/30 bg-amber-500/5">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5 text-amber-500" />
+          Niski stan magazynowy
+          <Badge variant="secondary" className="ml-auto bg-amber-500/20 text-amber-600 border-amber-500/30">
+            {lowStockItems.length}
+          </Badge>
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <ul className="list-disc pl-4">
-          {data.map((item: any) => (
-            <li key={item.id} className="text-sm">
-              {item.name} - zostało {item.quantity}
-            </li>
+        <div className="space-y-2">
+          {lowStockItems.map((item: any) => (
+            <div key={item.id} className="flex items-center justify-between text-sm border-b border-amber-500/10 pb-2 last:border-0">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">{item.name}</span>
+                {item.sku && <span className="text-xs text-muted-foreground font-mono">({item.sku})</span>}
+              </div>
+              <div className="flex items-center gap-3 text-xs">
+                <span className="text-amber-600 font-medium">
+                  Stan: {Number(item.stock_quantity)} {item.unit}
+                </span>
+                <span className="text-muted-foreground">
+                  Min: {Number(item.minimum_quantity)} {item.unit}
+                </span>
+              </div>
+            </div>
           ))}
-        </ul>
+        </div>
       </CardContent>
     </Card>
   );
 }
 
 function TodaysScheduledOrders() {
-  const today = new Date();
-  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+  const { user } = useAuth();
+  const { isAdmin, isKierownik, isSerwisant } = useUserRole();
 
-  const { data } = useSupabaseQuery({
-    queryKey: ["todays-scheduled-orders"],
+  const today = new Date().toISOString().split("T")[0];
+
+  const { data: orders = [] } = useQuery({
+    queryKey: ["dashboard-todays-schedule", user?.id, isAdmin, isKierownik],
     queryFn: async () => {
-      const { data } = await supabase
+      let query = supabase
         .from("service_orders")
-        .select("id, client_name, scheduled_start")
-        .gte("scheduled_start", todayStart.toISOString())
-        .lte("scheduled_start", todayEnd.toISOString());
-      return data ?? [];
+        .select("id, order_number, status, priority, planned_execution_date, planned_execution_time, appointment_note, clients(display_name), devices(manufacturer, model)")
+        .not("status", "in", '("COMPLETED","ARCHIVED","CANCELLED")')
+        .not("planned_execution_date", "is", null)
+        .lte("planned_execution_date", today)
+        .order("planned_execution_date", { ascending: true });
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      let result = (data ?? []) as any[];
+
+      if (isSerwisant && user?.id) {
+        const { data: assignments } = await supabase
+          .from("order_technicians")
+          .select("order_id")
+          .eq("user_id", user.id);
+        const assignedIds = new Set((assignments ?? []).map((a: any) => a.order_id));
+        result = result.filter((o: any) => assignedIds.has(o.id));
+      }
+
+      return result.sort((a: any, b: any) => {
+        const aToday = a.planned_execution_date === today;
+        const bToday = b.planned_execution_date === today;
+        if (aToday !== bToday) return aToday ? -1 : 1;
+        return (a.planned_execution_time || "99:99").localeCompare(b.planned_execution_time || "99:99");
+      });
     },
+    enabled: !!user,
   });
 
-  if (!data?.length) return null;
+  if (orders.length === 0) return null;
+
+  const todayOrders = orders.filter((o: any) => o.planned_execution_date === today);
+  const overdueOrders = orders.filter((o: any) => o.planned_execution_date < today);
 
   return (
-    <Card className="bg-blue-50/50 border-blue-500/50">
-      <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-        <CardTitle className="text-sm font-medium">Zaplanowane na dziś</CardTitle>
-        <CalendarDays className="h-4 w-4 text-blue-500" />
+    <Card className="mb-6 border-primary/20">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <CalendarDays className="h-5 w-5 text-primary" />
+          Dzisiejsze zadania
+          {todayOrders.length > 0 && (
+            <Badge variant="default" className="ml-1">{todayOrders.length}</Badge>
+          )}
+          {overdueOrders.length > 0 && (
+            <Badge variant="destructive" className="ml-1">
+              {overdueOrders.length} zaległe
+            </Badge>
+          )}
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <ul className="list-disc pl-4">
-          {data.map((item: any) => (
-            <li key={item.id} className="text-sm">
-              {item.client_name} - {format(new Date(item.scheduled_start), "HH:mm")}
-            </li>
-          ))}
-        </ul>
+        <div className="space-y-2">
+          {orders.map((order: any) => {
+            const isOverdue = order.planned_execution_date < today;
+            const isToday = order.planned_execution_date === today;
+            return (
+              <Link
+                key={order.id}
+                to={`/orders/${order.id}`}
+                className="flex items-center justify-between text-sm border-b pb-2 last:border-0 hover:bg-muted/50 -mx-2 px-2 py-1.5 rounded transition-colors"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="text-xs font-mono w-12 shrink-0 text-center">
+                    {order.planned_execution_time
+                      ? order.planned_execution_time.slice(0, 5)
+                      : "—"}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium font-mono">{order.order_number}</span>
+                      {isToday && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">📅 Dziś</Badge>
+                      )}
+                      {isOverdue && (
+                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0">⚠ Zaległe</Badge>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {order.clients?.display_name}
+                      {order.devices && ` · ${order.devices.manufacturer || ""} ${order.devices.model || ""}`.trim()}
+                    </div>
+                    {order.appointment_note && (
+                      <div className="text-xs text-muted-foreground italic truncate">
+                        {order.appointment_note}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <OrderStatusBadge status={order.status} />
+              </Link>
+            );
+          })}
+        </div>
       </CardContent>
     </Card>
   );
 }
 
 function PurchaseListWidget() {
-  const { data } = useSupabaseQuery({
-    queryKey: ["purchase-list-widget"],
+  const { data: count = 0 } = useQuery({
+    queryKey: ["dashboard-purchase-list-count"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("purchase_lists")
-        .select("id, name, status")
-        .eq("status", "OPEN");
-      return data ?? [];
+      const { data, error } = await supabase
+        .from("inventory_items")
+        .select("id, stock_quantity, minimum_quantity")
+        .eq("is_active", true)
+        .is("deleted_at", null);
+      if (error) throw error;
+      return (data ?? []).filter((i) => Number(i.minimum_quantity) > 0 && Number(i.stock_quantity) <= Number(i.minimum_quantity)).length;
     },
   });
 
-  if (!data?.length) return null;
+  if (count === 0) return null;
 
   return (
-    <Card className="bg-orange-50/50 border-orange-500/50">
-      <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-        <CardTitle className="text-sm font-medium">Listy zakupów</CardTitle>
-        <ShoppingCart className="h-4 w-4 text-orange-500" />
-      </CardHeader>
-      <CardContent>
-        <ul className="list-disc pl-4">
-          {data.map((item: any) => (
-            <li key={item.id} className="text-sm">
-              {item.name}
-            </li>
-          ))}
-        </ul>
+    <Card className="mb-6 border-primary/20 bg-primary/5">
+      <CardContent className="py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <ShoppingCart className="h-5 w-5 text-primary" />
+          <div>
+            <span className="font-medium">Produkty do zamówienia:</span>
+            <Badge variant="secondary" className="ml-2">{count}</Badge>
+          </div>
+        </div>
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/purchase-list">Otwórz listę zakupów</Link>
+        </Button>
       </CardContent>
     </Card>
   );
 }
 
 function PurchaseRequestsWidget() {
-  const { data } = useSupabaseQuery({
-    queryKey: ["purchase-requests-widget"],
+  const { data: count = 0 } = useQuery({
+    queryKey: ["dashboard-purchase-requests-count"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { count, error } = await supabase
         .from("purchase_requests")
-        .select("id, description, status")
-        .eq("status", "OPEN");
-      return data ?? [];
+        .select("*", { count: "exact", head: true })
+        .in("status", ["NEW", "TO_ORDER"]);
+      if (error) throw error;
+      return count ?? 0;
     },
   });
 
-  if (!data?.length) return null;
+  if (count === 0) return null;
 
   return (
-    <Card className="bg-teal-50/50 border-teal-500/50">
-      <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-        <CardTitle className="text-sm font-medium">Zapotrzebowania</CardTitle>
-        <Package className="h-4 w-4 text-teal-500" />
-      </CardHeader>
-      <CardContent>
-        <ul className="list-disc pl-4">
-          {data.map((item: any) => (
-            <li key={item.id} className="text-sm">
-              {item.description}
-            </li>
-          ))}
-        </ul>
+    <Card className="mb-6 border-orange-200 bg-orange-50 dark:border-orange-900/30 dark:bg-orange-950/20">
+      <CardContent className="py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Package className="h-5 w-5 text-orange-600" />
+          <div>
+            <span className="font-medium">Zapotrzebowanie ze zleceń:</span>
+            <Badge variant="secondary" className="ml-2">{count}</Badge>
+          </div>
+        </div>
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/purchase-requests">Otwórz kolejkę</Link>
+        </Button>
       </CardContent>
     </Card>
+  );
+}
+
+export function OrderStatusBadge({ status }: { status: OrderStatus }) {
+  const colorMap: Record<OrderStatus, string> = {
+    NEW: "bg-status-new/10 text-status-new",
+    DIAGNOSIS: "bg-status-diagnosis/10 text-status-diagnosis",
+    IN_PROGRESS: "bg-status-in-progress/10 text-status-in-progress",
+    WAITING_CLIENT: "bg-status-waiting/10 text-status-waiting",
+    READY_FOR_RETURN: "bg-status-ready/10 text-status-ready",
+    COMPLETED: "bg-status-completed/10 text-status-completed",
+    ARCHIVED: "bg-status-archived/10 text-status-archived",
+    CANCELLED: "bg-status-cancelled/10 text-status-cancelled",
+  };
+
+  return (
+    <span className={`status-badge ${colorMap[status]}`}>
+      {ORDER_STATUS_LABELS[status]}
+    </span>
   );
 }
