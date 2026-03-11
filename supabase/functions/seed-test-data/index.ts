@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
         payment_method: pick(paymentMethods),
         paid_amount: payStatus === "PAID" ? grossAmt : payStatus === "PARTIALLY_PAID" ? Math.round(grossAmt * 0.5) : 0,
         related_order_id: relOrder,
-        buyer_name: cData?.display_name || "Test",
+        buyer_name: cData?.company_name || `${cData?.first_name} ${cData?.last_name}`,
         buyer_nip: cData?.nip || null,
         buyer_street: cData?.address_street || null,
         buyer_city: cData?.address_city || null,
