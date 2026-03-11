@@ -12,6 +12,7 @@ interface MentionUser {
 interface MentionTextareaProps {
   value: string;
   onChange: (value: string) => void;
+  onSubmit?: () => void;
   placeholder?: string;
   rows?: number;
   className?: string;
@@ -22,7 +23,7 @@ interface MentionTextareaProps {
  * While editing, user sees: @Display Name
  * Autocomplete triggers on typing "@"
  */
-export function MentionTextarea({ value, onChange, placeholder, rows = 2, className }: MentionTextareaProps) {
+export function MentionTextarea({ value, onChange, onSubmit, placeholder, rows = 2, className }: MentionTextareaProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -129,21 +130,29 @@ export function MentionTextarea({ value, onChange, placeholder, rows = 2, classN
   }, [value, mentionStart, onChange]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (mentionQuery === null || filteredUsers.length === 0) return;
-
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setSelectedIndex((i) => Math.min(i + 1, filteredUsers.length - 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setSelectedIndex((i) => Math.max(i - 1, 0));
-    } else if (e.key === "Enter" || e.key === "Tab") {
-      e.preventDefault();
-      insertMention(filteredUsers[selectedIndex]);
-    } else if (e.key === "Escape") {
-      setMentionQuery(null);
+    // If mention dropdown is open, handle dropdown navigation
+    if (mentionQuery !== null && filteredUsers.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedIndex((i) => Math.min(i + 1, filteredUsers.length - 1));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIndex((i) => Math.max(i - 1, 0));
+      } else if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        insertMention(filteredUsers[selectedIndex]);
+      } else if (e.key === "Escape") {
+        setMentionQuery(null);
+      }
+      return;
     }
-  }, [mentionQuery, filteredUsers, selectedIndex, insertMention]);
+
+    // Enter without Shift submits (calls onSubmit)
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      onSubmit?.();
+    }
+  }, [mentionQuery, filteredUsers, selectedIndex, insertMention, onSubmit]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -208,41 +217,45 @@ export function MentionTextarea({ value, onChange, placeholder, rows = 2, classN
  */
 export function renderCommentWithMentions(text: string): React.ReactNode[] {
   const parts: React.ReactNode[] = [];
-  const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
+  // Combined regex: mentions @[Name](id), **bold**, *italic*
+  const regex = /@\[([^\]]+)\]\(([^)]+)\)|\*\*(.+?)\*\*|\*(.+?)\*/g;
   let lastIndex = 0;
   let match;
+  let keyIdx = 0;
 
-  while ((match = mentionRegex.exec(text)) !== null) {
-    // Add text before mention
+  while ((match = regex.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      parts.push(<span key={`t-${lastIndex}`}>{text.slice(lastIndex, match.index)}</span>);
+      parts.push(<span key={`t-${keyIdx++}`}>{text.slice(lastIndex, match.index)}</span>);
     }
-    // Add highlighted mention
-    parts.push(
-      <span
-        key={`m-${match.index}`}
-        className="text-primary font-medium bg-primary/10 px-1 rounded-sm"
-      >
-        @{match[1]}
-      </span>
-    );
+    if (match[1]) {
+      // Mention
+      parts.push(
+        <span key={`m-${keyIdx++}`} className="text-primary font-medium bg-primary/10 px-1 rounded-sm">
+          @{match[1]}
+        </span>
+      );
+    } else if (match[3]) {
+      // Bold **text**
+      parts.push(<strong key={`b-${keyIdx++}`}>{match[3]}</strong>);
+    } else if (match[4]) {
+      // Italic *text*
+      parts.push(<em key={`i-${keyIdx++}`}>{match[4]}</em>);
+    }
     lastIndex = match.index + match[0].length;
   }
 
-  // Remaining text - also handle legacy @name mentions
   if (lastIndex < text.length) {
     const remaining = text.slice(lastIndex);
-    // Highlight legacy @mentions too
     const legacyParts = remaining.split(/(@\S+)/g);
     legacyParts.forEach((part, i) => {
       if (part.startsWith("@") && part.length > 1) {
         parts.push(
-          <span key={`l-${lastIndex}-${i}`} className="text-primary font-medium bg-primary/10 px-0.5 rounded">
+          <span key={`l-${keyIdx++}-${i}`} className="text-primary font-medium bg-primary/10 px-0.5 rounded">
             {part}
           </span>
         );
       } else if (part) {
-        parts.push(<span key={`r-${lastIndex}-${i}`}>{part}</span>);
+        parts.push(<span key={`r-${keyIdx++}-${i}`}>{part}</span>);
       }
     });
   }
