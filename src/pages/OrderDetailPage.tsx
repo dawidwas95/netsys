@@ -90,6 +90,60 @@ const ORDER_DETAIL_TABS = [
   { value: "signatures", label: "Podpisy" },
 ];
 
+function CommentsPanel({ comments, profileMap, comment, setComment, addComment }: {
+  comments: any[];
+  profileMap: Record<string, string>;
+  comment: string;
+  setComment: (v: string) => void;
+  addComment: any;
+}) {
+  return (
+    <Card className="h-full flex flex-col">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          <MessageSquare className="h-4 w-4" /> Komentarze ({comments?.length ?? 0})
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 overflow-y-auto space-y-3 mb-3 max-h-[calc(100vh-320px)]">
+          {!comments?.length && <p className="text-sm text-muted-foreground">Brak komentarzy</p>}
+          {comments?.map((c: any) => (
+            <div key={c.id} className="border-b border-border pb-3 last:border-0">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
+                  {(profileMap[c.user_id] || "?")[0].toUpperCase()}
+                </div>
+                <div>
+                  <span className="text-xs font-medium">{profileMap[c.user_id] || "Użytkownik"}</span>
+                  <span className="text-[10px] text-muted-foreground ml-1.5">
+                    {new Date(c.created_at).toLocaleDateString("pl-PL", { day: "2-digit", month: "2-digit" })}
+                    {" "}
+                    {new Date(c.created_at).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+              </div>
+              <p className="text-sm ml-8">
+                {renderCommentWithMentions(c.comment)}
+              </p>
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-2 items-end mt-auto">
+          <MentionTextarea
+            value={comment}
+            onChange={setComment}
+            placeholder="Dodaj komentarz... @ aby oznaczyć"
+            rows={2}
+          />
+          <Button size="icon" className="shrink-0" onClick={() => addComment.mutate()} disabled={!comment.trim() || addComment.isPending}>
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
