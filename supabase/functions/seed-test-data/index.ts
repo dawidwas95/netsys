@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
         first_name: fn,
         last_name: ln,
         company_name: isCompany ? `${pick(companyNames)} ${ln}` : null,
-        display_name: isCompany ? `${pick(companyNames)} ${ln}` : `${fn} ${ln}`,
+        
         email: `${fn.toLowerCase()}.${ln.toLowerCase()}${i}@example.pl`,
         phone: `+48${rand(500, 899)}${String(rand(100000, 999999))}`,
         nip: isCompany ? `${rand(100, 999)}${rand(100, 999)}${rand(10, 99)}${rand(10, 99)}` : null,
@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
         payment_method: pick(paymentMethods),
         paid_amount: payStatus === "PAID" ? grossAmt : payStatus === "PARTIALLY_PAID" ? Math.round(grossAmt * 0.5) : 0,
         related_order_id: relOrder,
-        buyer_name: cData?.display_name || "Test",
+        buyer_name: cData?.company_name || `${cData?.first_name} ${cData?.last_name}`,
         buyer_nip: cData?.nip || null,
         buyer_street: cData?.address_street || null,
         buyer_city: cData?.address_city || null,
