@@ -155,21 +155,24 @@ Deno.serve(async (req) => {
       const dev = clientDevices.length > 0 ? pick(clientDevices) : pick(deviceBatch);
       const totalNet = rand(50, 3000);
       const totalGross = Math.round(totalNet * 1.23);
+      const st = pick(orderStatuses);
       orderBatch.push({
         id,
+        order_number: `SRV/SEED/${String(i + 1).padStart(4, "0")}`,
         client_id: clientIds[cIdx],
         device_id: dev.id,
         service_type: pick(serviceTypes),
-        status: pick(orderStatuses),
+        status: st,
         priority: pick(priorities),
         intake_channel: pick(intakeChannels),
-        description: pick(descriptions),
+        problem_description: pick(descriptions),
         diagnosis: Math.random() > 0.3 ? `Diagnoza: ${pick(descriptions)}` : null,
-        resolution: Math.random() > 0.5 ? `Rozwiązanie: ${pick(descriptions)}` : null,
+        repair_description: Math.random() > 0.5 ? `Rozwiązanie: ${pick(descriptions)}` : null,
         total_net: totalNet,
         total_gross: totalGross,
-        estimated_completion: date(2025, 2026),
-        notes: Math.random() > 0.6 ? "Uwagi do zlecenia testowego" : null,
+        estimated_completion_date: date(2025, 2026),
+        internal_notes: Math.random() > 0.6 ? "Uwagi do zlecenia testowego" : null,
+        completed_at: st === "COMPLETED" || st === "ARCHIVED" ? `${date(2025, 2026)}T12:00:00Z` : null,
       });
     }
     // Insert one by one for trigger-generated order_number
