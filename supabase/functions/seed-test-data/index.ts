@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
         const prefix = prefixMap[docType] || "DOC";
 
         docBatch.push({
-          document_number: `${prefix}/SEED/${String(i + 1).padStart(6, "0")}`,
+          document_number: `${prefix}/${RUN_ID}/${String(i + 1).padStart(6, "0")}`,
           document_type: docType,
           direction,
           client_id: cData.id,
