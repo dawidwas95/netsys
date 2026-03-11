@@ -73,18 +73,44 @@ export default function DataManagementPage() {
   const [restoreItem, setRestoreItem] = useState<{ table: string; id: string; name: string } | null>(null);
   const [seeding, setSeeding] = useState(false);
 
+  const [seedProgress, setSeedProgress] = useState("");
+
+  async function seedPhase(phase: string, label: string) {
+    setSeedProgress(label);
+    const res = await supabase.functions.invoke("seed-test-data", { body: { phase } });
+    if (res.error) throw res.error;
+    const data = res.data as any;
+    if (data?.error) throw new Error(data.error);
+    return data?.progress || [];
+  }
+
   async function seedTestData() {
     setSeeding(true);
+    const allProgress: string[] = [];
     try {
-      const res = await supabase.functions.invoke("seed-test-data", { body: {} });
-      if (res.error) throw res.error;
-      const data = res.data as any;
-      if (data?.error) throw new Error(data.error);
-      toast.success("Dane testowe załadowane!", { description: data?.progress?.join(", ") });
+      const phases = [
+        { phase: "clients", label: "Generowanie 30 000 klientów..." },
+        { phase: "devices", label: "Generowanie 5 000 urządzeń..." },
+        { phase: "inventory", label: "Generowanie magazynu..." },
+        { phase: "orders", label: "Generowanie 10 000 zleceń..." },
+        { phase: "docs1", label: "Generowanie dokumentów 1/5..." },
+        { phase: "docs2", label: "Generowanie dokumentów 2/5..." },
+        { phase: "docs3", label: "Generowanie dokumentów 3/5..." },
+        { phase: "docs4", label: "Generowanie dokumentów 4/5..." },
+        { phase: "docs5", label: "Generowanie dokumentów 5/5..." },
+        { phase: "extras", label: "Generowanie kasy i magazynu..." },
+      ];
+      for (const p of phases) {
+        const result = await seedPhase(p.phase, p.label);
+        allProgress.push(...result);
+        toast.success(result.join(", "));
+      }
+      toast.success("✅ Wszystkie dane testowe załadowane!", { description: allProgress.join(", ") });
     } catch (e: any) {
       toast.error("Błąd seedowania: " + (e?.message || "unknown"));
     } finally {
       setSeeding(false);
+      setSeedProgress("");
     }
   }
 
@@ -222,10 +248,10 @@ export default function DataManagementPage() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-3">
-            Wygeneruj ~1000 klientów, 1500 urządzeń, 1000 zleceń, 5000 dokumentów, 200 pozycji magazynowych, 500 transakcji kasowych i 300 dokumentów magazynowych.
+            Wygeneruj ~30 000 klientów, 5 000 urządzeń, 10 000 zleceń, 100 000 dokumentów, 200 pozycji magazynowych, 2 000 transakcji kasowych i 1 000 dokumentów magazynowych.
           </p>
           <Button onClick={seedTestData} disabled={seeding} variant="destructive">
-            {seeding ? "Generowanie danych... (może potrwać ~1 min)" : "🚀 Załaduj dane testowe"}
+            {seeding ? `⏳ ${seedProgress}` : "🚀 Załaduj dane testowe"}
           </Button>
         </CardContent>
       </Card>
