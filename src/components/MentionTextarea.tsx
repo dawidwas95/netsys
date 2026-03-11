@@ -217,41 +217,45 @@ export function MentionTextarea({ value, onChange, onSubmit, placeholder, rows =
  */
 export function renderCommentWithMentions(text: string): React.ReactNode[] {
   const parts: React.ReactNode[] = [];
-  const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
+  // Combined regex: mentions @[Name](id), **bold**, *italic*
+  const regex = /@\[([^\]]+)\]\(([^)]+)\)|\*\*(.+?)\*\*|\*(.+?)\*/g;
   let lastIndex = 0;
   let match;
+  let keyIdx = 0;
 
-  while ((match = mentionRegex.exec(text)) !== null) {
-    // Add text before mention
+  while ((match = regex.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      parts.push(<span key={`t-${lastIndex}`}>{text.slice(lastIndex, match.index)}</span>);
+      parts.push(<span key={`t-${keyIdx++}`}>{text.slice(lastIndex, match.index)}</span>);
     }
-    // Add highlighted mention
-    parts.push(
-      <span
-        key={`m-${match.index}`}
-        className="text-primary font-medium bg-primary/10 px-1 rounded-sm"
-      >
-        @{match[1]}
-      </span>
-    );
+    if (match[1]) {
+      // Mention
+      parts.push(
+        <span key={`m-${keyIdx++}`} className="text-primary font-medium bg-primary/10 px-1 rounded-sm">
+          @{match[1]}
+        </span>
+      );
+    } else if (match[3]) {
+      // Bold **text**
+      parts.push(<strong key={`b-${keyIdx++}`}>{match[3]}</strong>);
+    } else if (match[4]) {
+      // Italic *text*
+      parts.push(<em key={`i-${keyIdx++}`}>{match[4]}</em>);
+    }
     lastIndex = match.index + match[0].length;
   }
 
-  // Remaining text - also handle legacy @name mentions
   if (lastIndex < text.length) {
     const remaining = text.slice(lastIndex);
-    // Highlight legacy @mentions too
     const legacyParts = remaining.split(/(@\S+)/g);
     legacyParts.forEach((part, i) => {
       if (part.startsWith("@") && part.length > 1) {
         parts.push(
-          <span key={`l-${lastIndex}-${i}`} className="text-primary font-medium bg-primary/10 px-0.5 rounded">
+          <span key={`l-${keyIdx++}-${i}`} className="text-primary font-medium bg-primary/10 px-0.5 rounded">
             {part}
           </span>
         );
       } else if (part) {
-        parts.push(<span key={`r-${lastIndex}-${i}`}>{part}</span>);
+        parts.push(<span key={`r-${keyIdx++}-${i}`}>{part}</span>);
       }
     });
   }
