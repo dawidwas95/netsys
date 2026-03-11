@@ -248,10 +248,10 @@ export default function DataManagementPage() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-3">
-            Wygeneruj ~1000 klientów, 1500 urządzeń, 1000 zleceń, 5000 dokumentów, 200 pozycji magazynowych, 500 transakcji kasowych i 300 dokumentów magazynowych.
+            Wygeneruj ~30 000 klientów, 5 000 urządzeń, 10 000 zleceń, 100 000 dokumentów, 200 pozycji magazynowych, 2 000 transakcji kasowych i 1 000 dokumentów magazynowych.
           </p>
           <Button onClick={seedTestData} disabled={seeding} variant="destructive">
-            {seeding ? "Generowanie danych... (może potrwać ~1 min)" : "🚀 Załaduj dane testowe"}
+            {seeding ? `⏳ ${seedProgress}` : "🚀 Załaduj dane testowe"}
           </Button>
         </CardContent>
       </Card>
