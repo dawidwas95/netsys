@@ -233,7 +233,7 @@ Deno.serve(async (req) => {
     for (let i = 0; i < 500; i++) {
       const amt = rand(10, 5000);
       cashBatch.push({
-        transaction_type: pick(["INCOME","EXPENSE"]),
+        transaction_type: pick(["IN","OUT"]),
         amount: amt,
         gross_amount: Math.round(amt * 1.23),
         vat_amount: Math.round(amt * 0.23),
