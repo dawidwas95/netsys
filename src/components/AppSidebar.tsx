@@ -55,6 +55,7 @@ const serviceNav = [
   { title: "Tablica zleceń", url: "/orders/kanban", icon: KanbanSquare },
   { title: "Ekran serwisowy", url: "/service-board-display", icon: Tv },
   { title: "Lista zleceń", url: "/orders", icon: ListTodo },
+  { title: "Komentarze", url: "/comments", icon: MessageSquare },
   // Hidden modules (can be restored later):
   // { title: "Prace IT", url: "/it-work", icon: Wrench },
   // { title: "Oferty", url: "/offers", icon: FileText },

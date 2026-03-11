@@ -96,6 +96,7 @@ const App = () => (
             <Route path="/data-management" element={<DataManagementPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/technician-stats" element={<TechnicianStatsPage />} />
+            <Route path="/comments" element={<CommentsPage />} />
             <Route path="/install" element={<InstallPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
