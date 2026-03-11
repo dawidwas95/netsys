@@ -90,12 +90,15 @@ const ORDER_DETAIL_TABS = [
   { value: "signatures", label: "Podpisy" },
 ];
 
-function CommentsPanel({ comments, profileMap, comment, setComment, addComment }: {
+function CommentsPanel({ comments, profileMap, comment, setComment, addComment, readIds, onMarkRead, onMarkUnread }: {
   comments: any[];
   profileMap: Record<string, string>;
   comment: string;
   setComment: (v: string) => void;
   addComment: any;
+  readIds: Set<string>;
+  onMarkRead: (id: string) => void;
+  onMarkUnread: (id: string) => void;
 }) {
   return (
     <Card className="h-full flex flex-col">
@@ -107,31 +110,48 @@ function CommentsPanel({ comments, profileMap, comment, setComment, addComment }
       <CardContent className="flex-1 flex flex-col min-h-0">
         <div className="flex-1 overflow-y-auto space-y-3 mb-3 max-h-[calc(100vh-320px)]">
           {!comments?.length && <p className="text-sm text-muted-foreground">Brak komentarzy</p>}
-          {comments?.map((c: any) => (
-            <div key={c.id} className="border-b border-border pb-3 last:border-0">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
-                  {(profileMap[c.user_id] || "?")[0].toUpperCase()}
+          {comments?.map((c: any) => {
+            const isRead = readIds.has(c.id);
+            return (
+              <div key={c.id} className={`border-b pb-3 last:border-0 rounded-md px-2 py-1 transition-colors ${!isRead ? "border-destructive/30 bg-destructive/5" : "border-border"}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
+                    {(profileMap[c.user_id] || "?")[0].toUpperCase()}
+                  </div>
+                  <div className="flex-1">
+                    <span className="text-xs font-medium">{profileMap[c.user_id] || "Użytkownik"}</span>
+                    <span className="text-[10px] text-muted-foreground ml-1.5">
+                      {new Date(c.created_at).toLocaleDateString("pl-PL", { day: "2-digit", month: "2-digit" })}
+                      {" "}
+                      {new Date(c.created_at).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                    {!isRead && (
+                      <Badge variant="destructive" className="text-[9px] px-1 py-0 ml-1">nowy</Badge>
+                    )}
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className={`h-6 w-6 shrink-0 ${isRead ? "text-green-600 hover:text-destructive" : "text-destructive hover:text-green-600"}`}
+                    onClick={() => isRead ? onMarkUnread(c.id) : onMarkRead(c.id)}
+                    title={isRead ? "Nieprzeczytany" : "Przeczytany"}
+                  >
+                    {isRead ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                  </Button>
                 </div>
-                <div>
-                  <span className="text-xs font-medium">{profileMap[c.user_id] || "Użytkownik"}</span>
-                  <span className="text-[10px] text-muted-foreground ml-1.5">
-                    {new Date(c.created_at).toLocaleDateString("pl-PL", { day: "2-digit", month: "2-digit" })}
-                    {" "}
-                    {new Date(c.created_at).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}
-                  </span>
+                <div className="text-sm ml-8">
+                  {renderCommentWithMentions(c.comment)}
                 </div>
               </div>
-              <p className="text-sm ml-8">
-                {renderCommentWithMentions(c.comment)}
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
+        <p className="text-[10px] text-muted-foreground mb-1">Formatowanie: **pogrubienie**, *kursywa*, @wzmianka. Enter = wyślij.</p>
         <div className="flex gap-2 items-end mt-auto">
           <MentionTextarea
             value={comment}
             onChange={setComment}
+            onSubmit={() => { if (comment.trim()) addComment.mutate(); }}
             placeholder="Dodaj komentarz... @ aby oznaczyć"
             rows={2}
           />
