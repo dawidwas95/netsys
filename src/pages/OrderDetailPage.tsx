@@ -327,6 +327,43 @@ export default function OrderDetailPage() {
     enabled: !!id,
   });
 
+  // Read/unread tracking for comments
+  const { data: commentReadIds = new Set<string>() } = useQuery({
+    queryKey: ["comment-reads", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("comment_reads" as any)
+        .select("comment_id")
+        .eq("user_id", user!.id);
+      if (error) throw error;
+      return new Set((data as any[]).map((r: any) => r.comment_id));
+    },
+    enabled: !!user?.id,
+  });
+
+  const markCommentRead = useMutation({
+    mutationFn: async (commentId: string) => {
+      const { error } = await supabase.from("comment_reads" as any).insert({
+        comment_id: commentId,
+        user_id: user!.id,
+      });
+      if (error && !error.message.includes("duplicate")) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["comment-reads"] }),
+  });
+
+  const markCommentUnread = useMutation({
+    mutationFn: async (commentId: string) => {
+      const { error } = await supabase
+        .from("comment_reads" as any)
+        .delete()
+        .eq("comment_id", commentId)
+        .eq("user_id", user!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["comment-reads"] }),
+  });
+
   const { data: logs } = useQuery({
     queryKey: ["order-logs", id],
     queryFn: async () => {
