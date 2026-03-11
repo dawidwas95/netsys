@@ -32,6 +32,7 @@ import OrderStatusPage from "@/pages/OrderStatusPage";
 import ServiceBoardDisplay from "@/pages/ServiceBoardDisplay";
 import DailyPlanPage from "@/pages/DailyPlanPage";
 import TechnicianStatsPage from "@/pages/TechnicianStatsPage";
+import CommentsPage from "@/pages/CommentsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -95,6 +96,7 @@ const App = () => (
             <Route path="/data-management" element={<DataManagementPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/technician-stats" element={<TechnicianStatsPage />} />
+            <Route path="/comments" element={<CommentsPage />} />
             <Route path="/install" element={<InstallPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />

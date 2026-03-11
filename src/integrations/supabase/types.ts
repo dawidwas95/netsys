@@ -430,6 +430,35 @@ export type Database = {
         }
         Relationships: []
       }
+      comment_reads: {
+        Row: {
+          comment_id: string
+          id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          id?: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_reads_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "service_order_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_settings: {
         Row: {
           address_city: string | null
