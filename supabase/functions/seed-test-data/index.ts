@@ -38,6 +38,8 @@ const intakeChannels = ["PHONE","EMAIL","IN_PERSON","REMOTE","OTHER"];
 const paymentMethods = ["CASH","CARD","TRANSFER"];
 const descriptions = ["Wymiana dysku SSD","Czyszczenie systemu","Naprawa zasilacza","Wymiana ekranu","Aktualizacja systemu","Usunięcie wirusów","Wymiana baterii","Naprawa klawiatury","Instalacja oprogramowania","Konfiguracja sieci","Wymiana matrycy","Rozbudowa RAM","Naprawa głośnika","Wymiana portu ładowania","Reinstalacja Windows","Odzyskiwanie danych","Konfiguracja serwera","Naprawa drukarki","Wymiana wentylatora","Diagnostyka sprzętu"];
 
+const RUN_ID = crypto.randomUUID().slice(0, 6);
+
 async function insertBatch(admin: any, table: string, rows: any[], chunkSize: number) {
   for (let c = 0; c < rows.length; c += chunkSize) {
     const chunk = rows.slice(c, c + chunkSize);
