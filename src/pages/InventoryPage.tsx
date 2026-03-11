@@ -273,23 +273,27 @@ export default function InventoryPage() {
         </Dialog>
       </div>
 
-      {/* KPI */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        <Card><CardContent className="pt-4 pb-4">
+      {/* KPI - first card is half width on md+ */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-8 gap-4">
+        <Card className="md:col-span-1">
+          <CardContent className="pt-4 pb-4">
           <div className="text-xs text-muted-foreground">Pozycji w magazynie</div>
           <div className="text-2xl font-bold">{activeItems.length}</div>
         </CardContent></Card>
-        <Card><CardContent className="pt-4 pb-4">
+        <Card className="md:col-span-2">
+          <CardContent className="pt-4 pb-4">
           <div className="text-xs text-muted-foreground">Wartość magazynu (brutto)</div>
-          <div className="text-2xl font-bold">{totalValue.toFixed(2)} zł</div>
+          <div className="text-2xl font-bold">{formatNumberPL(totalValue)} zł</div>
         </CardContent></Card>
-        <Card><CardContent className="pt-4 pb-4">
+        <Card className="md:col-span-2">
+          <CardContent className="pt-4 pb-4">
           <div className="text-xs text-muted-foreground flex items-center gap-1">
             <AlertTriangle className="h-3 w-3 text-amber-400" /> Niski stan
           </div>
           <div className="text-2xl font-bold text-amber-400">{lowStock.length}</div>
         </CardContent></Card>
-        <Card><CardContent className="pt-4 pb-4">
+        <Card className="md:col-span-3">
+          <CardContent className="pt-4 pb-4">
           <div className="text-xs text-muted-foreground">Ostatnie ruchy</div>
           <div className="text-2xl font-bold">{movements.length}</div>
         </CardContent></Card>
