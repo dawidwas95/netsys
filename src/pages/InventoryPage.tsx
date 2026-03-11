@@ -46,6 +46,10 @@ const MOVEMENT_COLORS: Record<string, string> = {
   INTERNAL_USE: "bg-purple-500/20 text-purple-400 border-purple-500/30",
 };
 
+function formatNumberPL(n: number): string {
+  return n.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export default function InventoryPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -273,23 +277,27 @@ export default function InventoryPage() {
         </Dialog>
       </div>
 
-      {/* KPI */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        <Card><CardContent className="pt-4 pb-4">
+      {/* KPI - first card is half width on md+ */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-8 gap-4">
+        <Card className="md:col-span-1">
+          <CardContent className="pt-4 pb-4">
           <div className="text-xs text-muted-foreground">Pozycji w magazynie</div>
           <div className="text-2xl font-bold">{activeItems.length}</div>
         </CardContent></Card>
-        <Card><CardContent className="pt-4 pb-4">
+        <Card className="md:col-span-2">
+          <CardContent className="pt-4 pb-4">
           <div className="text-xs text-muted-foreground">Wartość magazynu (brutto)</div>
-          <div className="text-2xl font-bold">{totalValue.toFixed(2)} zł</div>
+          <div className="text-2xl font-bold">{formatNumberPL(totalValue)} zł</div>
         </CardContent></Card>
-        <Card><CardContent className="pt-4 pb-4">
+        <Card className="md:col-span-2">
+          <CardContent className="pt-4 pb-4">
           <div className="text-xs text-muted-foreground flex items-center gap-1">
             <AlertTriangle className="h-3 w-3 text-amber-400" /> Niski stan
           </div>
           <div className="text-2xl font-bold text-amber-400">{lowStock.length}</div>
         </CardContent></Card>
-        <Card><CardContent className="pt-4 pb-4">
+        <Card className="md:col-span-3">
+          <CardContent className="pt-4 pb-4">
           <div className="text-xs text-muted-foreground">Ostatnie ruchy</div>
           <div className="text-2xl font-bold">{movements.length}</div>
         </CardContent></Card>
@@ -386,8 +394,8 @@ export default function InventoryPage() {
                               <span className={available <= 0 ? "text-destructive" : ""}>{available} {item.unit}</span>
                             </TableCell>
                             <TableCell className="text-right tabular-nums text-muted-foreground">{Number(item.minimum_quantity)}</TableCell>
-                            <TableCell className="text-right tabular-nums text-xs">{(Number(item.purchase_net) * (1 + (Number(item.vat_rate) || 23) / 100)).toFixed(2)} zł</TableCell>
-                            <TableCell className="text-right tabular-nums text-xs">{(Number(item.sale_net) * (1 + (Number(item.vat_rate) || 23) / 100)).toFixed(2)} zł</TableCell>
+                            <TableCell className="text-right tabular-nums text-xs">{formatNumberPL(Number(item.purchase_net) * (1 + (Number(item.vat_rate) || 23) / 100))} zł</TableCell>
+                            <TableCell className="text-right tabular-nums text-xs">{formatNumberPL(Number(item.sale_net) * (1 + (Number(item.vat_rate) || 23) / 100))} zł</TableCell>
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <div className="flex gap-1 flex-wrap">
                                 <Button size="sm" variant="ghost" className="h-7 px-2" title="Przyjęcie"
