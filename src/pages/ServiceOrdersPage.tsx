@@ -125,15 +125,15 @@ function groupOrdersByAction(orders: any[]) {
 const COL_WIDTHS = "w-[17%] w-[12%] w-[18%] w-[15%] w-[17%] w-[10%] w-[11%]";
 const COL_CLASSES = COL_WIDTHS.split(" ");
 
-function DesktopOrderRow({ order, unread, onClientClick }: { order: any; unread: boolean; onClientClick?: (clientId: string) => void }) {
+function DesktopOrderRow({ order, unread, onClientClick, onOrderClick }: { order: any; unread: boolean; onClientClick?: (clientId: string) => void; onOrderClick?: (orderId: string) => void }) {
   return (
     <TableRow className={`hover:bg-muted/50 ${unread ? "bg-primary/5" : ""}`}>
       <TableCell className={COL_CLASSES[0]}>
         <div className="flex items-center gap-1.5">
           {unread && <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />}
-          <Link to={`/orders/${order.id}`} className="font-medium text-primary hover:underline font-mono">
+          <button onClick={() => onOrderClick?.(order.id)} className="font-medium text-primary hover:underline font-mono text-left">
             {order.order_number}
-          </Link>
+          </button>
         </div>
       </TableCell>
       <TableCell className={`${COL_CLASSES[1]} text-xs`}>{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</TableCell>
