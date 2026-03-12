@@ -70,7 +70,7 @@ function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
     <Link to={`/orders/${order.id}`} className={`mobile-data-card block ${unread ? "ring-2 ring-primary/30" : ""}`}>
       <div className="mobile-card-header">
         <span className="font-medium font-mono text-primary flex items-center gap-1.5">
-          {unread && <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />}
+          <span className={`h-2 w-2 rounded-full shrink-0 ${unread ? "bg-destructive" : "bg-emerald-500"}`} />
           {order.order_number}
         </span>
         <div className="flex items-center gap-1">
