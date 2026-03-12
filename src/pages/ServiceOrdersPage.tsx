@@ -70,7 +70,7 @@ function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
     <Link to={`/orders/${order.id}`} className={`mobile-data-card block ${unread ? "ring-2 ring-primary/30" : ""}`}>
       <div className="mobile-card-header">
         <span className="font-medium font-mono text-primary flex items-center gap-1.5">
-          {unread && <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />}
+          <span className={`h-2 w-2 rounded-full shrink-0 ${unread ? "bg-destructive" : "bg-emerald-500"}`} />
           {order.order_number}
         </span>
         <div className="flex items-center gap-1">
@@ -130,7 +130,7 @@ function DesktopOrderRow({ order, unread, onClientClick, onOrderClick }: { order
     <TableRow className={`hover:bg-muted/50 ${unread ? "bg-primary/5" : ""}`}>
       <TableCell className={COL_CLASSES[0]}>
         <div className="flex items-center gap-1.5">
-          {unread && <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />}
+          <span className={`h-2 w-2 rounded-full shrink-0 ${unread ? "bg-destructive" : "bg-emerald-500"}`} />
           <button onClick={() => onOrderClick?.(order.id)} className="font-medium text-primary hover:underline font-mono text-left">
             {order.order_number}
           </button>
@@ -614,6 +614,7 @@ export default function ServiceOrdersPage() {
           if (!open) {
             setQuickEditOrderId(null);
             queryClient.invalidateQueries({ queryKey: ["service-orders"] });
+            queryClient.invalidateQueries({ queryKey: ["unread-orders"] });
           }
         }}
       />
