@@ -406,17 +406,20 @@ export default function ServiceOrdersPage() {
                   const barColor = STATUS_GROUP_COLORS[group.status];
                   return (
                     <React.Fragment key={group.status}>
-                      {/* Group header row */}
                       <TableRow
                         className="cursor-pointer hover:bg-muted/50 border-b-0"
                         onClick={() => toggleGroup(group.status)}
                       >
-                        <TableCell colSpan={8} className="py-2 px-3">
-                          <div className="flex items-center gap-2">
-                            <div className={`${barColor} w-3 h-3 rounded-sm shrink-0`} />
-                            {collapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-                            <span className="font-semibold text-sm">{ORDER_STATUS_LABELS[group.status]}</span>
-                            <span className="text-xs text-muted-foreground">({group.orders.length})</span>
+                        <TableCell colSpan={8} className="py-0 px-0">
+                          <div className="flex items-stretch">
+                            <div className={`${barColor} w-[180px] shrink-0 rounded-l-md px-4 py-2.5 flex flex-col items-start justify-center gap-0.5 text-white`}>
+                              <div className="flex items-center gap-2 w-full">
+                                {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                <span className="font-semibold text-sm">{ORDER_STATUS_LABELS[group.status]}</span>
+                              </div>
+                              <span className="text-xs opacity-80 pl-6">{group.orders.length} zleceń</span>
+                            </div>
+                            <div className="flex-1" />
                           </div>
                         </TableCell>
                       </TableRow>
