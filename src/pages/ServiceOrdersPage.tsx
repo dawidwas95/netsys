@@ -606,6 +606,17 @@ export default function ServiceOrdersPage() {
         open={!!quickViewClientId}
         onOpenChange={(open) => { if (!open) setQuickViewClientId(null); }}
       />
+
+      <OrderQuickEditDialog
+        orderId={quickEditOrderId}
+        open={!!quickEditOrderId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setQuickEditOrderId(null);
+            queryClient.invalidateQueries({ queryKey: ["service-orders"] });
+          }
+        }}
+      />
     </div>
   );
 }
