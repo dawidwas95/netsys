@@ -159,10 +159,6 @@ export function useUnreadOrders() {
 
       return unread;
     },
-      });
-
-      return unread;
-    },
     enabled: !!user?.id,
     refetchInterval: 30000,
   });
