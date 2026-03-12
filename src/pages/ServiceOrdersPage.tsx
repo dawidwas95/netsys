@@ -467,7 +467,7 @@ export default function ServiceOrdersPage() {
           <>
             {/* Shared table header – offset by 180px status + 140px action = 320px */}
             <div className="flex gap-0">
-              <div className="w-[320px] shrink-0" />
+              <div className="w-[320px] shrink-0 sticky left-0 z-10 bg-background" />
               <div className="flex-1 min-w-0 data-table-wrapper rounded-b-none border-b-0">
                 <Table className="table-fixed">
                   <TableHeader>
