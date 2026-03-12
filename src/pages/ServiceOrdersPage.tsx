@@ -345,23 +345,27 @@ export default function ServiceOrdersPage() {
         ) : groupedOrders ? (
           groupedOrders.map((group) => {
             const collapsed = collapsedGroups.has(group.status);
+            const barColor = STATUS_GROUP_COLORS[group.status];
             return (
-              <div key={group.status}>
-                <button
-                  onClick={() => toggleGroup(group.status)}
-                  className="flex items-center gap-2 mb-2 mt-4 first:mt-0 w-full text-left"
-                >
-                  {collapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-                  <OrderStatusBadge status={group.status} />
-                  <span className="text-xs text-muted-foreground">({group.orders.length})</span>
-                </button>
-                {!collapsed && (
-                  <div className="space-y-2">
-                    {group.orders.map((order: any) => (
-                      <MobileOrderCard key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
-                    ))}
-                  </div>
-                )}
+              <div key={group.status} className="flex gap-0">
+                <div className={`${barColor} w-1.5 rounded-sm shrink-0 ${collapsed ? "" : "opacity-80"}`} />
+                <div className="flex-1 min-w-0">
+                  <button
+                    onClick={() => toggleGroup(group.status)}
+                    className="flex items-center gap-2 py-2.5 px-2 w-full text-left"
+                  >
+                    {collapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                    <OrderStatusBadge status={group.status} />
+                    <span className="text-xs text-muted-foreground">({group.orders.length})</span>
+                  </button>
+                  {!collapsed && (
+                    <div className="space-y-2 pl-2 pb-3">
+                      {group.orders.map((order: any) => (
+                        <MobileOrderCard key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })
