@@ -61,12 +61,6 @@ function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
           <OrderStatusBadge status={order.status} />
         </div>
       </div>
-      {order.action_category && (
-        <div className="mobile-card-row">
-          <span className="mobile-card-label">Działanie</span>
-          <Badge variant="outline" className="text-xs">{order.action_category}</Badge>
-        </div>
-      )}
       <div className="mobile-card-row">
         <span className="mobile-card-label">Dział</span>
         <span className="text-sm">{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || "—"}</span>
@@ -95,7 +89,24 @@ function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
   );
 }
 
-const COL_WIDTHS = "w-[13%] w-[10%] w-[13%] w-[11%] w-[13%] w-[9%] w-[10%] w-[9%] w-[12%]";
+function groupOrdersByAction(orders: any[]) {
+  const actionGroups: { action: string | null; orders: any[] }[] = [];
+  const byAction = new Map<string | null, any[]>();
+  for (const o of orders) {
+    const key = o.action_category || null;
+    if (!byAction.has(key)) byAction.set(key, []);
+    byAction.get(key)!.push(o);
+  }
+  // Put named actions first, then null
+  for (const [action, items] of byAction.entries()) {
+    if (action) actionGroups.push({ action, orders: items });
+  }
+  const noAction = byAction.get(null);
+  if (noAction) actionGroups.push({ action: null, orders: noAction });
+  return actionGroups;
+}
+
+const COL_WIDTHS = "w-[15%] w-[11%] w-[15%] w-[13%] w-[15%] w-[10%] w-[10%] w-[11%]";
 const COL_CLASSES = COL_WIDTHS.split(" ");
 
 function DesktopOrderRow({ order, unread }: { order: any; unread: boolean }) {
@@ -122,9 +133,8 @@ function DesktopOrderRow({ order, unread }: { order: any; unread: boolean }) {
         </div>
       </TableCell>
       <TableCell className={COL_CLASSES[5]}><OrderStatusBadge status={order.status} /></TableCell>
-      <TableCell className={`${COL_CLASSES[6]} text-xs`}>{order.action_category || "—"}</TableCell>
-      <TableCell className={`${COL_CLASSES[7]} text-sm`}>{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
-      <TableCell className={`${COL_CLASSES[8]} text-sm`}>{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
+      <TableCell className={`${COL_CLASSES[6]} text-sm`}>{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
+      <TableCell className={`${COL_CLASSES[7]} text-sm`}>{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
     </TableRow>
   );
 }
@@ -370,13 +380,38 @@ export default function ServiceOrdersPage() {
                     <OrderStatusBadge status={group.status} />
                     <span className="text-xs text-muted-foreground">({group.orders.length})</span>
                   </button>
-                  {!collapsed && (
-                    <div className="space-y-2 pl-2 pb-3">
-                      {group.orders.map((order: any) => (
-                        <MobileOrderCard key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
-                      ))}
-                    </div>
-                  )}
+                  {!collapsed && (() => {
+                    const actionSubGroups = groupOrdersByAction(group.orders);
+                    const hasActions = actionSubGroups.some(g => g.action !== null);
+                    if (!hasActions) {
+                      return (
+                        <div className="space-y-2 pl-2 pb-3">
+                          {group.orders.map((order: any) => (
+                            <MobileOrderCard key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                          ))}
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="pl-2 pb-3 space-y-1">
+                        {actionSubGroups.map((sub) => (
+                          <div key={sub.action ?? "__none"}>
+                            <div className="px-2 py-1 mb-1">
+                              <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                                {sub.action ?? "brak działania"}
+                              </span>
+                              <span className="text-[11px] text-muted-foreground ml-1">({sub.orders.length})</span>
+                            </div>
+                            <div className="space-y-2">
+                              {sub.orders.map((order: any) => (
+                                <MobileOrderCard key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             );
@@ -409,9 +444,8 @@ export default function ServiceOrdersPage() {
                       <TableHead className={COL_CLASSES[3]}>Urządzenie</TableHead>
                       <TableHead className={COL_CLASSES[4]}>Technik</TableHead>
                       <TableHead className={COL_CLASSES[5]}>Status</TableHead>
-                      <TableHead className={COL_CLASSES[6]}>Działanie</TableHead>
-                      <TableHead className={COL_CLASSES[7]}>Priorytet</TableHead>
-                      <TableHead className={COL_CLASSES[8]}>Data przyjęcia</TableHead>
+                      <TableHead className={COL_CLASSES[6]}>Priorytet</TableHead>
+                      <TableHead className={COL_CLASSES[7]}>Data przyjęcia</TableHead>
                     </TableRow>
                   </TableHeader>
                 </Table>
@@ -437,15 +471,42 @@ export default function ServiceOrdersPage() {
                     </button>
                     {/* Right orders area */}
                     <div className={`flex-1 min-w-0 border border-l-0 border-border rounded-r-lg ${collapsed ? "" : "bg-card"}`}>
-                      {!collapsed && (
-                        <Table className="table-fixed">
-                          <TableBody>
-                            {group.orders.map((order: any) => (
-                              <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                      {!collapsed && (() => {
+                        const actionSubGroups = groupOrdersByAction(group.orders);
+                        const hasActions = actionSubGroups.some(g => g.action !== null);
+                        if (!hasActions) {
+                          return (
+                            <Table className="table-fixed">
+                              <TableBody>
+                                {group.orders.map((order: any) => (
+                                  <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                                ))}
+                              </TableBody>
+                            </Table>
+                          );
+                        }
+                        return (
+                          <div>
+                            {actionSubGroups.map((sub) => (
+                              <div key={sub.action ?? "__none"}>
+                                <div className="px-3 py-1.5 bg-muted/40 border-b border-border">
+                                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                    {sub.action ?? "brak działania"}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground ml-1.5">({sub.orders.length})</span>
+                                </div>
+                                <Table className="table-fixed">
+                                  <TableBody>
+                                    {sub.orders.map((order: any) => (
+                                      <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
                             ))}
-                          </TableBody>
-                        </Table>
-                      )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 );
@@ -463,7 +524,6 @@ export default function ServiceOrdersPage() {
                   <TableHead>Urządzenie</TableHead>
                   <TableHead>Technik</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Działanie</TableHead>
                   <TableHead>Priorytet</TableHead>
                   <TableHead>Data przyjęcia</TableHead>
                 </TableRow>
