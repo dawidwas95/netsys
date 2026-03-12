@@ -229,7 +229,7 @@ export default function ServiceOrdersPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Szukaj po numerze, opisie..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 min-h-[44px]" />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-full sm:w-48 min-h-[44px]"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Wszystkie statusy</SelectItem>
@@ -248,6 +248,16 @@ export default function ServiceOrdersPage() {
              ))}
            </SelectContent>
          </Select>
+         <Button
+           variant={groupByStatus ? "default" : "outline"}
+           size="sm"
+           className="min-h-[44px] shrink-0"
+           onClick={() => setGroupByStatus(!groupByStatus)}
+           title={groupByStatus ? "Wyłącz grupowanie" : "Grupuj wg statusu"}
+         >
+           <Layers className="h-4 w-4 mr-1" />
+           <span className="hidden sm:inline">Grupuj</span>
+         </Button>
        </div>
 
       {/* Mobile card view */}
