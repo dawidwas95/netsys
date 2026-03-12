@@ -540,8 +540,8 @@ export default function ServiceOrdersPage() {
                                 </div>
                               );
                             })}
+                          </div>
                         );
-                      })()}
                       })()}
                     </div>
                   </div>
