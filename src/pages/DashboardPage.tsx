@@ -88,7 +88,7 @@ export default function DashboardPage() {
       const active = orders?.filter((o) => !["ARCHIVED", "CANCELLED"].includes(o.status)).length ?? 0;
 
       const completedPeriod = orders?.filter(
-        (o) => o.status === "COMPLETED" && o.completed_at && new Date(o.completed_at) >= range.from && new Date(o.completed_at) <= range.to
+        (o) => o.status === "ARCHIVED" && o.completed_at && new Date(o.completed_at) >= range.from && new Date(o.completed_at) <= range.to
       ) ?? [];
 
       return { newInPeriod, active, completedPeriodCount: completedPeriod.length };
