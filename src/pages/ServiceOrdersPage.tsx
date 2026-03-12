@@ -126,6 +126,21 @@ export default function ServiceOrdersPage() {
     },
   });
 
+  // Status order for grouping (active statuses first, then completed)
+  const STATUS_ORDER: OrderStatus[] = ["NEW", "DIAGNOSIS", "IN_PROGRESS", "WAITING_CLIENT", "READY_FOR_RETURN", "COMPLETED", "ARCHIVED", "CANCELLED"];
+
+  const groupedOrders = useMemo(() => {
+    if (!orders || !groupByStatus || statusFilter !== "all") return null;
+    const groups: { status: OrderStatus; label: string; orders: any[] }[] = [];
+    STATUS_ORDER.forEach((status) => {
+      const filtered = orders.filter((o: any) => o.status === status);
+      if (filtered.length > 0) {
+        groups.push({ status, label: ORDER_STATUS_LABELS[status], orders: filtered });
+      }
+    });
+    return groups;
+  }, [orders, groupByStatus, statusFilter]);
+
   const createOrder = useMutation({
     mutationFn: async (data: ServiceOrderInsert & { _technicianId?: string }) => {
       const { _technicianId, ...orderData } = data;
