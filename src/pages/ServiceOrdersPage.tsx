@@ -36,31 +36,31 @@ import {
 const STATUS_ORDER: OrderStatus[] = ["NEW", "DIAGNOSIS_QUOTE", "TODO", "IN_PROGRESS", "WAITING", "WAITING_CLIENT", "READY_FOR_RETURN", "ARCHIVED"];
 
 const STATUS_GROUP_COLORS: Record<string, string> = {
-  NEW: "bg-blue-500",
-  DIAGNOSIS_QUOTE: "bg-amber-500",
-  TODO: "bg-cyan-500",
-  IN_PROGRESS: "bg-orange-500",
-  WAITING: "bg-indigo-500",
-  WAITING_CLIENT: "bg-purple-500",
-  READY_FOR_RETURN: "bg-emerald-500",
-  ARCHIVED: "bg-gray-400",
-  CANCELLED: "bg-red-500",
-  DIAGNOSIS: "bg-amber-500",
-  COMPLETED: "bg-green-600",
+  NEW: "bg-[#8B7355]",
+  DIAGNOSIS_QUOTE: "bg-[#A0522D]",
+  TODO: "bg-[#6B7F5E]",
+  IN_PROGRESS: "bg-[#CD853F]",
+  WAITING: "bg-[#8B8378]",
+  WAITING_CLIENT: "bg-[#9C8565]",
+  READY_FOR_RETURN: "bg-[#6E8B3D]",
+  ARCHIVED: "bg-[#808070]",
+  CANCELLED: "bg-[#8B6355]",
+  DIAGNOSIS: "bg-[#A0522D]",
+  COMPLETED: "bg-[#556B2F]",
 };
 
 const STATUS_GROUP_COLORS_LIGHT: Record<string, string> = {
-  NEW: "bg-blue-200",
-  DIAGNOSIS_QUOTE: "bg-amber-200",
-  TODO: "bg-cyan-200",
-  IN_PROGRESS: "bg-orange-200",
-  WAITING: "bg-indigo-200",
-  WAITING_CLIENT: "bg-purple-200",
-  READY_FOR_RETURN: "bg-emerald-200",
-  ARCHIVED: "bg-gray-200",
-  CANCELLED: "bg-red-200",
-  DIAGNOSIS: "bg-amber-200",
-  COMPLETED: "bg-green-200",
+  NEW: "bg-[#D2C4A8]",
+  DIAGNOSIS_QUOTE: "bg-[#DEB89A]",
+  TODO: "bg-[#B5C4A8]",
+  IN_PROGRESS: "bg-[#E8CFA0]",
+  WAITING: "bg-[#C8C4BC]",
+  WAITING_CLIENT: "bg-[#D4C4AD]",
+  READY_FOR_RETURN: "bg-[#B8CFA0]",
+  ARCHIVED: "bg-[#C0BFB0]",
+  CANCELLED: "bg-[#D4B5A8]",
+  DIAGNOSIS: "bg-[#DEB89A]",
+  COMPLETED: "bg-[#AFC49A]",
 };
 
 // ── Extracted row components ──
