@@ -124,7 +124,7 @@ function groupOrdersByAction(orders: any[]) {
 const COL_WIDTHS = "w-[17%] w-[12%] w-[18%] w-[15%] w-[17%] w-[10%] w-[11%]";
 const COL_CLASSES = COL_WIDTHS.split(" ");
 
-function DesktopOrderRow({ order, unread }: { order: any; unread: boolean }) {
+function DesktopOrderRow({ order, unread, onClientClick }: { order: any; unread: boolean; onClientClick?: (clientId: string) => void }) {
   return (
     <TableRow className={`hover:bg-muted/50 ${unread ? "bg-primary/5" : ""}`}>
       <TableCell className={COL_CLASSES[0]}>
@@ -133,13 +133,14 @@ function DesktopOrderRow({ order, unread }: { order: any; unread: boolean }) {
           <Link to={`/orders/${order.id}`} className="font-medium text-primary hover:underline font-mono">
             {order.order_number}
           </Link>
-          
         </div>
       </TableCell>
       <TableCell className={`${COL_CLASSES[1]} text-xs`}>{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</TableCell>
       <TableCell className={COL_CLASSES[2]}>
         {order.client_id ? (
-          <Link to={`/clients/${order.client_id}`} className="text-primary hover:underline">{order.clients?.display_name}</Link>
+          <button onClick={() => onClientClick?.(order.client_id)} className="text-primary hover:underline text-left">
+            {order.clients?.display_name}
+          </button>
         ) : (order.clients?.display_name ?? "—")}
       </TableCell>
       <TableCell className={`${COL_CLASSES[3]} text-sm`}>
