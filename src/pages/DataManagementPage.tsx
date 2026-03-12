@@ -71,7 +71,25 @@ export default function DataManagementPage() {
   const [exporting, setExporting] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState<"json" | "sql">("json");
   const [restoreItem, setRestoreItem] = useState<{ table: string; id: string; name: string } | null>(null);
+  const [cleaning, setCleaning] = useState(false);
+  const [cleanResult, setCleanResult] = useState<string[]>([]);
 
+  async function cleanupData() {
+    setCleaning(true);
+    setCleanResult([]);
+    try {
+      const res = await supabase.functions.invoke("cleanup-data");
+      if (res.error) throw res.error;
+      const data = res.data as any;
+      if (data?.error) throw new Error(data.error);
+      setCleanResult(data?.progress ?? ["Gotowe"]);
+      toast.success("Baza wyczyszczona!");
+    } catch (e: any) {
+      toast.error("Błąd: " + (e?.message || "unknown"));
+    } finally {
+      setCleaning(false);
+    }
+  }
 
 
   // Check admin role
@@ -199,6 +217,30 @@ export default function DataManagementPage() {
         <p className="text-sm text-muted-foreground">Eksport danych, przywracanie usuniętych rekordów</p>
       </div>
 
+      {/* Cleanup Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Trash2 className="h-5 w-5" /> Czyszczenie bazy
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-3">
+            Zredukuj dane do ~10 rekordów w każdej kategorii (klienci, urządzenia, dokumenty, magazyn, kasa, oferty).
+            Zlecenia: 10 na każdy status.
+          </p>
+          <Button onClick={cleanupData} disabled={cleaning} variant="destructive">
+            {cleaning ? "⏳ Czyszczenie w toku..." : "🧹 Wyczyść bazę (zostaw po 10)"}
+          </Button>
+          {cleanResult.length > 0 && (
+            <div className="mt-3 space-y-1">
+              {cleanResult.map((line, i) => (
+                <p key={i} className="text-sm text-muted-foreground">✅ {line}</p>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Export Section */}
       <Card>
