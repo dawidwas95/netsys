@@ -170,6 +170,7 @@ export default function ServiceOrdersPage() {
   const [collapsedActions, setCollapsedActions] = useState<Set<string>>(new Set());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [quickViewClientId, setQuickViewClientId] = useState<string | null>(null);
+  const [quickEditOrderId, setQuickEditOrderId] = useState<string | null>(null);
   const { unreadOrderIds } = useUnreadOrders();
   const queryClient = useQueryClient();
   const { user } = useAuth();
