@@ -85,7 +85,7 @@ export default function DashboardPage() {
         return d >= range.from && d <= range.to;
       }).length ?? 0;
 
-      const active = orders?.filter((o) => !["COMPLETED", "ARCHIVED", "CANCELLED"].includes(o.status)).length ?? 0;
+      const active = orders?.filter((o) => !["ARCHIVED", "CANCELLED"].includes(o.status)).length ?? 0;
 
       const completedPeriod = orders?.filter(
         (o) => o.status === "COMPLETED" && o.completed_at && new Date(o.completed_at) >= range.from && new Date(o.completed_at) <= range.to
