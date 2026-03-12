@@ -22,7 +22,7 @@ import { TechnicianBadges, QuickAssignButton } from "@/components/TechnicianAssi
 
 import {
   ORDER_STATUS_LABELS, ORDER_PRIORITY_LABELS, SERVICE_TYPE_LABELS,
-  DEPARTMENT_LABELS, DEPARTMENT_ICONS,
+  DEPARTMENT_LABELS, DEPARTMENT_ICONS, ACTION_CATEGORY_OPTIONS,
   type OrderStatus, type OrderPriority, type ServiceType,
   type ServiceOrderInsert,
 } from "@/types/database";
