@@ -90,10 +90,13 @@ function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
   );
 }
 
+const COL_WIDTHS = "w-[14%] w-[12%] w-[14%] w-[12%] w-[14%] w-[10%] w-[10%] w-[14%]";
+const COL_CLASSES = COL_WIDTHS.split(" ");
+
 function DesktopOrderRow({ order, unread }: { order: any; unread: boolean }) {
   return (
     <TableRow className={`hover:bg-muted/50 ${unread ? "bg-primary/5" : ""}`}>
-      <TableCell>
+      <TableCell className={COL_CLASSES[0]}>
         <div className="flex items-center gap-1.5">
           {unread && <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />}
           <Link to={`/orders/${order.id}`} className="font-medium text-primary hover:underline font-mono">
@@ -102,20 +105,20 @@ function DesktopOrderRow({ order, unread }: { order: any; unread: boolean }) {
           <ScheduleBadgeWithAction orderId={order.id} orderNumber={order.order_number} date={order.planned_execution_date} time={order.planned_execution_time} />
         </div>
       </TableCell>
-      <TableCell className="text-xs">{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</TableCell>
-      <TableCell>{order.clients?.display_name}</TableCell>
-      <TableCell className="text-sm">
+      <TableCell className={`${COL_CLASSES[1]} text-xs`}>{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</TableCell>
+      <TableCell className={COL_CLASSES[2]}>{order.clients?.display_name}</TableCell>
+      <TableCell className={`${COL_CLASSES[3]} text-sm`}>
         {order.devices ? `${order.devices.manufacturer} ${order.devices.model}` : "—"}
       </TableCell>
-      <TableCell>
+      <TableCell className={COL_CLASSES[4]}>
         <div className="flex items-center gap-1">
           <TechnicianBadges orderId={order.id} compact />
           <QuickAssignButton orderId={order.id} orderNumber={order.order_number} />
         </div>
       </TableCell>
-      <TableCell><OrderStatusBadge status={order.status} /></TableCell>
-      <TableCell className="text-sm">{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
-      <TableCell className="text-sm">{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
+      <TableCell className={COL_CLASSES[5]}><OrderStatusBadge status={order.status} /></TableCell>
+      <TableCell className={`${COL_CLASSES[6]} text-sm`}>{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
+      <TableCell className={`${COL_CLASSES[7]} text-sm`}>{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
     </TableRow>
   );
 }
@@ -391,17 +394,17 @@ export default function ServiceOrdersPage() {
             <div className="flex gap-0">
               <div className="w-[180px] shrink-0" />
               <div className="flex-1 min-w-0 data-table-wrapper rounded-b-none border-b-0">
-                <Table>
+                <Table className="table-fixed">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nr zlecenia</TableHead>
-                      <TableHead>Dział</TableHead>
-                      <TableHead>Klient</TableHead>
-                      <TableHead>Urządzenie</TableHead>
-                      <TableHead>Technik</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Priorytet</TableHead>
-                      <TableHead>Data przyjęcia</TableHead>
+                      <TableHead className={COL_CLASSES[0]}>Nr zlecenia</TableHead>
+                      <TableHead className={COL_CLASSES[1]}>Dział</TableHead>
+                      <TableHead className={COL_CLASSES[2]}>Klient</TableHead>
+                      <TableHead className={COL_CLASSES[3]}>Urządzenie</TableHead>
+                      <TableHead className={COL_CLASSES[4]}>Technik</TableHead>
+                      <TableHead className={COL_CLASSES[5]}>Status</TableHead>
+                      <TableHead className={COL_CLASSES[6]}>Priorytet</TableHead>
+                      <TableHead className={COL_CLASSES[7]}>Data przyjęcia</TableHead>
                     </TableRow>
                   </TableHeader>
                 </Table>
@@ -428,7 +431,7 @@ export default function ServiceOrdersPage() {
                     {/* Right orders area */}
                     <div className={`flex-1 min-w-0 border border-l-0 border-border rounded-r-lg ${collapsed ? "" : "bg-card"}`}>
                       {!collapsed && (
-                        <Table>
+                        <Table className="table-fixed">
                           <TableBody>
                             {group.orders.map((order: any) => (
                               <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
