@@ -241,6 +241,15 @@ export default function ServiceOrdersPage() {
     });
   };
 
+  const toggleAction = (key: string) => {
+    setCollapsedActions((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
   const groupedOrders = useMemo(() => {
     if (!orders || statusFilter !== "all") return null;
     const groups: { status: OrderStatus; label: string; orders: any[] }[] = [];
