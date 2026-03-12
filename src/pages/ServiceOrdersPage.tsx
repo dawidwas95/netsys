@@ -473,9 +473,9 @@ export default function ServiceOrdersPage() {
         ) : groupedOrders ? (
           <>
             {/* Shared table header – offset by 180px status + 140px action = 320px */}
-            <div className="flex gap-0 sticky top-0 z-20 border-b border-border [&_th]:h-12 [&_th]:px-4 [&_th]:text-left [&_th]:align-middle [&_th]:font-medium [&_th]:text-muted-foreground [&_th]:text-sm">
-              <div className="w-[180px] shrink-0 sticky left-0 z-10 bg-background h-12 flex items-center px-4 font-medium text-muted-foreground text-sm">status</div>
-              <div className="w-[140px] shrink-0 sticky left-[180px] z-[5] bg-background h-12 flex items-center px-4 font-medium text-muted-foreground text-sm border-r border-border">działanie</div>
+            <div className="flex gap-0 sticky top-0 z-20 bg-card border-b border-border shadow-sm [&_th]:border-r [&_th]:border-border [&_th]:last:border-r-0">
+              <div className="w-[180px] shrink-0 sticky left-0 z-10 bg-card h-12 flex items-center px-4 font-medium text-muted-foreground text-sm border-r border-border">status</div>
+              <div className="w-[140px] shrink-0 sticky left-[180px] z-[5] bg-card h-12 flex items-center px-4 font-medium text-muted-foreground text-sm border-r border-border">działanie</div>
               <Table className="table-fixed flex-1 min-w-0">
                 <TableHeader>
                   <TableRow className="border-b-0">
