@@ -61,12 +61,6 @@ function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
           <OrderStatusBadge status={order.status} />
         </div>
       </div>
-      {order.action_category && (
-        <div className="mobile-card-row">
-          <span className="mobile-card-label">Działanie</span>
-          <Badge variant="outline" className="text-xs">{order.action_category}</Badge>
-        </div>
-      )}
       <div className="mobile-card-row">
         <span className="mobile-card-label">Dział</span>
         <span className="text-sm">{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || "—"}</span>
@@ -93,6 +87,23 @@ function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
       </div>
     </Link>
   );
+}
+
+function groupOrdersByAction(orders: any[]) {
+  const actionGroups: { action: string | null; orders: any[] }[] = [];
+  const byAction = new Map<string | null, any[]>();
+  for (const o of orders) {
+    const key = o.action_category || null;
+    if (!byAction.has(key)) byAction.set(key, []);
+    byAction.get(key)!.push(o);
+  }
+  // Put named actions first, then null
+  for (const [action, items] of byAction.entries()) {
+    if (action) actionGroups.push({ action, orders: items });
+  }
+  const noAction = byAction.get(null);
+  if (noAction) actionGroups.push({ action: null, orders: noAction });
+  return actionGroups;
 }
 
 const COL_WIDTHS = "w-[13%] w-[10%] w-[13%] w-[11%] w-[13%] w-[9%] w-[10%] w-[9%] w-[12%]";
