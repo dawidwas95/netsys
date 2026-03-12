@@ -71,7 +71,25 @@ export default function DataManagementPage() {
   const [exporting, setExporting] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState<"json" | "sql">("json");
   const [restoreItem, setRestoreItem] = useState<{ table: string; id: string; name: string } | null>(null);
+  const [cleaning, setCleaning] = useState(false);
+  const [cleanResult, setCleanResult] = useState<string[]>([]);
 
+  async function cleanupData() {
+    setCleaning(true);
+    setCleanResult([]);
+    try {
+      const res = await supabase.functions.invoke("cleanup-data");
+      if (res.error) throw res.error;
+      const data = res.data as any;
+      if (data?.error) throw new Error(data.error);
+      setCleanResult(data?.progress ?? ["Gotowe"]);
+      toast.success("Baza wyczyszczona!");
+    } catch (e: any) {
+      toast.error("Błąd: " + (e?.message || "unknown"));
+    } finally {
+      setCleaning(false);
+    }
+  }
 
 
   // Check admin role
