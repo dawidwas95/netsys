@@ -569,7 +569,7 @@ export default function OrderDetailPage() {
         const { error: updError } = await supabase
           .from("service_orders")
           .update({
-            status: "CANCELLED",
+            status: "ARCHIVED",
             is_archived: true,
             is_paid: false,
             paid_at: null,
@@ -585,7 +585,7 @@ export default function OrderDetailPage() {
       if (!isAdmin) {
         const { error: cancelError } = await supabase
           .from("service_orders")
-          .update({ status: "CANCELLED", is_archived: true, archive_reason: "Anulowane przez użytkownika", updated_by: user?.id })
+          .update({ status: "ARCHIVED", is_archived: true, archive_reason: "Anulowane przez użytkownika", updated_by: user?.id })
           .eq("id", id!);
         if (cancelError) throw cancelError;
         return "cancelled";
@@ -633,7 +633,7 @@ export default function OrderDetailPage() {
       const { error } = await supabase
         .from("service_orders")
         .update({
-          status: "CANCELLED",
+          status: "ARCHIVED",
           is_archived: true,
           is_paid: false,
           paid_at: null,
@@ -770,7 +770,7 @@ export default function OrderDetailPage() {
   if (isLoading) return <p className="text-muted-foreground p-4">Ładowanie...</p>;
   if (!order) return <p className="text-muted-foreground p-4">Zlecenie nie znalezione</p>;
 
-  const isCompleted = order.status === "ARCHIVED" || order.status === "CANCELLED";
+  const isCompleted = order.status === "ARCHIVED";
 
   return (
     <div className="space-y-5">

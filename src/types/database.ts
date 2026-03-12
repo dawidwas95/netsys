@@ -54,7 +54,7 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   READY_FOR_RETURN: "do zwrotu",
   COMPLETED: "archiwum",
   ARCHIVED: "archiwum",
-  CANCELLED: "anulowane",
+  CANCELLED: "archiwum",
 };
 
 export const ORDER_PRIORITY_LABELS: Record<OrderPriority, string> = {

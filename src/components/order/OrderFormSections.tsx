@@ -397,7 +397,7 @@ export function DiagnosisSection({ formData, onChange, onStatusChange }: { formD
           <Label className="text-xs">Status zlecenia</Label>
           <Select value={formData.status ?? "NEW"} onValueChange={onStatusChange}>
             <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>{Object.entries(ORDER_STATUS_LABELS).filter(([k]) => !["DIAGNOSIS", "COMPLETED"].includes(k)).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}</SelectContent>
+            <SelectContent>{Object.entries(ORDER_STATUS_LABELS).filter(([k]) => !["DIAGNOSIS", "COMPLETED", "CANCELLED"].includes(k)).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}</SelectContent>
           </Select>
         </div>
       )}
