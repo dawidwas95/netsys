@@ -585,7 +585,7 @@ export default function OrderDetailPage() {
       if (!isAdmin) {
         const { error: cancelError } = await supabase
           .from("service_orders")
-          .update({ status: "CANCELLED", is_archived: true, archive_reason: "Anulowane przez użytkownika", updated_by: user?.id })
+          .update({ status: "ARCHIVED", is_archived: true, archive_reason: "Anulowane przez użytkownika", updated_by: user?.id })
           .eq("id", id!);
         if (cancelError) throw cancelError;
         return "cancelled";
