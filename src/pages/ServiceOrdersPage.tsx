@@ -130,7 +130,7 @@ function DesktopOrderRow({ order, unread, onClientClick, onOrderClick }: { order
     <TableRow className={`hover:bg-muted/50 ${unread ? "bg-primary/5" : ""}`}>
       <TableCell className={COL_CLASSES[0]}>
         <div className="flex items-center gap-1.5">
-          {unread && <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />}
+          <span className={`h-2 w-2 rounded-full shrink-0 ${unread ? "bg-destructive" : "bg-emerald-500"}`} />
           <button onClick={() => onOrderClick?.(order.id)} className="font-medium text-primary hover:underline font-mono text-left">
             {order.order_number}
           </button>
