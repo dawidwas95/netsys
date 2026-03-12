@@ -10,7 +10,7 @@ interface OrderQuickEditDialogProps {
 export function OrderQuickEditDialog({ orderId, open, onOpenChange }: OrderQuickEditDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] w-[1400px] max-h-[90vh] overflow-y-auto p-6">
+      <DialogContent className="max-w-[71vw] w-[1050px] max-h-[67vh] overflow-y-auto p-4">
         {orderId && open && (
           <OrderDetailPage orderId={orderId} isDialog />
         )}
