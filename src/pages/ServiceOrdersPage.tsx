@@ -113,7 +113,7 @@ export default function ServiceOrdersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [techFilter, setTechFilter] = useState<string>("all");
   const [deptFilter, setDeptFilter] = useState<string>("all");
-  const [groupByStatus, setGroupByStatus] = useState(true);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [dialogOpen, setDialogOpen] = useState(false);
   const { unreadOrderIds } = useUnreadOrders();
   const queryClient = useQueryClient();
