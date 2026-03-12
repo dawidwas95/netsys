@@ -430,7 +430,7 @@ export default function OrderDetailPage() {
           ? `Zmiana statusu: ${order?.status} → ${updates.status}`
           : "Edycja zlecenia",
       });
-      const shouldCreateCash = updates.status === "COMPLETED" || (updates.is_paid && order?.status === "COMPLETED");
+      const shouldCreateCash = (updates.status === "ARCHIVED" && updates.completed_at) || (updates.is_paid && order?.status === "ARCHIVED");
       if (shouldCreateCash) {
         const merged = { ...order, ...updates };
         if (merged.payment_method === "CASH" && merged.is_paid && revenue > 0) {
