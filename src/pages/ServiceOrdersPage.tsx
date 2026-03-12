@@ -614,6 +614,7 @@ export default function ServiceOrdersPage() {
           if (!open) {
             setQuickEditOrderId(null);
             queryClient.invalidateQueries({ queryKey: ["service-orders"] });
+            queryClient.invalidateQueries({ queryKey: ["unread-orders"] });
           }
         }}
       />
