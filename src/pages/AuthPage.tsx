@@ -39,8 +39,11 @@ export default function AuthPage() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
+          <div className="flex justify-center mb-3">
+            <img src="/images/logo-netsys.png" alt="NETSYS" className="h-10" />
+          </div>
           <CardTitle className="text-2xl font-bold">
-            🔧 Serwis<span className="text-primary">Pro</span>
+            NETSYS
           </CardTitle>
           <CardDescription>
             {isLogin ? "Zaloguj się do systemu" : "Utwórz nowe konto"}

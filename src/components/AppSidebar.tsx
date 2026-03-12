@@ -2,7 +2,6 @@ import {
   LayoutDashboard,
   Users,
   Monitor,
-  Wrench,
   KanbanSquare,
   ListTodo,
   Settings,
@@ -123,10 +122,10 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         <div className="px-4 py-4 flex items-center gap-2">
-          <Wrench className="h-8 w-8 text-primary shrink-0" />
+          <img src="/images/logo-netsys.png" alt="NETSYS" className="h-8 shrink-0" />
           {!collapsed && (
             <h1 className="text-lg font-bold text-sidebar-accent-foreground tracking-tight">
-              Serwis
+              NETSYS
             </h1>
           )}
         </div>
