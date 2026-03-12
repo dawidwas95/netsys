@@ -446,15 +446,42 @@ export default function ServiceOrdersPage() {
                     </button>
                     {/* Right orders area */}
                     <div className={`flex-1 min-w-0 border border-l-0 border-border rounded-r-lg ${collapsed ? "" : "bg-card"}`}>
-                      {!collapsed && (
-                        <Table className="table-fixed">
-                          <TableBody>
-                            {group.orders.map((order: any) => (
-                              <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                      {!collapsed && (() => {
+                        const actionSubGroups = groupOrdersByAction(group.orders);
+                        const hasActions = actionSubGroups.some(g => g.action !== null);
+                        if (!hasActions) {
+                          return (
+                            <Table className="table-fixed">
+                              <TableBody>
+                                {group.orders.map((order: any) => (
+                                  <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                                ))}
+                              </TableBody>
+                            </Table>
+                          );
+                        }
+                        return (
+                          <div>
+                            {actionSubGroups.map((sub) => (
+                              <div key={sub.action ?? "__none"}>
+                                <div className="px-3 py-1.5 bg-muted/40 border-b border-border">
+                                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                    {sub.action ?? "brak działania"}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground ml-1.5">({sub.orders.length})</span>
+                                </div>
+                                <Table className="table-fixed">
+                                  <TableBody>
+                                    {sub.orders.map((order: any) => (
+                                      <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
                             ))}
-                          </TableBody>
-                        </Table>
-                      )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 );
