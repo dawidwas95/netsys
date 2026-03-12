@@ -101,7 +101,7 @@ export default function DashboardPage() {
       const { data: completedOrders } = await supabase
         .from("service_orders")
         .select("id, labor_net, parts_net, extra_cost_net, total_net, total_gross, is_paid, payment_method, completed_at")
-        .eq("status", "COMPLETED")
+        .eq("status", "ARCHIVED")
         .eq("is_paid", true)
         .gte("completed_at", range.from.toISOString())
         .lte("completed_at", range.to.toISOString());
