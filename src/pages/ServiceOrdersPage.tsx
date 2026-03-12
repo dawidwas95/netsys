@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { TechnicianBadges, QuickAssignButton } from "@/components/TechnicianAssignment";
-import { ScheduleBadgeWithAction } from "@/components/ScheduleOrderDialog";
+
 import {
   ORDER_STATUS_LABELS, ORDER_PRIORITY_LABELS, SERVICE_TYPE_LABELS,
   DEPARTMENT_LABELS, DEPARTMENT_ICONS,
@@ -58,7 +58,7 @@ function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
           {order.order_number}
         </span>
         <div className="flex items-center gap-1">
-          <ScheduleBadgeWithAction orderId={order.id} orderNumber={order.order_number} date={order.planned_execution_date} time={order.planned_execution_time} />
+          <OrderStatusBadge status={order.status} />
           <OrderStatusBadge status={order.status} />
         </div>
       </div>
@@ -102,7 +102,7 @@ function DesktopOrderRow({ order, unread }: { order: any; unread: boolean }) {
           <Link to={`/orders/${order.id}`} className="font-medium text-primary hover:underline font-mono">
             {order.order_number}
           </Link>
-          <ScheduleBadgeWithAction orderId={order.id} orderNumber={order.order_number} date={order.planned_execution_date} time={order.planned_execution_time} />
+          
         </div>
       </TableCell>
       <TableCell className={`${COL_CLASSES[1]} text-xs`}>{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</TableCell>
