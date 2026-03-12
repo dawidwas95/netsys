@@ -44,6 +44,7 @@ import { useMarkOrderAsRead, createMentionNotifications, createCommentNotificati
 import {
   ORDER_STATUS_LABELS, ORDER_PRIORITY_LABELS, SERVICE_TYPE_LABELS,
   PAYMENT_METHOD_LABELS, INTAKE_CHANNEL_LABELS, DEVICE_CATEGORY_LABELS,
+  ACTION_CATEGORY_OPTIONS,
   type OrderStatus, type OrderPriority, type IntakeChannel,
   type PaymentMethod, type DeviceCategory,
 } from "@/types/database";
