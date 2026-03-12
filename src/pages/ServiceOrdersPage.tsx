@@ -497,23 +497,33 @@ export default function ServiceOrdersPage() {
                         }
                         return (
                           <div>
-                            {actionSubGroups.map((sub) => (
-                              <div key={sub.action ?? "__none"}>
-                                <div className="px-3 py-1.5 bg-muted/40 border-b border-border">
-                                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                                    {sub.action ?? "brak działania"}
-                                  </span>
-                                  <span className="text-xs text-muted-foreground ml-1.5">({sub.orders.length})</span>
+                            {actionSubGroups.map((sub) => {
+                              const actionKey = `${group.status}__${sub.action ?? "__none"}`;
+                              const actionCollapsed = collapsedActions.has(actionKey);
+                              return (
+                                <div key={sub.action ?? "__none"}>
+                                  <button
+                                    onClick={() => toggleAction(actionKey)}
+                                    className="flex items-center gap-2 px-3 py-2 w-full text-left bg-muted/40 border-b border-border hover:bg-muted/60 transition-colors"
+                                  >
+                                    <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${actionCollapsed ? "-rotate-90" : ""}`} />
+                                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                      {sub.action ?? "brak działania"}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">({sub.orders.length})</span>
+                                  </button>
+                                  {!actionCollapsed && (
+                                    <Table className="table-fixed">
+                                      <TableBody>
+                                        {sub.orders.map((order: any) => (
+                                          <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  )}
                                 </div>
-                                <Table className="table-fixed">
-                                  <TableBody>
-                                    {sub.orders.map((order: any) => (
-                                      <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
-                                    ))}
-                                  </TableBody>
-                                </Table>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         );
                       })()}
