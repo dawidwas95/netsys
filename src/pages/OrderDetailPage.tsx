@@ -169,8 +169,9 @@ function CommentsPanel({ comments, profileMap, comment, setComment, addComment, 
   );
 }
 
-export default function OrderDetailPage() {
-  const { id } = useParams<{ id: string }>();
+export default function OrderDetailPage({ orderId: propOrderId, isDialog }: { orderId?: string; isDialog?: boolean } = {}) {
+  const { id: paramId } = useParams<{ id: string }>();
+  const id = propOrderId || paramId;
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -779,9 +780,11 @@ export default function OrderDetailPage() {
       {/* HEADER */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <Link to="/orders" className="text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
+          {!isDialog && (
+            <Link to="/orders" className="text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+          )}
           <div>
             <h1 className="text-2xl font-bold tracking-tight font-mono">{order.order_number}</h1>
             <div className="flex items-center gap-2 mt-1 flex-wrap">

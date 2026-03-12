@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { TechnicianBadges, QuickAssignButton } from "@/components/TechnicianAssignment";
 import { ClientQuickViewDialog } from "@/components/ClientQuickViewDialog";
+import { OrderQuickEditDialog } from "@/components/OrderQuickEditDialog";
 
 import {
   ORDER_STATUS_LABELS, ORDER_PRIORITY_LABELS, SERVICE_TYPE_LABELS,
@@ -124,15 +125,15 @@ function groupOrdersByAction(orders: any[]) {
 const COL_WIDTHS = "w-[17%] w-[12%] w-[18%] w-[15%] w-[17%] w-[10%] w-[11%]";
 const COL_CLASSES = COL_WIDTHS.split(" ");
 
-function DesktopOrderRow({ order, unread, onClientClick }: { order: any; unread: boolean; onClientClick?: (clientId: string) => void }) {
+function DesktopOrderRow({ order, unread, onClientClick, onOrderClick }: { order: any; unread: boolean; onClientClick?: (clientId: string) => void; onOrderClick?: (orderId: string) => void }) {
   return (
     <TableRow className={`hover:bg-muted/50 ${unread ? "bg-primary/5" : ""}`}>
       <TableCell className={COL_CLASSES[0]}>
         <div className="flex items-center gap-1.5">
           {unread && <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />}
-          <Link to={`/orders/${order.id}`} className="font-medium text-primary hover:underline font-mono">
+          <button onClick={() => onOrderClick?.(order.id)} className="font-medium text-primary hover:underline font-mono text-left">
             {order.order_number}
-          </Link>
+          </button>
         </div>
       </TableCell>
       <TableCell className={`${COL_CLASSES[1]} text-xs`}>{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</TableCell>
@@ -169,6 +170,7 @@ export default function ServiceOrdersPage() {
   const [collapsedActions, setCollapsedActions] = useState<Set<string>>(new Set());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [quickViewClientId, setQuickViewClientId] = useState<string | null>(null);
+  const [quickEditOrderId, setQuickEditOrderId] = useState<string | null>(null);
   const { unreadOrderIds } = useUnreadOrders();
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -521,7 +523,7 @@ export default function ServiceOrdersPage() {
                                 <Table className="table-fixed">
                                   <TableBody>
                                     {group.orders.map((order: any) => (
-                                      <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} onClientClick={setQuickViewClientId} />
+                                      <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} onClientClick={setQuickViewClientId} onOrderClick={setQuickEditOrderId} />
                                     ))}
                                   </TableBody>
                                 </Table>
@@ -555,7 +557,7 @@ export default function ServiceOrdersPage() {
                                       <Table className="table-fixed">
                                         <TableBody>
                                           {sub.orders.map((order: any) => (
-                                            <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} onClientClick={setQuickViewClientId} />
+                                            <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} onClientClick={setQuickViewClientId} onOrderClick={setQuickEditOrderId} />
                                           ))}
                                         </TableBody>
                                       </Table>
@@ -590,7 +592,7 @@ export default function ServiceOrdersPage() {
               </TableHeader>
               <TableBody>
                 {orders.map((order: any) => (
-                  <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} onClientClick={setQuickViewClientId} />
+                  <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} onClientClick={setQuickViewClientId} onOrderClick={setQuickEditOrderId} />
                 ))}
               </TableBody>
             </Table>
@@ -603,6 +605,17 @@ export default function ServiceOrdersPage() {
         clientId={quickViewClientId}
         open={!!quickViewClientId}
         onOpenChange={(open) => { if (!open) setQuickViewClientId(null); }}
+      />
+
+      <OrderQuickEditDialog
+        orderId={quickEditOrderId}
+        open={!!quickEditOrderId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setQuickEditOrderId(null);
+            queryClient.invalidateQueries({ queryKey: ["service-orders"] });
+          }
+        }}
       />
     </div>
   );
