@@ -121,13 +121,8 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-        <div className="px-4 py-4 flex items-center gap-2">
+        <div className="px-4 py-4 flex items-center justify-center bg-white rounded-md mx-2 mt-2">
           <img src="/images/logo-netsys.png" alt="NETSYS" className="h-8 shrink-0" />
-          {!collapsed && (
-            <h1 className="text-lg font-bold text-sidebar-accent-foreground tracking-tight">
-              NETSYS
-            </h1>
-          )}
         </div>
 
         <SidebarGroup>
