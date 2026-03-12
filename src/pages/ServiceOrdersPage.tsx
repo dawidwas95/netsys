@@ -117,8 +117,9 @@ function DesktopOrderRow({ order, unread }: { order: any; unread: boolean }) {
         </div>
       </TableCell>
       <TableCell className={COL_CLASSES[5]}><OrderStatusBadge status={order.status} /></TableCell>
-      <TableCell className={`${COL_CLASSES[6]} text-sm`}>{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
-      <TableCell className={`${COL_CLASSES[7]} text-sm`}>{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
+      <TableCell className={`${COL_CLASSES[6]} text-xs`}>{order.action_category || "—"}</TableCell>
+      <TableCell className={`${COL_CLASSES[7]} text-sm`}>{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
+      <TableCell className={`${COL_CLASSES[8]} text-sm`}>{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
     </TableRow>
   );
 }
