@@ -380,13 +380,38 @@ export default function ServiceOrdersPage() {
                     <OrderStatusBadge status={group.status} />
                     <span className="text-xs text-muted-foreground">({group.orders.length})</span>
                   </button>
-                  {!collapsed && (
-                    <div className="space-y-2 pl-2 pb-3">
-                      {group.orders.map((order: any) => (
-                        <MobileOrderCard key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
-                      ))}
-                    </div>
-                  )}
+                  {!collapsed && (() => {
+                    const actionSubGroups = groupOrdersByAction(group.orders);
+                    const hasActions = actionSubGroups.some(g => g.action !== null);
+                    if (!hasActions) {
+                      return (
+                        <div className="space-y-2 pl-2 pb-3">
+                          {group.orders.map((order: any) => (
+                            <MobileOrderCard key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                          ))}
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="pl-2 pb-3 space-y-1">
+                        {actionSubGroups.map((sub) => (
+                          <div key={sub.action ?? "__none"}>
+                            <div className="px-2 py-1 mb-1">
+                              <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                                {sub.action ?? "brak działania"}
+                              </span>
+                              <span className="text-[11px] text-muted-foreground ml-1">({sub.orders.length})</span>
+                            </div>
+                            <div className="space-y-2">
+                              {sub.orders.map((order: any) => (
+                                <MobileOrderCard key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             );
