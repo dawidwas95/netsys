@@ -467,7 +467,7 @@ export default function ServiceOrdersPage() {
           <>
             {/* Shared table header – offset by 180px status + 140px action = 320px */}
             <div className="flex gap-0">
-              <div className="w-[320px] shrink-0" />
+              <div className="w-[320px] shrink-0 sticky left-0 z-10 bg-background" />
               <div className="flex-1 min-w-0 data-table-wrapper rounded-b-none border-b-0">
                 <Table className="table-fixed">
                   <TableHeader>
@@ -494,7 +494,7 @@ export default function ServiceOrdersPage() {
                     {/* Left status tile */}
                     <button
                       onClick={() => toggleGroup(group.status)}
-                      className={`${barColor} rounded-l-lg px-4 py-3 flex flex-col items-start justify-start gap-1 text-white cursor-pointer transition-opacity hover:opacity-90 select-none shrink-0 w-[180px] min-h-[52px]`}
+                      className={`${barColor} rounded-l-lg px-4 py-3 flex flex-col items-start justify-start gap-1 text-white cursor-pointer transition-opacity hover:opacity-90 select-none shrink-0 w-[180px] min-h-[52px] sticky left-0 z-10`}
                     >
                       <div className="flex items-center gap-2 w-full">
                         <ChevronDown className={`h-4 w-4 transition-transform ${collapsed ? "-rotate-90" : ""}`} />
@@ -510,7 +510,7 @@ export default function ServiceOrdersPage() {
                         if (!hasActions) {
                           return (
                             <div className="flex items-stretch">
-                              <div className="w-[140px] shrink-0" />
+                              <div className="w-[140px] shrink-0 sticky left-[180px] z-[5] bg-card" />
                               <div className="flex-1 min-w-0">
                                 <Table className="table-fixed">
                                   <TableBody>
@@ -533,7 +533,7 @@ export default function ServiceOrdersPage() {
                                   {/* Left action tile */}
                                   <button
                                     onClick={() => toggleAction(actionKey)}
-                                    className={`w-[140px] shrink-0 px-3 py-2 flex flex-col items-start justify-start gap-0.5 ${STATUS_GROUP_COLORS_LIGHT[group.status] || "bg-muted/50"} border-r border-border hover:opacity-80 transition-colors cursor-pointer select-none text-left`}
+                                    className={`w-[140px] shrink-0 px-3 py-2 flex flex-col items-start justify-start gap-0.5 ${STATUS_GROUP_COLORS_LIGHT[group.status] || "bg-muted/50"} border-r border-border hover:opacity-80 transition-colors cursor-pointer select-none text-left sticky left-[180px] z-[5]`}
                                   >
                                     <div className="flex items-center gap-1.5 w-full">
                                       <ChevronDown className={`h-3 w-3 text-muted-foreground transition-transform ${actionCollapsed ? "-rotate-90" : ""}`} />
