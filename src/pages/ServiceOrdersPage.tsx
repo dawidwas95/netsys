@@ -510,7 +510,7 @@ export default function ServiceOrdersPage() {
                         if (!hasActions) {
                           return (
                             <div className="flex items-stretch">
-                              <div className="w-[140px] shrink-0" />
+                              <div className="w-[140px] shrink-0 sticky left-[180px] z-[5] bg-card" />
                               <div className="flex-1 min-w-0">
                                 <Table className="table-fixed">
                                   <TableBody>
