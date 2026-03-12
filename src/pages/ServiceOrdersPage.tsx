@@ -22,7 +22,7 @@ import { TechnicianBadges, QuickAssignButton } from "@/components/TechnicianAssi
 
 import {
   ORDER_STATUS_LABELS, ORDER_PRIORITY_LABELS, SERVICE_TYPE_LABELS,
-  DEPARTMENT_LABELS, DEPARTMENT_ICONS,
+  DEPARTMENT_LABELS, DEPARTMENT_ICONS, ACTION_CATEGORY_OPTIONS,
   type OrderStatus, type OrderPriority, type ServiceType,
   type ServiceOrderInsert,
 } from "@/types/database";
@@ -59,9 +59,14 @@ function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
         </span>
         <div className="flex items-center gap-1">
           <OrderStatusBadge status={order.status} />
-          <OrderStatusBadge status={order.status} />
         </div>
       </div>
+      {order.action_category && (
+        <div className="mobile-card-row">
+          <span className="mobile-card-label">Działanie</span>
+          <Badge variant="outline" className="text-xs">{order.action_category}</Badge>
+        </div>
+      )}
       <div className="mobile-card-row">
         <span className="mobile-card-label">Dział</span>
         <span className="text-sm">{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || "—"}</span>
@@ -90,7 +95,7 @@ function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
   );
 }
 
-const COL_WIDTHS = "w-[14%] w-[12%] w-[14%] w-[12%] w-[14%] w-[10%] w-[10%] w-[14%]";
+const COL_WIDTHS = "w-[13%] w-[10%] w-[13%] w-[11%] w-[13%] w-[9%] w-[10%] w-[9%] w-[12%]";
 const COL_CLASSES = COL_WIDTHS.split(" ");
 
 function DesktopOrderRow({ order, unread }: { order: any; unread: boolean }) {
@@ -117,8 +122,9 @@ function DesktopOrderRow({ order, unread }: { order: any; unread: boolean }) {
         </div>
       </TableCell>
       <TableCell className={COL_CLASSES[5]}><OrderStatusBadge status={order.status} /></TableCell>
-      <TableCell className={`${COL_CLASSES[6]} text-sm`}>{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
-      <TableCell className={`${COL_CLASSES[7]} text-sm`}>{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
+      <TableCell className={`${COL_CLASSES[6]} text-xs`}>{order.action_category || "—"}</TableCell>
+      <TableCell className={`${COL_CLASSES[7]} text-sm`}>{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
+      <TableCell className={`${COL_CLASSES[8]} text-sm`}>{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
     </TableRow>
   );
 }
@@ -403,8 +409,9 @@ export default function ServiceOrdersPage() {
                       <TableHead className={COL_CLASSES[3]}>Urządzenie</TableHead>
                       <TableHead className={COL_CLASSES[4]}>Technik</TableHead>
                       <TableHead className={COL_CLASSES[5]}>Status</TableHead>
-                      <TableHead className={COL_CLASSES[6]}>Priorytet</TableHead>
-                      <TableHead className={COL_CLASSES[7]}>Data przyjęcia</TableHead>
+                      <TableHead className={COL_CLASSES[6]}>Działanie</TableHead>
+                      <TableHead className={COL_CLASSES[7]}>Priorytet</TableHead>
+                      <TableHead className={COL_CLASSES[8]}>Data przyjęcia</TableHead>
                     </TableRow>
                   </TableHeader>
                 </Table>
@@ -456,6 +463,7 @@ export default function ServiceOrdersPage() {
                   <TableHead>Urządzenie</TableHead>
                   <TableHead>Technik</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Działanie</TableHead>
                   <TableHead>Priorytet</TableHead>
                   <TableHead>Data przyjęcia</TableHead>
                 </TableRow>

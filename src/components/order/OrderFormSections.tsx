@@ -22,6 +22,7 @@ import { DeviceFormDialog } from "@/components/DeviceFormDialog";
 import {
   ORDER_STATUS_LABELS, ORDER_PRIORITY_LABELS, SERVICE_TYPE_LABELS,
   INTAKE_CHANNEL_LABELS, PAYMENT_METHOD_LABELS, DEVICE_CATEGORY_LABELS,
+  ACTION_CATEGORY_OPTIONS,
   type OrderStatus, type OrderPriority, type ServiceType,
   type IntakeChannel, type PaymentMethod, type DeviceCategory,
 } from "@/types/database";
@@ -393,12 +394,32 @@ export function DiagnosisSection({ formData, onChange, onStatusChange }: { formD
   return (
     <FormSection icon={Wrench} title="Diagnostyka i naprawa">
       {onStatusChange && (
-        <div className="space-y-1">
-          <Label className="text-xs">Status zlecenia</Label>
-          <Select value={formData.status ?? "NEW"} onValueChange={onStatusChange}>
-            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>{Object.entries(ORDER_STATUS_LABELS).filter(([k]) => !["DIAGNOSIS", "COMPLETED", "CANCELLED"].includes(k)).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}</SelectContent>
-          </Select>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Status zlecenia</Label>
+            <Select value={formData.status ?? "NEW"} onValueChange={(v) => {
+              onStatusChange(v);
+              // Clear action_category if new status has no options
+              const opts = ACTION_CATEGORY_OPTIONS[v] || [];
+              if (opts.length === 0) onChange("action_category", null);
+            }}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>{Object.entries(ORDER_STATUS_LABELS).filter(([k]) => !["DIAGNOSIS", "COMPLETED", "CANCELLED"].includes(k)).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}</SelectContent>
+            </Select>
+          </div>
+          {(ACTION_CATEGORY_OPTIONS[formData.status] || []).length > 0 && (
+            <div className="space-y-1">
+              <Label className="text-xs">Działanie</Label>
+              <Select value={formData.action_category ?? ""} onValueChange={(v) => onChange("action_category", v || null)}>
+                <SelectTrigger className="h-9"><SelectValue placeholder="Wybierz działanie..." /></SelectTrigger>
+                <SelectContent>
+                  {(ACTION_CATEGORY_OPTIONS[formData.status] || []).map((opt) => (
+                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
       )}
       <div className="space-y-1"><Label className="text-xs">Diagnoza</Label><Textarea rows={3} value={formData.diagnosis ?? ""} onChange={(e) => onChange("diagnosis", e.target.value)} placeholder="Wynik diagnostyki, ustalenia" /></div>

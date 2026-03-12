@@ -283,6 +283,7 @@ export default function OrderDetailPage() {
       lock_code: order.lock_code,
       internal_notes: order.internal_notes,
       status: order.status,
+      action_category: (order as any).action_category ?? null,
       diagnosis: order.diagnosis,
       repair_description: order.repair_description,
       labor_net: order.labor_net?.toString() ?? "",

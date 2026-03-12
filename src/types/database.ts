@@ -121,6 +121,21 @@ export const INTAKE_CHANNEL_LABELS: Record<IntakeChannel, string> = {
   OTHER: "Inne",
 };
 
+// Action category options per status
+export const ACTION_CATEGORY_OPTIONS: Record<string, string[]> = {
+  NEW: [],
+  DIAGNOSIS_QUOTE: ["zdiagnozować", "zrobić ofertę"],
+  TODO: ["zrobić", "kupić podzespoły", "dostarczyć do podwykonawcy", "kupić narzędzia", "dostarczyć do dostawcy"],
+  IN_PROGRESS: ["diagnostyka", "naprawa"],
+  WAITING: ["podwykonawca", "dostawa", "wizyta klienta", "decyzja klienta", "brak części"],
+  WAITING_CLIENT: ["przedstawić ofertę", "informacja"],
+  READY_FOR_RETURN: ["poinformować klienta", "gotowe"],
+  ARCHIVED: [],
+  COMPLETED: [],
+  CANCELLED: [],
+  DIAGNOSIS: ["zdiagnozować", "zrobić ofertę"],
+};
+
 // Kanban columns config
 export const KANBAN_COLUMNS: { status: OrderStatus; label: string; color: string }[] = [
   { status: "NEW", label: "nowe", color: "bg-status-new" },

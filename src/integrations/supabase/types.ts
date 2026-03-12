@@ -2080,6 +2080,7 @@ export type Database = {
       service_orders: {
         Row: {
           accessories_received: string | null
+          action_category: string | null
           appointment_note: string | null
           archive_reason: string | null
           assigned_user_id: string | null
@@ -2137,6 +2138,7 @@ export type Database = {
         }
         Insert: {
           accessories_received?: string | null
+          action_category?: string | null
           appointment_note?: string | null
           archive_reason?: string | null
           assigned_user_id?: string | null
@@ -2194,6 +2196,7 @@ export type Database = {
         }
         Update: {
           accessories_received?: string | null
+          action_category?: string | null
           appointment_note?: string | null
           archive_reason?: string | null
           assigned_user_id?: string | null
