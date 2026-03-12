@@ -478,7 +478,7 @@ export default function ServiceOrdersPage() {
               <div className="w-[140px] shrink-0 sticky left-[180px] z-[5] bg-card h-12 flex items-center px-4 font-medium text-muted-foreground text-sm border-r border-border">działanie</div>
               <Table className="table-fixed flex-1 min-w-0">
                 <TableHeader>
-                  <TableRow className="border-b-0">
+                  <TableRow className="border-b-0 hover:bg-transparent">
                     <TableHead className={COL_CLASSES[0]}>nr zlecenia</TableHead>
                     <TableHead className={COL_CLASSES[1]}>dział</TableHead>
                     <TableHead className={COL_CLASSES[2]}>klient</TableHead>
