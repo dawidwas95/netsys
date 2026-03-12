@@ -71,9 +71,6 @@ export default function DataManagementPage() {
   const [exporting, setExporting] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState<"json" | "sql">("json");
   const [restoreItem, setRestoreItem] = useState<{ table: string; id: string; name: string } | null>(null);
-  const [seeding, setSeeding] = useState(false);
-
-  const [seedProgress, setSeedProgress] = useState("");
 
   async function seedPhase(phase: string, label: string, runId: string) {
     setSeedProgress(label);
