@@ -322,17 +322,6 @@ export default function ServiceOrdersPage() {
               <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
             ))}
           </SelectContent>
-        </Select>
-        <Button
-          variant={groupByStatus ? "default" : "outline"}
-          size="sm"
-          className="min-h-[44px] shrink-0"
-          onClick={() => setGroupByStatus(!groupByStatus)}
-          title={groupByStatus ? "Wyłącz grupowanie" : "Grupuj wg statusu"}
-        >
-          <Layers className="h-4 w-4 mr-1" />
-          <span className="hidden sm:inline">Grupuj</span>
-        </Button>
       </div>
 
       {/* Mobile card view */}
