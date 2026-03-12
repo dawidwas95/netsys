@@ -770,7 +770,7 @@ export default function OrderDetailPage() {
   if (isLoading) return <p className="text-muted-foreground p-4">Ładowanie...</p>;
   if (!order) return <p className="text-muted-foreground p-4">Zlecenie nie znalezione</p>;
 
-  const isCompleted = order.status === "COMPLETED" || order.status === "ARCHIVED" || order.status === "CANCELLED";
+  const isCompleted = order.status === "ARCHIVED" || order.status === "CANCELLED";
 
   return (
     <div className="space-y-5">
