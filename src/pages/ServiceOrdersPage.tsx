@@ -332,19 +332,28 @@ export default function ServiceOrdersPage() {
         ) : !orders?.length ? (
           <div className="text-center py-8 text-muted-foreground">Brak zleceń</div>
         ) : groupedOrders ? (
-          groupedOrders.map((group) => (
-            <div key={group.status}>
-              <div className="flex items-center gap-2 mb-2 mt-4 first:mt-0">
-                <OrderStatusBadge status={group.status} />
-                <span className="text-xs text-muted-foreground">({group.orders.length})</span>
+          groupedOrders.map((group) => {
+            const collapsed = collapsedGroups.has(group.status);
+            return (
+              <div key={group.status}>
+                <button
+                  onClick={() => toggleGroup(group.status)}
+                  className="flex items-center gap-2 mb-2 mt-4 first:mt-0 w-full text-left"
+                >
+                  {collapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                  <OrderStatusBadge status={group.status} />
+                  <span className="text-xs text-muted-foreground">({group.orders.length})</span>
+                </button>
+                {!collapsed && (
+                  <div className="space-y-2">
+                    {group.orders.map((order: any) => (
+                      <MobileOrderCard key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="space-y-2">
-                {group.orders.map((order: any) => (
-                  <MobileOrderCard key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
-                ))}
-              </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           orders.map((order: any) => (
             <MobileOrderCard key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
