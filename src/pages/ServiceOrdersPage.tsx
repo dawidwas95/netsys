@@ -47,6 +47,20 @@ const STATUS_GROUP_COLORS: Record<string, string> = {
   COMPLETED: "bg-green-600",
 };
 
+const STATUS_GROUP_COLORS_LIGHT: Record<string, string> = {
+  NEW: "bg-blue-200",
+  DIAGNOSIS_QUOTE: "bg-amber-200",
+  TODO: "bg-cyan-200",
+  IN_PROGRESS: "bg-orange-200",
+  WAITING: "bg-indigo-200",
+  WAITING_CLIENT: "bg-purple-200",
+  READY_FOR_RETURN: "bg-emerald-200",
+  ARCHIVED: "bg-gray-200",
+  CANCELLED: "bg-red-200",
+  DIAGNOSIS: "bg-amber-200",
+  COMPLETED: "bg-green-200",
+};
+
 // ── Extracted row components ──
 
 function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
