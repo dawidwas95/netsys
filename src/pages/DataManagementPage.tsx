@@ -230,7 +230,7 @@ export default function DataManagementPage() {
             Operacja jest nieodwracalna!
           </p>
           <Button onClick={cleanupData} disabled={cleaning} variant="destructive">
-            {cleaning ? "⏳ Czyszczenie w toku..." : "🧹 Wyczyść bazę (zostaw po 10)"}
+            {cleaning ? "⏳ Czyszczenie w toku..." : "🧹 Wyczyść całą bazę"}
           </Button>
           {cleanResult.length > 0 && (
             <div className="mt-3 space-y-1">
