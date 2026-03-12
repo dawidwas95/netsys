@@ -401,9 +401,9 @@ export default function OrderDetailPage() {
 
   const updateOrder = useMutation({
     mutationFn: async (updates: Record<string, any>) => {
-      const isCompletingNow = updates.status === "COMPLETED" && order?.status !== "COMPLETED";
+      const isCompletingNow = updates.status === "ARCHIVED" && updates.completed_at && order?.status !== "ARCHIVED";
       if (isCompletingNow) {
-        updates.completed_at = new Date().toISOString();
+        updates.completed_at = updates.completed_at || new Date().toISOString();
       }
       const laborNet = parseFloat(updates.labor_net ?? currentForm.labor_net ?? 0) || 0;
       const itemsRevenue = orderItems.reduce((s, i) => s + i.total_sale_net, 0);
@@ -430,7 +430,7 @@ export default function OrderDetailPage() {
           ? `Zmiana statusu: ${order?.status} → ${updates.status}`
           : "Edycja zlecenia",
       });
-      const shouldCreateCash = updates.status === "COMPLETED" || (updates.is_paid && order?.status === "COMPLETED");
+      const shouldCreateCash = (updates.status === "ARCHIVED" && updates.completed_at) || (updates.is_paid && order?.status === "ARCHIVED");
       if (shouldCreateCash) {
         const merged = { ...order, ...updates };
         if (merged.payment_method === "CASH" && merged.is_paid && revenue > 0) {
@@ -452,7 +452,7 @@ export default function OrderDetailPage() {
       }
 
       // Convert reservations to actual OUT movements on completion
-      if (isCompletingNow) {
+      if (updates.status === "ARCHIVED" && updates.completed_at) {
         const { data: reservations } = await supabase
           .from("inventory_reservations" as any)
           .select("id, inventory_item_id, quantity, service_order_item_id")
@@ -515,7 +515,7 @@ export default function OrderDetailPage() {
       const newStatus = updates.status;
       if (
         newStatus &&
-        (newStatus === "READY_FOR_RETURN" || newStatus === "COMPLETED") &&
+        newStatus === "READY_FOR_RETURN" &&
         order?.status !== newStatus
       ) {
         const deviceName = order?.devices
@@ -528,7 +528,7 @@ export default function OrderDetailPage() {
           clientEmail: (order?.clients as any)?.email,
           clientName: (order?.clients as any)?.display_name,
           deviceName,
-          eventType: newStatus as "READY_FOR_RETURN" | "COMPLETED",
+          eventType: "READY_FOR_RETURN",
         }).then((result) => {
           if (result?.success) {
             toast.success("Powiadomienie wysłane do klienta");
@@ -663,7 +663,7 @@ export default function OrderDetailPage() {
     if (!currentForm.payment_method) errors.push("Nie wybrano formy płatności");
     if (errors.length > 0) { toast.error(`Nie można zamknąć zlecenia:\n${errors.join("\n")}`); return; }
     updateOrder.mutate({
-      ...currentForm, status: "COMPLETED", is_paid: true,
+      ...currentForm, status: "ARCHIVED", is_archived: true, is_paid: true,
       paid_at: new Date().toISOString(), completed_at: new Date().toISOString(),
     });
     setCloseDialogOpen(false);
@@ -770,7 +770,7 @@ export default function OrderDetailPage() {
   if (isLoading) return <p className="text-muted-foreground p-4">Ładowanie...</p>;
   if (!order) return <p className="text-muted-foreground p-4">Zlecenie nie znalezione</p>;
 
-  const isCompleted = order.status === "COMPLETED" || order.status === "ARCHIVED" || order.status === "CANCELLED";
+  const isCompleted = order.status === "ARCHIVED" || order.status === "CANCELLED";
 
   return (
     <div className="space-y-5">

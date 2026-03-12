@@ -392,7 +392,7 @@ export async function generateOrderPDF({ order, orderItems, financials }: OrderP
       /* ═══════════════ DOCUMENT TITLE ═══════════════ */
       case "document_title": {
         const statusLabel = ORDER_STATUS_LABELS[order.status as OrderStatus] ?? order.status;
-        const isCompleted = order.status === "COMPLETED" || order.status === "READY_FOR_RETURN";
+        const isCompleted = order.status === "ARCHIVED" || order.status === "READY_FOR_RETURN";
         const docTitle = isCompleted ? "PROTOKÓŁ SERWISOWY" : "POTWIERDZENIE PRZYJĘCIA DO SERWISU";
 
         b.setFont("bold", 12, PdfBuilder.DARK);

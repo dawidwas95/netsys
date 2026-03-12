@@ -44,14 +44,17 @@ export type ServiceOrderWithRelations = ServiceOrder & {
 
 // Labels
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  NEW: "Nowe",
-  DIAGNOSIS: "Diagnostyka",
-  IN_PROGRESS: "W trakcie",
-  WAITING_CLIENT: "Kontakt z klientem",
-  READY_FOR_RETURN: "Do zwrotu",
-  COMPLETED: "Zakończone",
-  ARCHIVED: "Archiwum",
-  CANCELLED: "Anulowane",
+  NEW: "nowe",
+  DIAGNOSIS: "diagnostyka / wycena",
+  DIAGNOSIS_QUOTE: "diagnostyka / wycena",
+  TODO: "do zrobienia",
+  IN_PROGRESS: "robione",
+  WAITING: "oczekiwane",
+  WAITING_CLIENT: "kontakt z klientem",
+  READY_FOR_RETURN: "do zwrotu",
+  COMPLETED: "archiwum",
+  ARCHIVED: "archiwum",
+  CANCELLED: "anulowane",
 };
 
 export const ORDER_PRIORITY_LABELS: Record<OrderPriority, string> = {
@@ -120,10 +123,11 @@ export const INTAKE_CHANNEL_LABELS: Record<IntakeChannel, string> = {
 
 // Kanban columns config
 export const KANBAN_COLUMNS: { status: OrderStatus; label: string; color: string }[] = [
-  { status: "NEW", label: "Nowe", color: "bg-status-new" },
-  { status: "DIAGNOSIS", label: "Diagnostyka", color: "bg-status-diagnosis" },
-  { status: "IN_PROGRESS", label: "W trakcie", color: "bg-status-in-progress" },
-  { status: "WAITING_CLIENT", label: "Kontakt z klientem", color: "bg-status-waiting" },
-  { status: "READY_FOR_RETURN", label: "Do zwrotu", color: "bg-status-ready" },
-  { status: "COMPLETED", label: "Zakończone", color: "bg-status-completed" },
+  { status: "NEW", label: "nowe", color: "bg-status-new" },
+  { status: "DIAGNOSIS_QUOTE", label: "diagnostyka / wycena", color: "bg-status-diagnosis" },
+  { status: "TODO", label: "do zrobienia", color: "bg-status-todo" },
+  { status: "IN_PROGRESS", label: "robione", color: "bg-status-in-progress" },
+  { status: "WAITING", label: "oczekiwane", color: "bg-status-waiting" },
+  { status: "WAITING_CLIENT", label: "kontakt z klientem", color: "bg-status-contact" },
+  { status: "READY_FOR_RETURN", label: "do zwrotu", color: "bg-status-ready" },
 ];

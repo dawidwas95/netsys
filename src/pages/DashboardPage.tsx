@@ -85,10 +85,10 @@ export default function DashboardPage() {
         return d >= range.from && d <= range.to;
       }).length ?? 0;
 
-      const active = orders?.filter((o) => !["COMPLETED", "ARCHIVED", "CANCELLED"].includes(o.status)).length ?? 0;
+      const active = orders?.filter((o) => !["ARCHIVED", "CANCELLED"].includes(o.status)).length ?? 0;
 
       const completedPeriod = orders?.filter(
-        (o) => o.status === "COMPLETED" && o.completed_at && new Date(o.completed_at) >= range.from && new Date(o.completed_at) <= range.to
+        (o) => o.status === "ARCHIVED" && o.completed_at && new Date(o.completed_at) >= range.from && new Date(o.completed_at) <= range.to
       ) ?? [];
 
       return { newInPeriod, active, completedPeriodCount: completedPeriod.length };
@@ -101,7 +101,7 @@ export default function DashboardPage() {
       const { data: completedOrders } = await supabase
         .from("service_orders")
         .select("id, labor_net, parts_net, extra_cost_net, total_net, total_gross, is_paid, payment_method, completed_at")
-        .eq("status", "COMPLETED")
+        .eq("status", "ARCHIVED")
         .eq("is_paid", true)
         .gte("completed_at", range.from.toISOString())
         .lte("completed_at", range.to.toISOString());
@@ -575,11 +575,14 @@ function PurchaseRequestsWidget() {
 }
 
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {
-  const colorMap: Record<OrderStatus, string> = {
+  const colorMap: Record<string, string> = {
     NEW: "bg-status-new/10 text-status-new",
     DIAGNOSIS: "bg-status-diagnosis/10 text-status-diagnosis",
+    DIAGNOSIS_QUOTE: "bg-status-diagnosis/10 text-status-diagnosis",
+    TODO: "bg-status-todo/10 text-status-todo",
     IN_PROGRESS: "bg-status-in-progress/10 text-status-in-progress",
-    WAITING_CLIENT: "bg-status-waiting/10 text-status-waiting",
+    WAITING: "bg-status-waiting/10 text-status-waiting",
+    WAITING_CLIENT: "bg-status-contact/10 text-status-contact",
     READY_FOR_RETURN: "bg-status-ready/10 text-status-ready",
     COMPLETED: "bg-status-completed/10 text-status-completed",
     ARCHIVED: "bg-status-archived/10 text-status-archived",
@@ -587,8 +590,8 @@ export function OrderStatusBadge({ status }: { status: OrderStatus }) {
   };
 
   return (
-    <span className={`status-badge ${colorMap[status]}`}>
-      {ORDER_STATUS_LABELS[status]}
+    <span className={`status-badge ${colorMap[status] ?? "bg-muted text-muted-foreground"}`}>
+      {ORDER_STATUS_LABELS[status] ?? status}
     </span>
   );
 }

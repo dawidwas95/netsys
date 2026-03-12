@@ -7,7 +7,7 @@ interface NotifyParams {
   clientEmail?: string | null;
   clientName?: string | null;
   deviceName?: string;
-  eventType: "READY_FOR_RETURN" | "COMPLETED";
+  eventType: "READY_FOR_RETURN";
 }
 
 function interpolate(template: string, vars: Record<string, string>): string {

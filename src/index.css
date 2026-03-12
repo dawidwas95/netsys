@@ -58,8 +58,10 @@
     /* Status colors */
     --status-new: 217 91% 50%;
     --status-diagnosis: 38 92% 50%;
-    --status-in-progress: 199 89% 48%;
-    --status-waiting: 280 65% 60%;
+    --status-todo: 190 80% 42%;
+    --status-in-progress: 25 95% 53%;
+    --status-waiting: 230 65% 55%;
+    --status-contact: 280 65% 60%;
     --status-ready: 142 71% 40%;
     --status-completed: 142 71% 35%;
     --status-archived: 220 10% 55%;

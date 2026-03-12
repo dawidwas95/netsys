@@ -31,17 +31,20 @@ import {
   ClientSection, DeviceSection, OrderDataSection, DescriptionSection, TechnicianSelectSection,
 } from "@/components/order/OrderFormSections";
 
-const STATUS_ORDER: OrderStatus[] = ["NEW", "DIAGNOSIS", "IN_PROGRESS", "WAITING_CLIENT", "READY_FOR_RETURN", "COMPLETED", "ARCHIVED", "CANCELLED"];
+const STATUS_ORDER: OrderStatus[] = ["NEW", "DIAGNOSIS_QUOTE", "TODO", "IN_PROGRESS", "WAITING", "WAITING_CLIENT", "READY_FOR_RETURN", "ARCHIVED"];
 
-const STATUS_GROUP_COLORS: Record<OrderStatus, string> = {
+const STATUS_GROUP_COLORS: Record<string, string> = {
   NEW: "bg-blue-500",
-  DIAGNOSIS: "bg-amber-500",
+  DIAGNOSIS_QUOTE: "bg-amber-500",
+  TODO: "bg-cyan-500",
   IN_PROGRESS: "bg-orange-500",
+  WAITING: "bg-indigo-500",
   WAITING_CLIENT: "bg-purple-500",
   READY_FOR_RETURN: "bg-emerald-500",
-  COMPLETED: "bg-green-600",
   ARCHIVED: "bg-gray-400",
   CANCELLED: "bg-red-500",
+  DIAGNOSIS: "bg-amber-500",
+  COMPLETED: "bg-green-600",
 };
 
 // ── Extracted row components ──
