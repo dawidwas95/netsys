@@ -591,7 +591,7 @@ export default function ServiceOrdersPage() {
               </TableHeader>
               <TableBody>
                 {orders.map((order: any) => (
-                  <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                  <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} onClientClick={setQuickViewClientId} />
                 ))}
               </TableBody>
             </Table>
