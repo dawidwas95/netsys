@@ -90,7 +90,7 @@ function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
   );
 }
 
-const COL_WIDTHS = "w-[14%] w-[12%] w-[14%] w-[12%] w-[14%] w-[10%] w-[10%] w-[14%]";
+const COL_WIDTHS = "w-[13%] w-[10%] w-[13%] w-[11%] w-[13%] w-[9%] w-[10%] w-[9%] w-[12%]";
 const COL_CLASSES = COL_WIDTHS.split(" ");
 
 function DesktopOrderRow({ order, unread }: { order: any; unread: boolean }) {
