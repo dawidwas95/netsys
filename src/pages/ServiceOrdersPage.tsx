@@ -431,7 +431,7 @@ export default function ServiceOrdersPage() {
                     {/* Right orders area */}
                     <div className={`flex-1 min-w-0 border border-l-0 border-border rounded-r-lg ${collapsed ? "" : "bg-card"}`}>
                       {!collapsed && (
-                        <Table>
+                        <Table className="table-fixed">
                           <TableBody>
                             {group.orders.map((order: any) => (
                               <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
