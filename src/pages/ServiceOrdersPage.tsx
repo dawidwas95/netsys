@@ -120,7 +120,7 @@ function groupOrdersByAction(orders: any[]) {
   return actionGroups;
 }
 
-const COL_WIDTHS = "w-[15%] w-[11%] w-[15%] w-[13%] w-[15%] w-[10%] w-[10%] w-[11%]";
+const COL_WIDTHS = "w-[17%] w-[12%] w-[18%] w-[15%] w-[17%] w-[10%] w-[11%]";
 const COL_CLASSES = COL_WIDTHS.split(" ");
 
 function DesktopOrderRow({ order, unread }: { order: any; unread: boolean }) {
@@ -146,9 +146,8 @@ function DesktopOrderRow({ order, unread }: { order: any; unread: boolean }) {
           <QuickAssignButton orderId={order.id} orderNumber={order.order_number} />
         </div>
       </TableCell>
-      <TableCell className={COL_CLASSES[5]}><OrderStatusBadge status={order.status} /></TableCell>
-      <TableCell className={`${COL_CLASSES[6]} text-sm`}>{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
-      <TableCell className={`${COL_CLASSES[7]} text-sm`}>{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
+      <TableCell className={`${COL_CLASSES[5]} text-sm`}>{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
+      <TableCell className={`${COL_CLASSES[6]} text-sm`}>{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
     </TableRow>
   );
 }
@@ -465,9 +464,9 @@ export default function ServiceOrdersPage() {
           <div className="text-center py-8 text-muted-foreground">Brak zleceń</div>
         ) : groupedOrders ? (
           <>
-            {/* Shared table header – offset by 180px to align with group tables */}
+            {/* Shared table header – offset by 180px status + 140px action = 320px */}
             <div className="flex gap-0">
-              <div className="w-[180px] shrink-0" />
+              <div className="w-[320px] shrink-0" />
               <div className="flex-1 min-w-0 data-table-wrapper rounded-b-none border-b-0">
                 <Table className="table-fixed">
                   <TableHeader>
@@ -477,9 +476,8 @@ export default function ServiceOrdersPage() {
                       <TableHead className={COL_CLASSES[2]}>Klient</TableHead>
                       <TableHead className={COL_CLASSES[3]}>Urządzenie</TableHead>
                       <TableHead className={COL_CLASSES[4]}>Technik</TableHead>
-                      <TableHead className={COL_CLASSES[5]}>Status</TableHead>
-                      <TableHead className={COL_CLASSES[6]}>Priorytet</TableHead>
-                      <TableHead className={COL_CLASSES[7]}>Data przyjęcia</TableHead>
+                      <TableHead className={COL_CLASSES[5]}>Priorytet</TableHead>
+                      <TableHead className={COL_CLASSES[6]}>Data przyjęcia</TableHead>
                     </TableRow>
                   </TableHeader>
                 </Table>
@@ -510,13 +508,18 @@ export default function ServiceOrdersPage() {
                         const hasActions = actionSubGroups.some(g => g.action !== null);
                         if (!hasActions) {
                           return (
-                            <Table className="table-fixed">
-                              <TableBody>
-                                {group.orders.map((order: any) => (
-                                  <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
-                                ))}
-                              </TableBody>
-                            </Table>
+                            <div className="flex items-stretch">
+                              <div className="w-[140px] shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <Table className="table-fixed">
+                                  <TableBody>
+                                    {group.orders.map((order: any) => (
+                                      <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            </div>
                           );
                         }
                         return (
