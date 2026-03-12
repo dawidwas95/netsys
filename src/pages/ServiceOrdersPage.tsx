@@ -589,6 +589,7 @@ export default function ServiceOrdersPage() {
             </Table>
           </div>
         )}
+        </div>
       </div>
     </div>
   );
