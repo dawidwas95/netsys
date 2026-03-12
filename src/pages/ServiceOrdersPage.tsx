@@ -404,21 +404,31 @@ export default function ServiceOrdersPage() {
                     }
                     return (
                       <div className="pl-2 pb-3 space-y-1">
-                        {actionSubGroups.map((sub) => (
-                          <div key={sub.action ?? "__none"}>
-                            <div className="px-2 py-1 mb-1">
-                              <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-                                {sub.action ?? "brak działania"}
-                              </span>
-                              <span className="text-[11px] text-muted-foreground ml-1">({sub.orders.length})</span>
+                        {actionSubGroups.map((sub) => {
+                          const actionKey = `${group.status}__${sub.action ?? "__none"}`;
+                          const actionCollapsed = collapsedActions.has(actionKey);
+                          return (
+                            <div key={sub.action ?? "__none"}>
+                              <button
+                                onClick={() => toggleAction(actionKey)}
+                                className="flex items-center gap-1.5 px-2 py-1.5 w-full text-left"
+                              >
+                                <ChevronDown className={`h-3 w-3 text-muted-foreground transition-transform ${actionCollapsed ? "-rotate-90" : ""}`} />
+                                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+                                  {sub.action ?? "brak działania"}
+                                </span>
+                                <span className="text-[11px] text-muted-foreground">({sub.orders.length})</span>
+                              </button>
+                              {!actionCollapsed && (
+                                <div className="space-y-2 pl-2">
+                                  {sub.orders.map((order: any) => (
+                                    <MobileOrderCard key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                                  ))}
+                                </div>
+                              )}
                             </div>
-                            <div className="space-y-2">
-                              {sub.orders.map((order: any) => (
-                                <MobileOrderCard key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
-                              ))}
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     );
                   })()}
