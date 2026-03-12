@@ -473,24 +473,22 @@ export default function ServiceOrdersPage() {
         ) : groupedOrders ? (
           <>
             {/* Shared table header – offset by 180px status + 140px action = 320px */}
-            <div className="flex gap-0 sticky top-0 z-20 bg-background">
-              <div className="w-[180px] shrink-0 sticky left-0 z-10 bg-background px-4 py-3 text-xs font-medium text-muted-foreground">status</div>
-              <div className="w-[140px] shrink-0 sticky left-[180px] z-[5] bg-background px-3 py-3 text-xs font-medium text-muted-foreground">działanie</div>
-              <div className="flex-1 min-w-0 data-table-wrapper rounded-b-none border-b-0">
-                <Table className="table-fixed">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className={COL_CLASSES[0]}>nr zlecenia</TableHead>
-                      <TableHead className={COL_CLASSES[1]}>dział</TableHead>
-                      <TableHead className={COL_CLASSES[2]}>klient</TableHead>
-                      <TableHead className={COL_CLASSES[3]}>urządzenie</TableHead>
-                      <TableHead className={COL_CLASSES[4]}>technik</TableHead>
-                      <TableHead className={COL_CLASSES[5]}>priorytet</TableHead>
-                      <TableHead className={COL_CLASSES[6]}>data przyjęcia</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                </Table>
-              </div>
+            <div className="flex gap-0 sticky top-0 z-20 bg-background border-b border-border">
+              <div className="w-[180px] shrink-0 sticky left-0 z-10 bg-background h-12 flex items-center px-4 text-xs font-medium text-muted-foreground">status</div>
+              <div className="w-[140px] shrink-0 sticky left-[180px] z-[5] bg-background h-12 flex items-center px-3 text-xs font-medium text-muted-foreground">działanie</div>
+              <Table className="table-fixed flex-1 min-w-0">
+                <TableHeader>
+                  <TableRow className="border-b-0">
+                    <TableHead className={COL_CLASSES[0]}>nr zlecenia</TableHead>
+                    <TableHead className={COL_CLASSES[1]}>dział</TableHead>
+                    <TableHead className={COL_CLASSES[2]}>klient</TableHead>
+                    <TableHead className={COL_CLASSES[3]}>urządzenie</TableHead>
+                    <TableHead className={COL_CLASSES[4]}>technik</TableHead>
+                    <TableHead className={COL_CLASSES[5]}>priorytet</TableHead>
+                    <TableHead className={COL_CLASSES[6]}>data przyjęcia</TableHead>
+                  </TableRow>
+                </TableHeader>
+              </Table>
             </div>
             {/* Groups with left tile */}
             <div className="space-y-3 mt-3">
