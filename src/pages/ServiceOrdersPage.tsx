@@ -529,7 +529,7 @@ export default function ServiceOrdersPage() {
                                   {/* Left action tile */}
                                   <button
                                     onClick={() => toggleAction(actionKey)}
-                                    className="w-[140px] shrink-0 px-3 py-2 flex flex-col items-start justify-start gap-0.5 bg-muted/50 border-r border-border hover:bg-muted/70 transition-colors cursor-pointer select-none text-left"
+                                    className={`w-[140px] shrink-0 px-3 py-2 flex flex-col items-start justify-start gap-0.5 ${STATUS_GROUP_COLORS_LIGHT[group.status] || "bg-muted/50"} border-r border-border hover:opacity-80 transition-colors cursor-pointer select-none text-left`}
                                   >
                                     <div className="flex items-center gap-1.5 w-full">
                                       <ChevronDown className={`h-3 w-3 text-muted-foreground transition-transform ${actionCollapsed ? "-rotate-90" : ""}`} />
