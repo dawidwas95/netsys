@@ -123,10 +123,11 @@ export const INTAKE_CHANNEL_LABELS: Record<IntakeChannel, string> = {
 
 // Kanban columns config
 export const KANBAN_COLUMNS: { status: OrderStatus; label: string; color: string }[] = [
-  { status: "NEW", label: "Nowe", color: "bg-status-new" },
-  { status: "DIAGNOSIS", label: "Diagnostyka", color: "bg-status-diagnosis" },
-  { status: "IN_PROGRESS", label: "W trakcie", color: "bg-status-in-progress" },
-  { status: "WAITING_CLIENT", label: "Kontakt z klientem", color: "bg-status-waiting" },
-  { status: "READY_FOR_RETURN", label: "Do zwrotu", color: "bg-status-ready" },
-  { status: "COMPLETED", label: "Zakończone", color: "bg-status-completed" },
+  { status: "NEW", label: "nowe", color: "bg-status-new" },
+  { status: "DIAGNOSIS_QUOTE", label: "diagnostyka / wycena", color: "bg-status-diagnosis" },
+  { status: "TODO", label: "do zrobienia", color: "bg-status-todo" },
+  { status: "IN_PROGRESS", label: "robione", color: "bg-status-in-progress" },
+  { status: "WAITING", label: "oczekiwane", color: "bg-status-waiting" },
+  { status: "WAITING_CLIENT", label: "kontakt z klientem", color: "bg-status-contact" },
+  { status: "READY_FOR_RETURN", label: "do zwrotu", color: "bg-status-ready" },
 ];

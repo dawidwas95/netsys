@@ -34,7 +34,10 @@ interface PublicOrderData {
 const STATUS_COLORS: Record<string, string> = {
   NEW: "bg-blue-100 text-blue-800",
   DIAGNOSIS: "bg-yellow-100 text-yellow-800",
+  DIAGNOSIS_QUOTE: "bg-yellow-100 text-yellow-800",
+  TODO: "bg-cyan-100 text-cyan-800",
   IN_PROGRESS: "bg-orange-100 text-orange-800",
+  WAITING: "bg-indigo-100 text-indigo-800",
   WAITING_CLIENT: "bg-purple-100 text-purple-800",
   READY_FOR_RETURN: "bg-green-100 text-green-800",
   COMPLETED: "bg-emerald-100 text-emerald-800",

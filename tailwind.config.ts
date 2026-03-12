@@ -76,8 +76,10 @@ export default {
         status: {
           new: "hsl(var(--status-new))",
           diagnosis: "hsl(var(--status-diagnosis))",
+          todo: "hsl(var(--status-todo))",
           "in-progress": "hsl(var(--status-in-progress))",
           waiting: "hsl(var(--status-waiting))",
+          contact: "hsl(var(--status-contact))",
           ready: "hsl(var(--status-ready))",
           completed: "hsl(var(--status-completed))",
           archived: "hsl(var(--status-archived))",

@@ -575,11 +575,14 @@ function PurchaseRequestsWidget() {
 }
 
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {
-  const colorMap: Record<OrderStatus, string> = {
+  const colorMap: Record<string, string> = {
     NEW: "bg-status-new/10 text-status-new",
     DIAGNOSIS: "bg-status-diagnosis/10 text-status-diagnosis",
+    DIAGNOSIS_QUOTE: "bg-status-diagnosis/10 text-status-diagnosis",
+    TODO: "bg-status-todo/10 text-status-todo",
     IN_PROGRESS: "bg-status-in-progress/10 text-status-in-progress",
-    WAITING_CLIENT: "bg-status-waiting/10 text-status-waiting",
+    WAITING: "bg-status-waiting/10 text-status-waiting",
+    WAITING_CLIENT: "bg-status-contact/10 text-status-contact",
     READY_FOR_RETURN: "bg-status-ready/10 text-status-ready",
     COMPLETED: "bg-status-completed/10 text-status-completed",
     ARCHIVED: "bg-status-archived/10 text-status-archived",
@@ -587,8 +590,8 @@ export function OrderStatusBadge({ status }: { status: OrderStatus }) {
   };
 
   return (
-    <span className={`status-badge ${colorMap[status]}`}>
-      {ORDER_STATUS_LABELS[status]}
+    <span className={`status-badge ${colorMap[status] ?? "bg-muted text-muted-foreground"}`}>
+      {ORDER_STATUS_LABELS[status] ?? status}
     </span>
   );
 }
