@@ -404,8 +404,9 @@ export default function ServiceOrdersPage() {
                       <TableHead className={COL_CLASSES[3]}>Urządzenie</TableHead>
                       <TableHead className={COL_CLASSES[4]}>Technik</TableHead>
                       <TableHead className={COL_CLASSES[5]}>Status</TableHead>
-                      <TableHead className={COL_CLASSES[6]}>Priorytet</TableHead>
-                      <TableHead className={COL_CLASSES[7]}>Data przyjęcia</TableHead>
+                      <TableHead className={COL_CLASSES[6]}>Działanie</TableHead>
+                      <TableHead className={COL_CLASSES[7]}>Priorytet</TableHead>
+                      <TableHead className={COL_CLASSES[8]}>Data przyjęcia</TableHead>
                     </TableRow>
                   </TableHeader>
                 </Table>
