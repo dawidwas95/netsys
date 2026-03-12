@@ -599,6 +599,12 @@ export default function ServiceOrdersPage() {
         )}
         </div>
       </div>
+
+      <ClientQuickViewDialog
+        clientId={quickViewClientId}
+        open={!!quickViewClientId}
+        onOpenChange={(open) => { if (!open) setQuickViewClientId(null); }}
+      />
     </div>
   );
 }
