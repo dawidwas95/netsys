@@ -408,7 +408,7 @@ export default function ServiceOrdersPage() {
                           onClick={() => toggleGroup(group.status)}
                           className={`${barColor} w-full rounded-lg px-4 py-3 flex items-center gap-3 text-white cursor-pointer transition-opacity hover:opacity-90 select-none`}
                         >
-                          {collapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                          {collapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronDown className="h-5 w-5 rotate-180" />}
                           <span className="font-semibold text-sm">{ORDER_STATUS_LABELS[group.status]}</span>
                           <span className="text-sm opacity-80">({group.orders.length})</span>
                         </button>
