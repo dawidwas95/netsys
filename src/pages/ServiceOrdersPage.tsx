@@ -457,7 +457,8 @@ export default function ServiceOrdersPage() {
       </div>
 
       {/* Desktop view */}
-      <div className="hidden md:block space-y-0">
+      <div className="hidden md:block overflow-x-auto">
+        <div className="min-w-[1100px] space-y-0">
         {isLoading ? (
           <div className="text-center py-8 text-muted-foreground">Ładowanie...</div>
         ) : !orders?.length ? (
@@ -536,7 +537,7 @@ export default function ServiceOrdersPage() {
                                   >
                                     <div className="flex items-center gap-1.5 w-full">
                                       <ChevronDown className={`h-3 w-3 text-muted-foreground transition-transform ${actionCollapsed ? "-rotate-90" : ""}`} />
-                                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide leading-tight">
+                                      <span className="text-[11px] font-semibold text-muted-foreground leading-tight">
                                         {sub.action ?? "brak działania"}
                                       </span>
                                     </div>
@@ -589,6 +590,7 @@ export default function ServiceOrdersPage() {
             </Table>
           </div>
         )}
+        </div>
       </div>
     </div>
   );
