@@ -387,22 +387,25 @@ export default function ServiceOrdersPage() {
           <div className="text-center py-8 text-muted-foreground">Brak zleceń</div>
         ) : groupedOrders ? (
           <>
-            {/* Shared table header */}
-            <div className="data-table-wrapper rounded-b-none border-b-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nr zlecenia</TableHead>
-                    <TableHead>Dział</TableHead>
-                    <TableHead>Klient</TableHead>
-                    <TableHead>Urządzenie</TableHead>
-                    <TableHead>Technik</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Priorytet</TableHead>
-                    <TableHead>Data przyjęcia</TableHead>
-                  </TableRow>
-                </TableHeader>
-              </Table>
+            {/* Shared table header – offset by 180px to align with group tables */}
+            <div className="flex gap-0">
+              <div className="w-[180px] shrink-0" />
+              <div className="flex-1 min-w-0 data-table-wrapper rounded-b-none border-b-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nr zlecenia</TableHead>
+                      <TableHead>Dział</TableHead>
+                      <TableHead>Klient</TableHead>
+                      <TableHead>Urządzenie</TableHead>
+                      <TableHead>Technik</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Priorytet</TableHead>
+                      <TableHead>Data przyjęcia</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                </Table>
+              </div>
             </div>
             {/* Groups with left tile */}
             <div className="space-y-3 mt-3">
