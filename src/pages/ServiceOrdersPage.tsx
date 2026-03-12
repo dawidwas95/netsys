@@ -382,21 +382,28 @@ export default function ServiceOrdersPage() {
             ) : !orders?.length ? (
               <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Brak zleceń</TableCell></TableRow>
             ) : groupedOrders ? (
-              groupedOrders.map((group) => (
-                <React.Fragment key={`group-${group.status}`}>
-                  <TableRow className="bg-muted/30 hover:bg-muted/40">
-                    <TableCell colSpan={8} className="py-2">
-                      <div className="flex items-center gap-2">
-                        <OrderStatusBadge status={group.status} />
-                        <span className="text-sm font-medium text-muted-foreground">({group.orders.length})</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                  {group.orders.map((order: any) => (
-                    <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
-                  ))}
-                </React.Fragment>
-              ))
+              groupedOrders.map((group) => {
+                const collapsed = collapsedGroups.has(group.status);
+                return (
+                  <React.Fragment key={`group-${group.status}`}>
+                    <TableRow
+                      className="bg-muted/30 hover:bg-muted/40 cursor-pointer select-none"
+                      onClick={() => toggleGroup(group.status)}
+                    >
+                      <TableCell colSpan={8} className="py-2">
+                        <div className="flex items-center gap-2">
+                          {collapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                          <OrderStatusBadge status={group.status} />
+                          <span className="text-sm font-medium text-muted-foreground">({group.orders.length})</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                    {!collapsed && group.orders.map((order: any) => (
+                      <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                    ))}
+                  </React.Fragment>
+                );
+              })
             ) : (
               orders.map((order: any) => (
                 <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
