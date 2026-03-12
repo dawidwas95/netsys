@@ -663,7 +663,7 @@ export default function OrderDetailPage() {
     if (!currentForm.payment_method) errors.push("Nie wybrano formy płatności");
     if (errors.length > 0) { toast.error(`Nie można zamknąć zlecenia:\n${errors.join("\n")}`); return; }
     updateOrder.mutate({
-      ...currentForm, status: "COMPLETED", is_paid: true,
+      ...currentForm, status: "ARCHIVED", is_archived: true, is_paid: true,
       paid_at: new Date().toISOString(), completed_at: new Date().toISOString(),
     });
     setCloseDialogOpen(false);
