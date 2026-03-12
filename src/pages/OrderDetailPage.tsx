@@ -265,6 +265,23 @@ export default function OrderDetailPage({ orderId: propOrderId, isDialog }: { or
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user?.id]);
 
+  // Realtime subscription for comments
+  useEffect(() => {
+    if (!id) return;
+    const channel = supabase
+      .channel(`order-comments-${id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "service_order_comments", filter: `order_id=eq.${id}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["order-comments", id] });
+          queryClient.invalidateQueries({ queryKey: ["unread-orders"] });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [id, queryClient]);
+
   const currentForm = useMemo(() => {
     if (editForm) return editForm;
     if (!order) return {};
