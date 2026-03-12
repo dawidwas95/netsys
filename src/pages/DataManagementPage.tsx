@@ -199,22 +199,6 @@ export default function DataManagementPage() {
         <p className="text-sm text-muted-foreground">Eksport danych, przywracanie usuniętych rekordów</p>
       </div>
 
-      {/* Seed Test Data */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            🧪 Dane testowe
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-3">
-            Wygeneruj ~30 000 klientów, 5 000 urządzeń, 10 000 zleceń, 100 000 dokumentów, 200 pozycji magazynowych, 2 000 transakcji kasowych i 1 000 dokumentów magazynowych.
-          </p>
-          <Button onClick={seedTestData} disabled={seeding} variant="destructive">
-            {seeding ? `⏳ ${seedProgress}` : "🚀 Załaduj dane testowe"}
-          </Button>
-        </CardContent>
-      </Card>
 
       {/* Export Section */}
       <Card>
