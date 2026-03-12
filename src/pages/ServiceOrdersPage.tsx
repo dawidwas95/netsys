@@ -395,22 +395,57 @@ export default function ServiceOrdersPage() {
             ) : groupedOrders ? (
               groupedOrders.map((group) => {
                 const collapsed = collapsedGroups.has(group.status);
+                const barColor = STATUS_GROUP_COLORS[group.status];
                 return (
                   <React.Fragment key={`group-${group.status}`}>
                     <TableRow
-                      className="bg-muted/30 hover:bg-muted/40 cursor-pointer select-none"
+                      className="hover:bg-muted/20 cursor-pointer select-none border-b-0"
                       onClick={() => toggleGroup(group.status)}
                     >
-                      <TableCell colSpan={8} className="py-2">
-                        <div className="flex items-center gap-2">
-                          {collapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-                          <OrderStatusBadge status={group.status} />
-                          <span className="text-sm font-medium text-muted-foreground">({group.orders.length})</span>
+                      <TableCell colSpan={8} className="py-0 px-0">
+                        <div className="flex items-stretch">
+                          <div className={`${barColor} w-1.5 rounded-sm self-stretch shrink-0`} />
+                          <div className="flex items-center gap-2 py-2.5 px-3">
+                            {collapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                            <OrderStatusBadge status={group.status} />
+                            <span className="text-sm font-medium text-muted-foreground">({group.orders.length})</span>
+                          </div>
                         </div>
                       </TableCell>
                     </TableRow>
                     {!collapsed && group.orders.map((order: any) => (
-                      <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                      <TableRow key={order.id} className={`hover:bg-muted/50 ${unreadOrderIds.has(order.id) ? "bg-primary/5" : ""}`}>
+                        <TableCell className="py-0 px-0" colSpan={8}>
+                          <div className="flex items-stretch">
+                            <div className={`${barColor} w-1.5 shrink-0 opacity-40`} />
+                            <table className="w-full"><tbody>
+                              <tr>
+                                <td className="py-2.5 px-3 w-[15%]">
+                                  <div className="flex items-center gap-1.5">
+                                    {unreadOrderIds.has(order.id) && <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />}
+                                    <Link to={`/orders/${order.id}`} className="font-medium text-primary hover:underline font-mono">
+                                      {order.order_number}
+                                    </Link>
+                                    <ScheduleBadgeWithAction orderId={order.id} orderNumber={order.order_number} date={order.planned_execution_date} time={order.planned_execution_time} />
+                                  </div>
+                                </td>
+                                <td className="py-2.5 px-3 text-xs w-[12%]">{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</td>
+                                <td className="py-2.5 px-3 w-[15%]">{order.clients?.display_name}</td>
+                                <td className="py-2.5 px-3 text-sm w-[15%]">{order.devices ? `${order.devices.manufacturer} ${order.devices.model}` : "—"}</td>
+                                <td className="py-2.5 px-3 w-[15%]">
+                                  <div className="flex items-center gap-1">
+                                    <TechnicianBadges orderId={order.id} compact />
+                                    <QuickAssignButton orderId={order.id} orderNumber={order.order_number} />
+                                  </div>
+                                </td>
+                                <td className="py-2.5 px-3 w-[10%]"><OrderStatusBadge status={order.status} /></td>
+                                <td className="py-2.5 px-3 text-sm w-[8%]">{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</td>
+                                <td className="py-2.5 px-3 text-sm w-[10%]">{new Date(order.received_at).toLocaleDateString("pl-PL")}</td>
+                              </tr>
+                            </tbody></table>
+                          </div>
+                        </TableCell>
+                      </TableRow>
                     ))}
                   </React.Fragment>
                 );
