@@ -508,13 +508,18 @@ export default function ServiceOrdersPage() {
                         const hasActions = actionSubGroups.some(g => g.action !== null);
                         if (!hasActions) {
                           return (
-                            <Table className="table-fixed">
-                              <TableBody>
-                                {group.orders.map((order: any) => (
-                                  <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
-                                ))}
-                              </TableBody>
-                            </Table>
+                            <div className="flex items-stretch">
+                              <div className="w-[140px] shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <Table className="table-fixed">
+                                  <TableBody>
+                                    {group.orders.map((order: any) => (
+                                      <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            </div>
                           );
                         }
                         return (
