@@ -401,9 +401,9 @@ export default function OrderDetailPage() {
 
   const updateOrder = useMutation({
     mutationFn: async (updates: Record<string, any>) => {
-      const isCompletingNow = updates.status === "COMPLETED" && order?.status !== "COMPLETED";
+      const isCompletingNow = updates.status === "ARCHIVED" && updates.completed_at && order?.status !== "ARCHIVED";
       if (isCompletingNow) {
-        updates.completed_at = new Date().toISOString();
+        updates.completed_at = updates.completed_at || new Date().toISOString();
       }
       const laborNet = parseFloat(updates.labor_net ?? currentForm.labor_net ?? 0) || 0;
       const itemsRevenue = orderItems.reduce((s, i) => s + i.total_sale_net, 0);
