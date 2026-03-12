@@ -121,45 +121,40 @@ export function useUnreadOrders() {
   const { data: unreadOrderIds = new Set<string>(), isLoading } = useQuery({
     queryKey: ["unread-orders", user?.id],
     queryFn: async () => {
-      // Get user's last read timestamps
-      const { data: reads } = await supabase
-        .from("user_order_reads")
-        .select("order_id, last_read_at")
-        .eq("user_id", user!.id);
+      const [
+        { data: comments, error: commentsError },
+        { data: commentReads, error: commentReadsError },
+        { data: unreadClientMessages, error: unreadClientMessagesError },
+      ] = await Promise.all([
+        supabase
+          .from("service_order_comments")
+          .select("id, order_id, user_id")
+          .is("deleted_at", null),
+        supabase
+          .from("comment_reads")
+          .select("comment_id")
+          .eq("user_id", user!.id),
+        supabase
+          .from("customer_messages")
+          .select("service_order_id")
+          .eq("sender_type", "CLIENT")
+          .eq("is_read_by_staff", false),
+      ]);
 
-      const readMap = new Map<string, string>();
-      (reads ?? []).forEach((r: any) => readMap.set(r.order_id, r.last_read_at));
+      if (commentsError) throw commentsError;
+      if (commentReadsError) throw commentReadsError;
+      if (unreadClientMessagesError) throw unreadClientMessagesError;
 
-      // Get recent comments and check which orders have newer activity
-      const { data: recentComments } = await supabase
-        .from("service_order_comments")
-        .select("order_id, created_at")
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false })
-        .limit(500);
-
-      // Get recent customer messages
-      const { data: recentMessages } = await supabase
-        .from("customer_messages")
-        .select("service_order_id, created_at")
-        .eq("sender_type", "CLIENT")
-        .order("created_at", { ascending: false })
-        .limit(200);
-
+      const readCommentIds = new Set((commentReads ?? []).map((r: any) => r.comment_id));
       const unread = new Set<string>();
 
-      (recentComments ?? []).forEach((c: any) => {
-        const lastRead = readMap.get(c.order_id);
-        if (!lastRead || new Date(c.created_at) > new Date(lastRead)) {
-          unread.add(c.order_id);
-        }
+      (comments ?? []).forEach((c: any) => {
+        if (c.user_id === user?.id) return;
+        if (!readCommentIds.has(c.id)) unread.add(c.order_id);
       });
 
-      (recentMessages ?? []).forEach((m: any) => {
-        const lastRead = readMap.get(m.service_order_id);
-        if (!lastRead || new Date(m.created_at) > new Date(lastRead)) {
-          unread.add(m.service_order_id);
-        }
+      (unreadClientMessages ?? []).forEach((m: any) => {
+        unread.add(m.service_order_id);
       });
 
       return unread;

@@ -64,9 +64,10 @@ export default function CustomerMessagesStaff({ orderId }: Props) {
         .then(() => {
           queryClient.invalidateQueries({ queryKey: ["customer-messages", orderId] });
           queryClient.invalidateQueries({ queryKey: ["customer-messages-unread"] });
+          queryClient.invalidateQueries({ queryKey: ["unread-orders"] });
         });
     }
-  }, [messages, orderId]);
+  }, [messages, orderId, queryClient]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });

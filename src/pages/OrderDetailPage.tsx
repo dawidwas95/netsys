@@ -356,7 +356,10 @@ export default function OrderDetailPage({ orderId: propOrderId, isDialog }: { or
       });
       if (error && !error.message.includes("duplicate")) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["comment-reads"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comment-reads"] });
+      queryClient.invalidateQueries({ queryKey: ["unread-orders"] });
+    },
   });
 
   const markCommentUnread = useMutation({
@@ -368,7 +371,10 @@ export default function OrderDetailPage({ orderId: propOrderId, isDialog }: { or
         .eq("user_id", user!.id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["comment-reads"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comment-reads"] });
+      queryClient.invalidateQueries({ queryKey: ["unread-orders"] });
+    },
   });
 
   const { data: logs } = useQuery({
