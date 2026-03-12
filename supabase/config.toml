@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.gus-lookup]
 verify_jwt = false
+
+[functions.cleanup-data]
+verify_jwt = false
