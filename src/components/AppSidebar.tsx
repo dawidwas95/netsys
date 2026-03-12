@@ -2,7 +2,6 @@ import {
   LayoutDashboard,
   Users,
   Monitor,
-  Wrench,
   KanbanSquare,
   ListTodo,
   Settings,
