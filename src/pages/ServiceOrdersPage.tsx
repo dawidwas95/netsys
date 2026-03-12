@@ -90,10 +90,13 @@ function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
   );
 }
 
+const COL_WIDTHS = "w-[14%] w-[12%] w-[14%] w-[12%] w-[14%] w-[10%] w-[10%] w-[14%]";
+const COL_CLASSES = COL_WIDTHS.split(" ");
+
 function DesktopOrderRow({ order, unread }: { order: any; unread: boolean }) {
   return (
     <TableRow className={`hover:bg-muted/50 ${unread ? "bg-primary/5" : ""}`}>
-      <TableCell>
+      <TableCell className={COL_CLASSES[0]}>
         <div className="flex items-center gap-1.5">
           {unread && <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />}
           <Link to={`/orders/${order.id}`} className="font-medium text-primary hover:underline font-mono">
@@ -102,20 +105,20 @@ function DesktopOrderRow({ order, unread }: { order: any; unread: boolean }) {
           <ScheduleBadgeWithAction orderId={order.id} orderNumber={order.order_number} date={order.planned_execution_date} time={order.planned_execution_time} />
         </div>
       </TableCell>
-      <TableCell className="text-xs">{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</TableCell>
-      <TableCell>{order.clients?.display_name}</TableCell>
-      <TableCell className="text-sm">
+      <TableCell className={`${COL_CLASSES[1]} text-xs`}>{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</TableCell>
+      <TableCell className={COL_CLASSES[2]}>{order.clients?.display_name}</TableCell>
+      <TableCell className={`${COL_CLASSES[3]} text-sm`}>
         {order.devices ? `${order.devices.manufacturer} ${order.devices.model}` : "—"}
       </TableCell>
-      <TableCell>
+      <TableCell className={COL_CLASSES[4]}>
         <div className="flex items-center gap-1">
           <TechnicianBadges orderId={order.id} compact />
           <QuickAssignButton orderId={order.id} orderNumber={order.order_number} />
         </div>
       </TableCell>
-      <TableCell><OrderStatusBadge status={order.status} /></TableCell>
-      <TableCell className="text-sm">{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
-      <TableCell className="text-sm">{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
+      <TableCell className={COL_CLASSES[5]}><OrderStatusBadge status={order.status} /></TableCell>
+      <TableCell className={`${COL_CLASSES[6]} text-sm`}>{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
+      <TableCell className={`${COL_CLASSES[7]} text-sm`}>{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
     </TableRow>
   );
 }
