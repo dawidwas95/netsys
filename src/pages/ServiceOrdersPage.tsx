@@ -523,7 +523,7 @@ export default function ServiceOrdersPage() {
                                 <Table className="table-fixed">
                                   <TableBody>
                                     {group.orders.map((order: any) => (
-                                      <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} onClientClick={setQuickViewClientId} />
+                                      <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} onClientClick={setQuickViewClientId} onOrderClick={setQuickEditOrderId} />
                                     ))}
                                   </TableBody>
                                 </Table>
