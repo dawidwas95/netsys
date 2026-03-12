@@ -33,6 +33,17 @@ import {
 
 const STATUS_ORDER: OrderStatus[] = ["NEW", "DIAGNOSIS", "IN_PROGRESS", "WAITING_CLIENT", "READY_FOR_RETURN", "COMPLETED", "ARCHIVED", "CANCELLED"];
 
+const STATUS_GROUP_COLORS: Record<OrderStatus, string> = {
+  NEW: "bg-blue-500",
+  DIAGNOSIS: "bg-amber-500",
+  IN_PROGRESS: "bg-orange-500",
+  WAITING_CLIENT: "bg-purple-500",
+  READY_FOR_RETURN: "bg-emerald-500",
+  COMPLETED: "bg-green-600",
+  ARCHIVED: "bg-gray-400",
+  CANCELLED: "bg-red-500",
+};
+
 // ── Extracted row components ──
 
 function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
