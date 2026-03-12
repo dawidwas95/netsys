@@ -506,31 +506,37 @@ export default function ServiceOrdersPage() {
                           );
                         }
                         return (
-                          <div>
+                          <div className="space-y-1 py-1">
                             {actionSubGroups.map((sub) => {
                               const actionKey = `${group.status}__${sub.action ?? "__none"}`;
                               const actionCollapsed = collapsedActions.has(actionKey);
                               return (
-                                <div key={sub.action ?? "__none"}>
+                                <div key={sub.action ?? "__none"} className="flex items-stretch">
+                                  {/* Left action tile */}
                                   <button
                                     onClick={() => toggleAction(actionKey)}
-                                    className="flex items-center gap-2 px-3 py-2 w-full text-left bg-muted/40 border-b border-border hover:bg-muted/60 transition-colors"
+                                    className="w-[140px] shrink-0 px-3 py-2 flex flex-col items-start justify-start gap-0.5 bg-muted/50 border-r border-border hover:bg-muted/70 transition-colors cursor-pointer select-none text-left"
                                   >
-                                    <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${actionCollapsed ? "-rotate-90" : ""}`} />
-                                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                                      {sub.action ?? "brak działania"}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">({sub.orders.length})</span>
+                                    <div className="flex items-center gap-1.5 w-full">
+                                      <ChevronDown className={`h-3 w-3 text-muted-foreground transition-transform ${actionCollapsed ? "-rotate-90" : ""}`} />
+                                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide leading-tight">
+                                        {sub.action ?? "brak działania"}
+                                      </span>
+                                    </div>
+                                    <span className="text-[10px] text-muted-foreground/70 pl-[18px]">{sub.orders.length}</span>
                                   </button>
-                                  {!actionCollapsed && (
-                                    <Table className="table-fixed">
-                                      <TableBody>
-                                        {sub.orders.map((order: any) => (
-                                          <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
-                                        ))}
-                                      </TableBody>
-                                    </Table>
-                                  )}
+                                  {/* Right orders */}
+                                  <div className="flex-1 min-w-0">
+                                    {!actionCollapsed && (
+                                      <Table className="table-fixed">
+                                        <TableBody>
+                                          {sub.orders.map((order: any) => (
+                                            <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                                          ))}
+                                        </TableBody>
+                                      </Table>
+                                    )}
+                                  </div>
                                 </div>
                               );
                             })}
