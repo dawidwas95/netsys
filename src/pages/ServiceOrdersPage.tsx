@@ -106,7 +106,7 @@ function groupOrdersByAction(orders: any[]) {
   return actionGroups;
 }
 
-const COL_WIDTHS = "w-[13%] w-[10%] w-[13%] w-[11%] w-[13%] w-[9%] w-[10%] w-[9%] w-[12%]";
+const COL_WIDTHS = "w-[15%] w-[11%] w-[15%] w-[13%] w-[15%] w-[10%] w-[10%] w-[11%]";
 const COL_CLASSES = COL_WIDTHS.split(" ");
 
 function DesktopOrderRow({ order, unread }: { order: any; unread: boolean }) {
