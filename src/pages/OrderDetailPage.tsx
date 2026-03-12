@@ -169,8 +169,9 @@ function CommentsPanel({ comments, profileMap, comment, setComment, addComment, 
   );
 }
 
-export default function OrderDetailPage() {
-  const { id } = useParams<{ id: string }>();
+export default function OrderDetailPage({ orderId: propOrderId, isDialog }: { orderId?: string; isDialog?: boolean } = {}) {
+  const { id: paramId } = useParams<{ id: string }>();
+  const id = propOrderId || paramId;
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
