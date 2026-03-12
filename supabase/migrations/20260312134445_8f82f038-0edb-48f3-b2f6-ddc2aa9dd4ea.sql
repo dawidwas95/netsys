@@ -1,0 +1,1 @@
+ALTER TABLE public.service_orders ADD COLUMN action_category text DEFAULT null;
