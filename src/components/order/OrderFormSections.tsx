@@ -399,7 +399,6 @@ export function DiagnosisSection({ formData, onChange, onStatusChange }: { formD
             <Label className="text-xs">Status zlecenia</Label>
             <Select value={formData.status ?? "NEW"} onValueChange={(v) => {
               onStatusChange(v);
-              // Clear action_category if new status has no options
               const opts = ACTION_CATEGORY_OPTIONS[v] || [];
               if (opts.length === 0) onChange("action_category", null);
             }}>
@@ -407,9 +406,9 @@ export function DiagnosisSection({ formData, onChange, onStatusChange }: { formD
               <SelectContent>{Object.entries(ORDER_STATUS_LABELS).filter(([k]) => !["DIAGNOSIS", "COMPLETED", "CANCELLED"].includes(k)).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}</SelectContent>
             </Select>
           </div>
-          {(ACTION_CATEGORY_OPTIONS[formData.status] || []).length > 0 && (
-            <div className="space-y-1">
-              <Label className="text-xs">Działanie</Label>
+          <div className="space-y-1">
+            <Label className="text-xs">Działanie</Label>
+            {(ACTION_CATEGORY_OPTIONS[formData.status] || []).length > 0 ? (
               <Select value={formData.action_category ?? ""} onValueChange={(v) => onChange("action_category", v || null)}>
                 <SelectTrigger className="h-9"><SelectValue placeholder="Wybierz działanie..." /></SelectTrigger>
                 <SelectContent>
@@ -418,8 +417,10 @@ export function DiagnosisSection({ formData, onChange, onStatusChange }: { formD
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-          )}
+            ) : (
+              <div className="h-9 flex items-center px-3 rounded-md border border-input bg-muted/50 text-sm text-muted-foreground">—</div>
+            )}
+          </div>
         </div>
       )}
       <div className="space-y-1"><Label className="text-xs">Diagnoza</Label><Textarea rows={3} value={formData.diagnosis ?? ""} onChange={(e) => onChange("diagnosis", e.target.value)} placeholder="Wynik diagnostyki, ustalenia" /></div>
