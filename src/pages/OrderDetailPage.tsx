@@ -633,7 +633,7 @@ export default function OrderDetailPage() {
       const { error } = await supabase
         .from("service_orders")
         .update({
-          status: "CANCELLED",
+          status: "ARCHIVED",
           is_archived: true,
           is_paid: false,
           paid_at: null,
