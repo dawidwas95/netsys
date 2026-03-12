@@ -102,7 +102,7 @@ function DesktopOrderRow({ order, unread }: { order: any; unread: boolean }) {
           <Link to={`/orders/${order.id}`} className="font-medium text-primary hover:underline font-mono">
             {order.order_number}
           </Link>
-          <ScheduleBadgeWithAction orderId={order.id} orderNumber={order.order_number} date={order.planned_execution_date} time={order.planned_execution_time} />
+          
         </div>
       </TableCell>
       <TableCell className={`${COL_CLASSES[1]} text-xs`}>{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</TableCell>
