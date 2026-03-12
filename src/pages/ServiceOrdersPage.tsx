@@ -494,7 +494,7 @@ export default function ServiceOrdersPage() {
                     {/* Left status tile */}
                     <button
                       onClick={() => toggleGroup(group.status)}
-                      className={`${barColor} rounded-l-lg px-4 py-3 flex flex-col items-start justify-start gap-1 text-white cursor-pointer transition-opacity hover:opacity-90 select-none shrink-0 w-[180px] min-h-[52px]`}
+                      className={`${barColor} rounded-l-lg px-4 py-3 flex flex-col items-start justify-start gap-1 text-white cursor-pointer transition-opacity hover:opacity-90 select-none shrink-0 w-[180px] min-h-[52px] sticky left-0 z-10`}
                     >
                       <div className="flex items-center gap-2 w-full">
                         <ChevronDown className={`h-4 w-4 transition-transform ${collapsed ? "-rotate-90" : ""}`} />
