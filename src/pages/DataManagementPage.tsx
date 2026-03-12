@@ -72,45 +72,7 @@ export default function DataManagementPage() {
   const [exportFormat, setExportFormat] = useState<"json" | "sql">("json");
   const [restoreItem, setRestoreItem] = useState<{ table: string; id: string; name: string } | null>(null);
 
-  async function seedPhase(phase: string, label: string, runId: string) {
-    setSeedProgress(label);
-    const res = await supabase.functions.invoke("seed-test-data", { body: { phase, runId } });
-    if (res.error) throw res.error;
-    const data = res.data as any;
-    if (data?.error) throw new Error(data.error);
-    return data?.progress || [];
-  }
 
-  async function seedTestData() {
-    setSeeding(true);
-    const allProgress: string[] = [];
-    const runId = crypto.randomUUID().slice(0, 8);
-    try {
-      const phases = [
-        { phase: "clients", label: "Generowanie 30 000 klientów..." },
-        { phase: "devices", label: "Generowanie 5 000 urządzeń..." },
-        { phase: "inventory", label: "Generowanie magazynu..." },
-        { phase: "orders", label: "Generowanie 10 000 zleceń..." },
-        { phase: "docs1", label: "Generowanie dokumentów 1/5..." },
-        { phase: "docs2", label: "Generowanie dokumentów 2/5..." },
-        { phase: "docs3", label: "Generowanie dokumentów 3/5..." },
-        { phase: "docs4", label: "Generowanie dokumentów 4/5..." },
-        { phase: "docs5", label: "Generowanie dokumentów 5/5..." },
-        { phase: "extras", label: "Generowanie kasy i magazynu..." },
-      ];
-      for (const p of phases) {
-        const result = await seedPhase(p.phase, p.label, runId);
-        allProgress.push(...result);
-        toast.success(result.join(", "));
-      }
-      toast.success("✅ Wszystkie dane testowe załadowane!", { description: allProgress.join(", ") });
-    } catch (e: any) {
-      toast.error("Błąd seedowania: " + (e?.message || "unknown"));
-    } finally {
-      setSeeding(false);
-      setSeedProgress("");
-    }
-  }
 
   // Check admin role
   const { data: myRoles = [] } = useQuery({
