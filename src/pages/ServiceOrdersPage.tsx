@@ -473,19 +473,19 @@ export default function ServiceOrdersPage() {
         ) : groupedOrders ? (
           <>
             {/* Shared table header – offset by 180px status + 140px action = 320px */}
-            <div className="flex gap-0">
+            <div className="flex gap-0 sticky top-0 z-20 bg-background">
               <div className="w-[320px] shrink-0 sticky left-0 z-10 bg-background" />
               <div className="flex-1 min-w-0 data-table-wrapper rounded-b-none border-b-0">
                 <Table className="table-fixed">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className={COL_CLASSES[0]}>Nr zlecenia</TableHead>
-                      <TableHead className={COL_CLASSES[1]}>Dział</TableHead>
-                      <TableHead className={COL_CLASSES[2]}>Klient</TableHead>
-                      <TableHead className={COL_CLASSES[3]}>Urządzenie</TableHead>
-                      <TableHead className={COL_CLASSES[4]}>Technik</TableHead>
-                      <TableHead className={COL_CLASSES[5]}>Priorytet</TableHead>
-                      <TableHead className={COL_CLASSES[6]}>Data przyjęcia</TableHead>
+                      <TableHead className={COL_CLASSES[0]}>nr zlecenia</TableHead>
+                      <TableHead className={COL_CLASSES[1]}>dział</TableHead>
+                      <TableHead className={COL_CLASSES[2]}>klient</TableHead>
+                      <TableHead className={COL_CLASSES[3]}>urządzenie</TableHead>
+                      <TableHead className={COL_CLASSES[4]}>technik</TableHead>
+                      <TableHead className={COL_CLASSES[5]}>priorytet</TableHead>
+                      <TableHead className={COL_CLASSES[6]}>data przyjęcia</TableHead>
                     </TableRow>
                   </TableHeader>
                 </Table>
