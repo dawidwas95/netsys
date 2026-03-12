@@ -59,9 +59,14 @@ function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
         </span>
         <div className="flex items-center gap-1">
           <OrderStatusBadge status={order.status} />
-          <OrderStatusBadge status={order.status} />
         </div>
       </div>
+      {order.action_category && (
+        <div className="mobile-card-row">
+          <span className="mobile-card-label">Działanie</span>
+          <Badge variant="outline" className="text-xs">{order.action_category}</Badge>
+        </div>
+      )}
       <div className="mobile-card-row">
         <span className="mobile-card-label">Dział</span>
         <span className="text-sm">{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || "—"}</span>
