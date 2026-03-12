@@ -515,7 +515,7 @@ export default function OrderDetailPage() {
       const newStatus = updates.status;
       if (
         newStatus &&
-        (newStatus === "READY_FOR_RETURN" || newStatus === "COMPLETED") &&
+        newStatus === "READY_FOR_RETURN" &&
         order?.status !== newStatus
       ) {
         const deviceName = order?.devices
@@ -528,7 +528,7 @@ export default function OrderDetailPage() {
           clientEmail: (order?.clients as any)?.email,
           clientName: (order?.clients as any)?.display_name,
           deviceName,
-          eventType: newStatus as "READY_FOR_RETURN" | "COMPLETED",
+          eventType: "READY_FOR_RETURN",
         }).then((result) => {
           if (result?.success) {
             toast.success("Powiadomienie wysłane do klienta");
