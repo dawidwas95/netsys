@@ -226,11 +226,11 @@ export default function DataManagementPage() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-3">
-            Zredukuj dane do ~10 rekordów w każdej kategorii (klienci, urządzenia, dokumenty, magazyn, kasa, oferty).
-            Zlecenia: 10 na każdy status.
+            Usuń wszystkie dane z bazy (klienci, zlecenia, dokumenty, urządzenia, magazyn, kasa, oferty).
+            Operacja jest nieodwracalna!
           </p>
           <Button onClick={cleanupData} disabled={cleaning} variant="destructive">
-            {cleaning ? "⏳ Czyszczenie w toku..." : "🧹 Wyczyść bazę (zostaw po 10)"}
+            {cleaning ? "⏳ Czyszczenie w toku..." : "🧹 Wyczyść całą bazę"}
           </Button>
           {cleanResult.length > 0 && (
             <div className="mt-3 space-y-1">
