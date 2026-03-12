@@ -394,17 +394,17 @@ export default function ServiceOrdersPage() {
             <div className="flex gap-0">
               <div className="w-[180px] shrink-0" />
               <div className="flex-1 min-w-0 data-table-wrapper rounded-b-none border-b-0">
-                <Table>
+                <Table className="table-fixed">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nr zlecenia</TableHead>
-                      <TableHead>Dział</TableHead>
-                      <TableHead>Klient</TableHead>
-                      <TableHead>Urządzenie</TableHead>
-                      <TableHead>Technik</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Priorytet</TableHead>
-                      <TableHead>Data przyjęcia</TableHead>
+                      <TableHead className={COL_CLASSES[0]}>Nr zlecenia</TableHead>
+                      <TableHead className={COL_CLASSES[1]}>Dział</TableHead>
+                      <TableHead className={COL_CLASSES[2]}>Klient</TableHead>
+                      <TableHead className={COL_CLASSES[3]}>Urządzenie</TableHead>
+                      <TableHead className={COL_CLASSES[4]}>Technik</TableHead>
+                      <TableHead className={COL_CLASSES[5]}>Status</TableHead>
+                      <TableHead className={COL_CLASSES[6]}>Priorytet</TableHead>
+                      <TableHead className={COL_CLASSES[7]}>Data przyjęcia</TableHead>
                     </TableRow>
                   </TableHeader>
                 </Table>
