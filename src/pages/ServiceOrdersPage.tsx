@@ -322,6 +322,7 @@ export default function ServiceOrdersPage() {
               <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
             ))}
           </SelectContent>
+        </Select>
       </div>
 
       {/* Mobile card view */}
