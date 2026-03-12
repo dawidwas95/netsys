@@ -972,7 +972,18 @@ export default function OrderDetailPage() {
                 onChange={handleFieldChange}
                 onStatusChange={(v) => {
                   handleFieldChange("status", v);
-                  updateOrder.mutate({ status: v });
+                  const opts = (ACTION_CATEGORY_OPTIONS as Record<string, string[]>)[v] || [];
+                  const newAction = opts.length === 0 ? null : undefined;
+                  if (newAction === null) {
+                    handleFieldChange("action_category", null);
+                    updateOrder.mutate({ status: v, action_category: null });
+                  } else {
+                    updateOrder.mutate({ status: v });
+                  }
+                }}
+                onActionChange={(v) => {
+                  handleFieldChange("action_category", v);
+                  updateOrder.mutate({ action_category: v });
                 }}
               />
 

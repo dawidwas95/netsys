@@ -387,7 +387,7 @@ const REPAIR_APPROVAL_STATUS_LABELS: Record<string, { label: string; color: stri
 };
 
 // ═══ DIAGNOSIS SECTION ═══
-export function DiagnosisSection({ formData, onChange, onStatusChange }: { formData: Record<string, any>; onChange: (field: string, value: any) => void; onStatusChange?: (status: string) => void; }) {
+export function DiagnosisSection({ formData, onChange, onStatusChange, onActionChange }: { formData: Record<string, any>; onChange: (field: string, value: any) => void; onStatusChange?: (status: string) => void; onActionChange?: (value: string | null) => void; }) {
   const approvalStatus = formData.repair_approval_status ?? "NONE";
   const approvalInfo = REPAIR_APPROVAL_STATUS_LABELS[approvalStatus] || REPAIR_APPROVAL_STATUS_LABELS.NONE;
 
@@ -399,8 +399,6 @@ export function DiagnosisSection({ formData, onChange, onStatusChange }: { formD
             <Label className="text-xs">Status zlecenia</Label>
             <Select value={formData.status ?? "NEW"} onValueChange={(v) => {
               onStatusChange(v);
-              const opts = ACTION_CATEGORY_OPTIONS[v] || [];
-              if (opts.length === 0) onChange("action_category", null);
             }}>
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>{Object.entries(ORDER_STATUS_LABELS).filter(([k]) => !["DIAGNOSIS", "COMPLETED", "CANCELLED"].includes(k)).map(([k, v]) => (<SelectItem key={k} value={k}>{v}</SelectItem>))}</SelectContent>
@@ -409,7 +407,11 @@ export function DiagnosisSection({ formData, onChange, onStatusChange }: { formD
           <div className="space-y-1">
             <Label className="text-xs">Działanie</Label>
             {(ACTION_CATEGORY_OPTIONS[formData.status] || []).length > 0 ? (
-              <Select value={formData.action_category ?? ""} onValueChange={(v) => onChange("action_category", v || null)}>
+              <Select value={formData.action_category ?? ""} onValueChange={(v) => {
+                const val = v || null;
+                onChange("action_category", val);
+                onActionChange?.(val);
+              }}>
                 <SelectTrigger className="h-9"><SelectValue placeholder="Wybierz działanie..." /></SelectTrigger>
                 <SelectContent>
                   {(ACTION_CATEGORY_OPTIONS[formData.status] || []).map((opt) => (
