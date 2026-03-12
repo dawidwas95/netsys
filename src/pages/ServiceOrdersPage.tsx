@@ -47,6 +47,20 @@ const STATUS_GROUP_COLORS: Record<string, string> = {
   COMPLETED: "bg-green-600",
 };
 
+const STATUS_GROUP_COLORS_LIGHT: Record<string, string> = {
+  NEW: "bg-blue-200",
+  DIAGNOSIS_QUOTE: "bg-amber-200",
+  TODO: "bg-cyan-200",
+  IN_PROGRESS: "bg-orange-200",
+  WAITING: "bg-indigo-200",
+  WAITING_CLIENT: "bg-purple-200",
+  READY_FOR_RETURN: "bg-emerald-200",
+  ARCHIVED: "bg-gray-200",
+  CANCELLED: "bg-red-200",
+  DIAGNOSIS: "bg-amber-200",
+  COMPLETED: "bg-green-200",
+};
+
 // ── Extracted row components ──
 
 function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
@@ -515,7 +529,7 @@ export default function ServiceOrdersPage() {
                                   {/* Left action tile */}
                                   <button
                                     onClick={() => toggleAction(actionKey)}
-                                    className="w-[140px] shrink-0 px-3 py-2 flex flex-col items-start justify-start gap-0.5 bg-muted/50 border-r border-border hover:bg-muted/70 transition-colors cursor-pointer select-none text-left"
+                                    className={`w-[140px] shrink-0 px-3 py-2 flex flex-col items-start justify-start gap-0.5 ${STATUS_GROUP_COLORS_LIGHT[group.status] || "bg-muted/50"} border-r border-border hover:opacity-80 transition-colors cursor-pointer select-none text-left`}
                                   >
                                     <div className="flex items-center gap-1.5 w-full">
                                       <ChevronDown className={`h-3 w-3 text-muted-foreground transition-transform ${actionCollapsed ? "-rotate-90" : ""}`} />
