@@ -136,7 +136,11 @@ function DesktopOrderRow({ order, unread }: { order: any; unread: boolean }) {
         </div>
       </TableCell>
       <TableCell className={`${COL_CLASSES[1]} text-xs`}>{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</TableCell>
-      <TableCell className={COL_CLASSES[2]}>{order.clients?.display_name}</TableCell>
+      <TableCell className={COL_CLASSES[2]}>
+        {order.client_id ? (
+          <Link to={`/clients/${order.client_id}`} className="text-primary hover:underline">{order.clients?.display_name}</Link>
+        ) : (order.clients?.display_name ?? "—")}
+      </TableCell>
       <TableCell className={`${COL_CLASSES[3]} text-sm`}>
         {order.devices ? `${order.devices.manufacturer} ${order.devices.model}` : "—"}
       </TableCell>
