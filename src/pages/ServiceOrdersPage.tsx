@@ -14,7 +14,7 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, KanbanSquare, User, CalendarDays, Layers } from "lucide-react";
+import { Plus, Search, KanbanSquare, ChevronDown, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
@@ -113,7 +113,7 @@ export default function ServiceOrdersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [techFilter, setTechFilter] = useState<string>("all");
   const [deptFilter, setDeptFilter] = useState<string>("all");
-  const [groupByStatus, setGroupByStatus] = useState(true);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [dialogOpen, setDialogOpen] = useState(false);
   const { unreadOrderIds } = useUnreadOrders();
   const queryClient = useQueryClient();
@@ -198,8 +198,17 @@ export default function ServiceOrdersPage() {
     },
   });
 
+  const toggleGroup = (status: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
+      return next;
+    });
+  };
+
   const groupedOrders = useMemo(() => {
-    if (!orders || !groupByStatus || statusFilter !== "all") return null;
+    if (!orders || statusFilter !== "all") return null;
     const groups: { status: OrderStatus; label: string; orders: any[] }[] = [];
     STATUS_ORDER.forEach((status) => {
       const filtered = orders.filter((o: any) => o.status === status);
@@ -208,7 +217,7 @@ export default function ServiceOrdersPage() {
       }
     });
     return groups;
-  }, [orders, groupByStatus, statusFilter]);
+  }, [orders, statusFilter]);
 
   const createOrder = useMutation({
     mutationFn: async (data: ServiceOrderInsert & { _technicianId?: string }) => {
@@ -314,16 +323,6 @@ export default function ServiceOrdersPage() {
             ))}
           </SelectContent>
         </Select>
-        <Button
-          variant={groupByStatus ? "default" : "outline"}
-          size="sm"
-          className="min-h-[44px] shrink-0"
-          onClick={() => setGroupByStatus(!groupByStatus)}
-          title={groupByStatus ? "Wyłącz grupowanie" : "Grupuj wg statusu"}
-        >
-          <Layers className="h-4 w-4 mr-1" />
-          <span className="hidden sm:inline">Grupuj</span>
-        </Button>
       </div>
 
       {/* Mobile card view */}
@@ -333,19 +332,28 @@ export default function ServiceOrdersPage() {
         ) : !orders?.length ? (
           <div className="text-center py-8 text-muted-foreground">Brak zleceń</div>
         ) : groupedOrders ? (
-          groupedOrders.map((group) => (
-            <div key={group.status}>
-              <div className="flex items-center gap-2 mb-2 mt-4 first:mt-0">
-                <OrderStatusBadge status={group.status} />
-                <span className="text-xs text-muted-foreground">({group.orders.length})</span>
+          groupedOrders.map((group) => {
+            const collapsed = collapsedGroups.has(group.status);
+            return (
+              <div key={group.status}>
+                <button
+                  onClick={() => toggleGroup(group.status)}
+                  className="flex items-center gap-2 mb-2 mt-4 first:mt-0 w-full text-left"
+                >
+                  {collapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                  <OrderStatusBadge status={group.status} />
+                  <span className="text-xs text-muted-foreground">({group.orders.length})</span>
+                </button>
+                {!collapsed && (
+                  <div className="space-y-2">
+                    {group.orders.map((order: any) => (
+                      <MobileOrderCard key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="space-y-2">
-                {group.orders.map((order: any) => (
-                  <MobileOrderCard key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
-                ))}
-              </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           orders.map((order: any) => (
             <MobileOrderCard key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
@@ -374,21 +382,28 @@ export default function ServiceOrdersPage() {
             ) : !orders?.length ? (
               <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Brak zleceń</TableCell></TableRow>
             ) : groupedOrders ? (
-              groupedOrders.map((group) => (
-                <React.Fragment key={`group-${group.status}`}>
-                  <TableRow className="bg-muted/30 hover:bg-muted/40">
-                    <TableCell colSpan={8} className="py-2">
-                      <div className="flex items-center gap-2">
-                        <OrderStatusBadge status={group.status} />
-                        <span className="text-sm font-medium text-muted-foreground">({group.orders.length})</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                  {group.orders.map((order: any) => (
-                    <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
-                  ))}
-                </React.Fragment>
-              ))
+              groupedOrders.map((group) => {
+                const collapsed = collapsedGroups.has(group.status);
+                return (
+                  <React.Fragment key={`group-${group.status}`}>
+                    <TableRow
+                      className="bg-muted/30 hover:bg-muted/40 cursor-pointer select-none"
+                      onClick={() => toggleGroup(group.status)}
+                    >
+                      <TableCell colSpan={8} className="py-2">
+                        <div className="flex items-center gap-2">
+                          {collapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                          <OrderStatusBadge status={group.status} />
+                          <span className="text-sm font-medium text-muted-foreground">({group.orders.length})</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                    {!collapsed && group.orders.map((order: any) => (
+                      <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                    ))}
+                  </React.Fragment>
+                );
+              })
             ) : (
               orders.map((order: any) => (
                 <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
