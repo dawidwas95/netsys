@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,7 +14,7 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, KanbanSquare, User, CalendarDays } from "lucide-react";
+import { Plus, Search, KanbanSquare, User, CalendarDays, Layers } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
@@ -31,11 +31,89 @@ import {
   ClientSection, DeviceSection, OrderDataSection, DescriptionSection, TechnicianSelectSection,
 } from "@/components/order/OrderFormSections";
 
+const STATUS_ORDER: OrderStatus[] = ["NEW", "DIAGNOSIS", "IN_PROGRESS", "WAITING_CLIENT", "READY_FOR_RETURN", "COMPLETED", "ARCHIVED", "CANCELLED"];
+
+// ── Extracted row components ──
+
+function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
+  return (
+    <Link to={`/orders/${order.id}`} className={`mobile-data-card block ${unread ? "ring-2 ring-primary/30" : ""}`}>
+      <div className="mobile-card-header">
+        <span className="font-medium font-mono text-primary flex items-center gap-1.5">
+          {unread && <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />}
+          {order.order_number}
+        </span>
+        <div className="flex items-center gap-1">
+          <ScheduleBadgeWithAction orderId={order.id} orderNumber={order.order_number} date={order.planned_execution_date} time={order.planned_execution_time} />
+          <OrderStatusBadge status={order.status} />
+        </div>
+      </div>
+      <div className="mobile-card-row">
+        <span className="mobile-card-label">Dział</span>
+        <span className="text-sm">{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || "—"}</span>
+      </div>
+      <div className="mobile-card-row">
+        <span className="mobile-card-label">Klient</span>
+        <span className="text-sm">{order.clients?.display_name || "—"}</span>
+      </div>
+      <div className="mobile-card-row">
+        <span className="mobile-card-label">Urządzenie</span>
+        <span className="text-sm">{order.devices ? `${order.devices.manufacturer} ${order.devices.model}` : "—"}</span>
+      </div>
+      <div className="mobile-card-row">
+        <span className="mobile-card-label">Technik</span>
+        <TechnicianBadges orderId={order.id} compact />
+      </div>
+      <div className="mobile-card-row">
+        <span className="mobile-card-label">Priorytet</span>
+        <span className="text-sm">{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</span>
+      </div>
+      <div className="mobile-card-row">
+        <span className="mobile-card-label">Data</span>
+        <span className="text-sm">{new Date(order.received_at).toLocaleDateString("pl-PL")}</span>
+      </div>
+    </Link>
+  );
+}
+
+function DesktopOrderRow({ order, unread }: { order: any; unread: boolean }) {
+  return (
+    <TableRow className={`hover:bg-muted/50 ${unread ? "bg-primary/5" : ""}`}>
+      <TableCell>
+        <div className="flex items-center gap-1.5">
+          {unread && <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />}
+          <Link to={`/orders/${order.id}`} className="font-medium text-primary hover:underline font-mono">
+            {order.order_number}
+          </Link>
+          <ScheduleBadgeWithAction orderId={order.id} orderNumber={order.order_number} date={order.planned_execution_date} time={order.planned_execution_time} />
+        </div>
+      </TableCell>
+      <TableCell className="text-xs">{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</TableCell>
+      <TableCell>{order.clients?.display_name}</TableCell>
+      <TableCell className="text-sm">
+        {order.devices ? `${order.devices.manufacturer} ${order.devices.model}` : "—"}
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-1">
+          <TechnicianBadges orderId={order.id} compact />
+          <QuickAssignButton orderId={order.id} orderNumber={order.order_number} />
+        </div>
+      </TableCell>
+      <TableCell><OrderStatusBadge status={order.status} /></TableCell>
+      <TableCell className="text-sm">{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
+      <TableCell className="text-sm">{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
+    </TableRow>
+  );
+}
+
+// ── Main page ──
+
 export default function ServiceOrdersPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [techFilter, setTechFilter] = useState<string>("all");
   const [deptFilter, setDeptFilter] = useState<string>("all");
+  const [groupByStatus, setGroupByStatus] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { unreadOrderIds } = useUnreadOrders();
   const queryClient = useQueryClient();
@@ -52,7 +130,6 @@ export default function ServiceOrdersPage() {
     enabled: !!user,
   });
 
-  // Set default dept filter from profile on first load
   const [deptInitialized, setDeptInitialized] = useState(false);
   useEffect(() => {
     if (!deptInitialized && myProfile?.default_department) {
@@ -78,16 +155,11 @@ export default function ServiceOrdersPage() {
   const { data: orders, isLoading } = useQuery({
     queryKey: ["service-orders", search, statusFilter, techFilter, deptFilter],
     queryFn: async () => {
-      // If filtering by technician, first get matching order IDs
-      let techOrderIds: string[] | null = null;
       if (techFilter === "unassigned") {
-        // Get all order IDs that HAVE a technician
         const { data: assignedRows } = await supabase
           .from("order_technicians")
           .select("order_id");
         const assignedOrderIds = new Set((assignedRows ?? []).map((r: any) => r.order_id));
-        techOrderIds = []; // will be used as "exclude these" below
-        // We'll handle this differently: fetch all orders then filter
         let query = supabase
           .from("service_orders")
           .select("*, clients(display_name), devices(manufacturer, model)")
@@ -100,6 +172,7 @@ export default function ServiceOrdersPage() {
         return (data ?? []).filter((o: any) => !assignedOrderIds.has(o.id));
       }
 
+      let techOrderIds: string[] | null = null;
       if (techFilter !== "all") {
         const { data: techRows } = await supabase
           .from("order_technicians")
@@ -125,13 +198,23 @@ export default function ServiceOrdersPage() {
     },
   });
 
+  const groupedOrders = useMemo(() => {
+    if (!orders || !groupByStatus || statusFilter !== "all") return null;
+    const groups: { status: OrderStatus; label: string; orders: any[] }[] = [];
+    STATUS_ORDER.forEach((status) => {
+      const filtered = orders.filter((o: any) => o.status === status);
+      if (filtered.length > 0) {
+        groups.push({ status, label: ORDER_STATUS_LABELS[status], orders: filtered });
+      }
+    });
+    return groups;
+  }, [orders, groupByStatus, statusFilter]);
+
   const createOrder = useMutation({
     mutationFn: async (data: ServiceOrderInsert & { _technicianId?: string }) => {
       const { _technicianId, ...orderData } = data;
       const { data: inserted, error } = await supabase.from("service_orders").insert(orderData as any).select("id, order_number").single();
       if (error) throw error;
-
-      // Auto-assign technician if selected
       if (_technicianId && inserted) {
         await supabase.from("order_technicians").upsert({
           order_id: inserted.id,
@@ -139,7 +222,6 @@ export default function ServiceOrdersPage() {
           is_primary: true,
           assigned_by: user?.id,
         } as any, { onConflict: "order_id,user_id", ignoreDuplicates: true });
-
         await supabase.from("activity_logs").insert({
           entity_type: "service_order",
           entity_id: inserted.id,
@@ -221,18 +303,28 @@ export default function ServiceOrdersPage() {
               <SelectItem key={key} value={key}>{label}</SelectItem>
             ))}
           </SelectContent>
-         </Select>
-         <Select value={techFilter} onValueChange={setTechFilter}>
-           <SelectTrigger className="w-full sm:w-48 min-h-[44px]"><SelectValue placeholder="Technik" /></SelectTrigger>
-           <SelectContent>
-             <SelectItem value="all">Wszyscy technicy</SelectItem>
-             <SelectItem value="unassigned">Nieprzypisane</SelectItem>
-             {staffUsers.map((u) => (
-               <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
-             ))}
-           </SelectContent>
-         </Select>
-       </div>
+        </Select>
+        <Select value={techFilter} onValueChange={setTechFilter}>
+          <SelectTrigger className="w-full sm:w-48 min-h-[44px]"><SelectValue placeholder="Technik" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Wszyscy technicy</SelectItem>
+            <SelectItem value="unassigned">Nieprzypisane</SelectItem>
+            {staffUsers.map((u) => (
+              <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          variant={groupByStatus ? "default" : "outline"}
+          size="sm"
+          className="min-h-[44px] shrink-0"
+          onClick={() => setGroupByStatus(!groupByStatus)}
+          title={groupByStatus ? "Wyłącz grupowanie" : "Grupuj wg statusu"}
+        >
+          <Layers className="h-4 w-4 mr-1" />
+          <span className="hidden sm:inline">Grupuj</span>
+        </Button>
+      </div>
 
       {/* Mobile card view */}
       <div className="space-y-3 md:hidden">
@@ -240,44 +332,23 @@ export default function ServiceOrdersPage() {
           <div className="text-center py-8 text-muted-foreground">Ładowanie...</div>
         ) : !orders?.length ? (
           <div className="text-center py-8 text-muted-foreground">Brak zleceń</div>
+        ) : groupedOrders ? (
+          groupedOrders.map((group) => (
+            <div key={group.status}>
+              <div className="flex items-center gap-2 mb-2 mt-4 first:mt-0">
+                <OrderStatusBadge status={group.status} />
+                <span className="text-xs text-muted-foreground">({group.orders.length})</span>
+              </div>
+              <div className="space-y-2">
+                {group.orders.map((order: any) => (
+                  <MobileOrderCard key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                ))}
+              </div>
+            </div>
+          ))
         ) : (
           orders.map((order: any) => (
-            <Link key={order.id} to={`/orders/${order.id}`} className={`mobile-data-card block ${unreadOrderIds.has(order.id) ? "ring-2 ring-primary/30" : ""}`}>
-              <div className="mobile-card-header">
-                <span className="font-medium font-mono text-primary flex items-center gap-1.5">
-                  {unreadOrderIds.has(order.id) && <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />}
-                  {order.order_number}
-                </span>
-                <div className="flex items-center gap-1">
-                  <ScheduleBadgeWithAction orderId={order.id} orderNumber={order.order_number} date={(order as any).planned_execution_date} time={(order as any).planned_execution_time} />
-                  <OrderStatusBadge status={order.status} />
-                </div>
-              </div>
-              <div className="mobile-card-row">
-                <span className="mobile-card-label">Dział</span>
-                <span className="text-sm">{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || "—"}</span>
-              </div>
-              <div className="mobile-card-row">
-                <span className="mobile-card-label">Klient</span>
-                <span className="text-sm">{order.clients?.display_name || "—"}</span>
-              </div>
-              <div className="mobile-card-row">
-                <span className="mobile-card-label">Urządzenie</span>
-                <span className="text-sm">{order.devices ? `${order.devices.manufacturer} ${order.devices.model}` : "—"}</span>
-              </div>
-              <div className="mobile-card-row">
-                <span className="mobile-card-label">Technik</span>
-                <TechnicianBadges orderId={order.id} compact />
-              </div>
-              <div className="mobile-card-row">
-                <span className="mobile-card-label">Priorytet</span>
-                <span className="text-sm">{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</span>
-              </div>
-              <div className="mobile-card-row">
-                <span className="mobile-card-label">Data</span>
-                <span className="text-sm">{new Date(order.received_at).toLocaleDateString("pl-PL")}</span>
-              </div>
-            </Link>
+            <MobileOrderCard key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
           ))
         )}
       </div>
@@ -302,33 +373,25 @@ export default function ServiceOrdersPage() {
               <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Ładowanie...</TableCell></TableRow>
             ) : !orders?.length ? (
               <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Brak zleceń</TableCell></TableRow>
+            ) : groupedOrders ? (
+              groupedOrders.map((group) => (
+                <React.Fragment key={`group-${group.status}`}>
+                  <TableRow className="bg-muted/30 hover:bg-muted/40">
+                    <TableCell colSpan={8} className="py-2">
+                      <div className="flex items-center gap-2">
+                        <OrderStatusBadge status={group.status} />
+                        <span className="text-sm font-medium text-muted-foreground">({group.orders.length})</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                  {group.orders.map((order: any) => (
+                    <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                  ))}
+                </React.Fragment>
+              ))
             ) : (
               orders.map((order: any) => (
-                <TableRow key={order.id} className={`hover:bg-muted/50 ${unreadOrderIds.has(order.id) ? "bg-primary/5" : ""}`}>
-                  <TableCell>
-                    <div className="flex items-center gap-1.5">
-                      {unreadOrderIds.has(order.id) && <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />}
-                      <Link to={`/orders/${order.id}`} className="font-medium text-primary hover:underline font-mono">
-                        {order.order_number}
-                      </Link>
-                      <ScheduleBadgeWithAction orderId={order.id} orderNumber={order.order_number} date={(order as any).planned_execution_date} time={(order as any).planned_execution_time} />
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs">{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</TableCell>
-                  <TableCell>{order.clients?.display_name}</TableCell>
-                  <TableCell className="text-sm">
-                    {order.devices ? `${order.devices.manufacturer} ${order.devices.model}` : "—"}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <TechnicianBadges orderId={order.id} compact />
-                      <QuickAssignButton orderId={order.id} orderNumber={order.order_number} />
-                    </div>
-                  </TableCell>
-                  <TableCell><OrderStatusBadge status={order.status} /></TableCell>
-                  <TableCell className="text-sm">{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
-                  <TableCell className="text-sm">{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
-                </TableRow>
+                <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
               ))
             )}
           </TableBody>
