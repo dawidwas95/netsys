@@ -2560,6 +2560,9 @@ export type Database = {
         | "COMPLETED"
         | "ARCHIVED"
         | "CANCELLED"
+        | "DIAGNOSIS_QUOTE"
+        | "TODO"
+        | "WAITING"
       payment_method: "CASH" | "CARD" | "TRANSFER"
       purchase_request_status:
         | "NEW"
@@ -2791,6 +2794,9 @@ export const Constants = {
         "COMPLETED",
         "ARCHIVED",
         "CANCELLED",
+        "DIAGNOSIS_QUOTE",
+        "TODO",
+        "WAITING",
       ],
       payment_method: ["CASH", "CARD", "TRANSFER"],
       purchase_request_status: [
