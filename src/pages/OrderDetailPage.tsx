@@ -452,7 +452,7 @@ export default function OrderDetailPage() {
       }
 
       // Convert reservations to actual OUT movements on completion
-      if (isCompletingNow) {
+      if (updates.status === "ARCHIVED" && updates.completed_at) {
         const { data: reservations } = await supabase
           .from("inventory_reservations" as any)
           .select("id, inventory_item_id, quantity, service_order_item_id")
