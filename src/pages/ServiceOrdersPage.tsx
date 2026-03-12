@@ -58,7 +58,7 @@ function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
           {order.order_number}
         </span>
         <div className="flex items-center gap-1">
-          <ScheduleBadgeWithAction orderId={order.id} orderNumber={order.order_number} date={order.planned_execution_date} time={order.planned_execution_time} />
+          <OrderStatusBadge status={order.status} />
           <OrderStatusBadge status={order.status} />
         </div>
       </div>
