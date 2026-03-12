@@ -376,57 +376,79 @@ export default function ServiceOrdersPage() {
         )}
       </div>
 
-      {/* Desktop table view */}
-      <div className="data-table-wrapper hidden md:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nr zlecenia</TableHead>
-              <TableHead>Dział</TableHead>
-              <TableHead>Klient</TableHead>
-              <TableHead>Urządzenie</TableHead>
-              <TableHead>Technik</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Priorytet</TableHead>
-              <TableHead>Data przyjęcia</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Ładowanie...</TableCell></TableRow>
-            ) : !orders?.length ? (
-              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Brak zleceń</TableCell></TableRow>
-            ) : groupedOrders ? (
-              groupedOrders.map((group) => {
-                const collapsed = collapsedGroups.has(group.status);
-                const barColor = STATUS_GROUP_COLORS[group.status];
-                return (
-                  <React.Fragment key={`group-${group.status}`}>
-                    <TableRow className="border-b-0 hover:bg-transparent">
-                      <TableCell colSpan={8} className="py-1.5 px-1">
-                        <button
-                          onClick={() => toggleGroup(group.status)}
-                          className={`${barColor} w-full rounded-lg px-4 py-3 flex items-center gap-3 text-white cursor-pointer transition-opacity hover:opacity-90 select-none`}
-                        >
-                          {collapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronDown className="h-5 w-5 rotate-180" />}
-                          <span className="font-semibold text-sm">{ORDER_STATUS_LABELS[group.status]}</span>
-                          <span className="text-sm opacity-80">({group.orders.length})</span>
-                        </button>
-                      </TableCell>
-                    </TableRow>
-                    {!collapsed && group.orders.map((order: any) => (
-                      <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
-                    ))}
-                  </React.Fragment>
-                );
-              })
-            ) : (
-              orders.map((order: any) => (
-                <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
-              ))
-            )}
-          </TableBody>
-        </Table>
+      {/* Desktop view */}
+      <div className="hidden md:block space-y-3">
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Ładowanie...</div>
+        ) : !orders?.length ? (
+          <div className="text-center py-8 text-muted-foreground">Brak zleceń</div>
+        ) : groupedOrders ? (
+          groupedOrders.map((group) => {
+            const collapsed = collapsedGroups.has(group.status);
+            const barColor = STATUS_GROUP_COLORS[group.status];
+            return (
+              <div key={group.status} className="flex gap-0 items-stretch">
+                {/* Left status tile */}
+                <button
+                  onClick={() => toggleGroup(group.status)}
+                  className={`${barColor} rounded-l-lg px-4 py-3 flex flex-col items-start justify-start gap-1 text-white cursor-pointer transition-opacity hover:opacity-90 select-none shrink-0 w-[180px] min-h-[52px]`}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <ChevronDown className={`h-4 w-4 transition-transform ${collapsed ? "" : "rotate-180"}`} />
+                    <span className="font-semibold text-sm">{ORDER_STATUS_LABELS[group.status]}</span>
+                  </div>
+                  <span className="text-xs opacity-80 pl-6">{group.orders.length} zleceń</span>
+                </button>
+                {/* Right orders area */}
+                <div className={`flex-1 min-w-0 border border-l-0 border-border rounded-r-lg ${collapsed ? "" : "bg-card"}`}>
+                  {!collapsed && (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nr zlecenia</TableHead>
+                          <TableHead>Dział</TableHead>
+                          <TableHead>Klient</TableHead>
+                          <TableHead>Urządzenie</TableHead>
+                          <TableHead>Technik</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Priorytet</TableHead>
+                          <TableHead>Data przyjęcia</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {group.orders.map((order: any) => (
+                          <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="data-table-wrapper">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nr zlecenia</TableHead>
+                  <TableHead>Dział</TableHead>
+                  <TableHead>Klient</TableHead>
+                  <TableHead>Urządzenie</TableHead>
+                  <TableHead>Technik</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Priorytet</TableHead>
+                  <TableHead>Data przyjęcia</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {orders.map((order: any) => (
+                  <DesktopOrderRow key={order.id} order={order} unread={unreadOrderIds.has(order.id)} />
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
     </div>
   );
