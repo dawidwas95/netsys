@@ -536,7 +536,7 @@ export default function ServiceOrdersPage() {
                                   >
                                     <div className="flex items-center gap-1.5 w-full">
                                       <ChevronDown className={`h-3 w-3 text-muted-foreground transition-transform ${actionCollapsed ? "-rotate-90" : ""}`} />
-                                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide leading-tight">
+                                      <span className="text-[11px] font-semibold text-muted-foreground leading-tight">
                                         {sub.action ?? "brak działania"}
                                       </span>
                                     </div>
