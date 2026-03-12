@@ -457,8 +457,8 @@ export default function ServiceOrdersPage() {
       </div>
 
       {/* Desktop view */}
-      <div className="hidden md:block space-y-0">
-        {isLoading ? (
+      <div className="hidden md:block overflow-x-auto">
+        <div className="min-w-[1100px] space-y-0">
           <div className="text-center py-8 text-muted-foreground">Ładowanie...</div>
         ) : !orders?.length ? (
           <div className="text-center py-8 text-muted-foreground">Brak zleceń</div>
