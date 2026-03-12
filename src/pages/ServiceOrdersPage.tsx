@@ -198,8 +198,17 @@ export default function ServiceOrdersPage() {
     },
   });
 
+  const toggleGroup = (status: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
+      return next;
+    });
+  };
+
   const groupedOrders = useMemo(() => {
-    if (!orders || !groupByStatus || statusFilter !== "all") return null;
+    if (!orders || statusFilter !== "all") return null;
     const groups: { status: OrderStatus; label: string; orders: any[] }[] = [];
     STATUS_ORDER.forEach((status) => {
       const filtered = orders.filter((o: any) => o.status === status);
@@ -208,7 +217,7 @@ export default function ServiceOrdersPage() {
       }
     });
     return groups;
-  }, [orders, groupByStatus, statusFilter]);
+  }, [orders, statusFilter]);
 
   const createOrder = useMutation({
     mutationFn: async (data: ServiceOrderInsert & { _technicianId?: string }) => {
