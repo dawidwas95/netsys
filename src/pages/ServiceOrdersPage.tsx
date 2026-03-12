@@ -499,7 +499,6 @@ export default function ServiceOrdersPage() {
                   <TableHead>Urządzenie</TableHead>
                   <TableHead>Technik</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Działanie</TableHead>
                   <TableHead>Priorytet</TableHead>
                   <TableHead>Data przyjęcia</TableHead>
                 </TableRow>
