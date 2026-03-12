@@ -44,14 +44,17 @@ export type ServiceOrderWithRelations = ServiceOrder & {
 
 // Labels
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  NEW: "Nowe",
-  DIAGNOSIS: "Diagnostyka",
-  IN_PROGRESS: "W trakcie",
-  WAITING_CLIENT: "Kontakt z klientem",
-  READY_FOR_RETURN: "Do zwrotu",
-  COMPLETED: "Zakończone",
-  ARCHIVED: "Archiwum",
-  CANCELLED: "Anulowane",
+  NEW: "nowe",
+  DIAGNOSIS: "diagnostyka / wycena",
+  DIAGNOSIS_QUOTE: "diagnostyka / wycena",
+  TODO: "do zrobienia",
+  IN_PROGRESS: "robione",
+  WAITING: "oczekiwane",
+  WAITING_CLIENT: "kontakt z klientem",
+  READY_FOR_RETURN: "do zwrotu",
+  COMPLETED: "archiwum",
+  ARCHIVED: "archiwum",
+  CANCELLED: "anulowane",
 };
 
 export const ORDER_PRIORITY_LABELS: Record<OrderPriority, string> = {
