@@ -2553,7 +2553,7 @@ export type Database = {
         | "REJECTED"
         | "CANCELLED"
         | "EXPIRED"
-      order_priority: "LOW" | "NORMAL" | "HIGH" | "URGENT"
+      order_priority: "NORMAL" | "HIGH" | "URGENT"
       order_status:
         | "NEW"
         | "DIAGNOSIS"
@@ -2787,7 +2787,7 @@ export const Constants = {
         "CANCELLED",
         "EXPIRED",
       ],
-      order_priority: ["LOW", "NORMAL", "HIGH", "URGENT"],
+      order_priority: ["NORMAL", "HIGH", "URGENT"],
       order_status: [
         "NEW",
         "DIAGNOSIS",
