@@ -133,7 +133,7 @@ function groupOrdersByAction(orders: any[]) {
   return actionGroups;
 }
 
-const COL_WIDTHS = "w-[15%] w-[10%] w-[18%] w-[12%] w-[12%] w-[12%] w-[21%]";
+const COL_WIDTHS = "w-[13%] w-[8%] w-[14%] w-[9%] w-[9%] w-[9%] w-[15%] w-[11%] w-[12%]";
 const COL_CLASSES = COL_WIDTHS.split(" ");
 
 function DesktopOrderRow({ order, unread, onClientClick, onOrderClick }: { order: any; unread: boolean; onClientClick?: (clientId: string) => void; onOrderClick?: (orderId: string) => void }) {
@@ -176,6 +176,8 @@ function DesktopOrderRow({ order, unread, onClientClick, onOrderClick }: { order
           </button>
         ) : (order.clients?.display_name ?? "—")}
       </TableCell>
+      <TableCell className={`${COL_CLASSES[7]} text-xs`}>{order.clients?.address_city || "—"}</TableCell>
+      <TableCell className={`${COL_CLASSES[8]} text-xs`}>{order.clients?.address_street || "—"}</TableCell>
     </TableRow>
   );
 }
@@ -239,7 +241,7 @@ export default function ServiceOrdersPage() {
         const assignedOrderIds = new Set((assignedRows ?? []).map((r: any) => r.order_id));
         let query = supabase
           .from("service_orders")
-          .select("*, clients(display_name), devices(manufacturer, model)")
+          .select("*, clients(display_name, address_city, address_street), devices(manufacturer, model)")
           .order("received_at", { ascending: false });
         if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
         if (deptFilter !== "all") query = query.eq("service_type", deptFilter as any);
@@ -261,7 +263,7 @@ export default function ServiceOrdersPage() {
 
       let query = supabase
         .from("service_orders")
-        .select("*, clients(display_name), devices(manufacturer, model)")
+        .select("*, clients(display_name, address_city, address_street), devices(manufacturer, model)")
         .order("received_at", { ascending: false });
 
       if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
@@ -509,6 +511,8 @@ export default function ServiceOrdersPage() {
                     <TableHead className={COL_CLASSES[4]}>przyjęcie</TableHead>
                     <TableHead className={COL_CLASSES[5]}>zakończenie</TableHead>
                     <TableHead className={COL_CLASSES[6]}>klient</TableHead>
+                    <TableHead className={COL_CLASSES[7]}>miasto</TableHead>
+                    <TableHead className={COL_CLASSES[8]}>adres</TableHead>
                   </TableRow>
                 </TableHeader>
               </Table>
@@ -608,6 +612,8 @@ export default function ServiceOrdersPage() {
                   <TableHead>Przyjęcie</TableHead>
                   <TableHead>Zakończenie</TableHead>
                   <TableHead>Klient</TableHead>
+                  <TableHead>Miasto</TableHead>
+                  <TableHead>Adres</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
