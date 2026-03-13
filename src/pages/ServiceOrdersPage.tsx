@@ -177,7 +177,7 @@ function DesktopOrderRow({ order, unread, onClientClick, onOrderClick }: { order
         ) : (order.clients?.display_name ?? "—")}
       </TableCell>
       <TableCell className={`${COL_CLASSES[7]} text-xs`}>{order.clients?.address_city || "—"}</TableCell>
-      <TableCell className={`${COL_CLASSES[8]} text-xs`}>{order.clients?.address_street || "—"}</TableCell>
+      <TableCell className={`${COL_CLASSES[8]} text-xs`}>{[order.clients?.address_street, order.clients?.address_building].filter(Boolean).join(" ") || "—"}</TableCell>
     </TableRow>
   );
 }
@@ -241,7 +241,7 @@ export default function ServiceOrdersPage() {
         const assignedOrderIds = new Set((assignedRows ?? []).map((r: any) => r.order_id));
         let query = supabase
           .from("service_orders")
-          .select("*, clients(display_name, address_city, address_street), devices(manufacturer, model)")
+          .select("*, clients(display_name, address_city, address_street, address_building), devices(manufacturer, model)")
           .order("received_at", { ascending: false });
         if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
         if (deptFilter !== "all") query = query.eq("service_type", deptFilter as any);
@@ -263,7 +263,7 @@ export default function ServiceOrdersPage() {
 
       let query = supabase
         .from("service_orders")
-        .select("*, clients(display_name, address_city, address_street), devices(manufacturer, model)")
+        .select("*, clients(display_name, address_city, address_street, address_building), devices(manufacturer, model)")
         .order("received_at", { ascending: false });
 
       if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
