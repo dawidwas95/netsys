@@ -98,9 +98,19 @@ function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
         <span className="text-sm">{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</span>
       </div>
       <div className="mobile-card-row">
-        <span className="mobile-card-label">Data</span>
+        <span className="mobile-card-label">Dodano</span>
+        <span className="text-sm">{new Date(order.created_at).toLocaleDateString("pl-PL")}</span>
+      </div>
+      <div className="mobile-card-row">
+        <span className="mobile-card-label">Przyjęcie</span>
         <span className="text-sm">{new Date(order.received_at).toLocaleDateString("pl-PL")}</span>
       </div>
+      {order.completed_at && (
+        <div className="mobile-card-row">
+          <span className="mobile-card-label">Zakończenie</span>
+          <span className="text-sm">{new Date(order.completed_at).toLocaleDateString("pl-PL")}</span>
+        </div>
+      )}
     </Link>
   );
 }
@@ -122,7 +132,7 @@ function groupOrdersByAction(orders: any[]) {
   return actionGroups;
 }
 
-const COL_WIDTHS = "w-[17%] w-[12%] w-[18%] w-[15%] w-[17%] w-[10%] w-[11%]";
+const COL_WIDTHS = "w-[14%] w-[10%] w-[15%] w-[13%] w-[14%] w-[8%] w-[9%] w-[9%] w-[8%]";
 const COL_CLASSES = COL_WIDTHS.split(" ");
 
 function DesktopOrderRow({ order, unread, onClientClick, onOrderClick }: { order: any; unread: boolean; onClientClick?: (clientId: string) => void; onOrderClick?: (orderId: string) => void }) {
@@ -153,8 +163,10 @@ function DesktopOrderRow({ order, unread, onClientClick, onOrderClick }: { order
           <QuickAssignButton orderId={order.id} orderNumber={order.order_number} />
         </div>
       </TableCell>
-      <TableCell className={`${COL_CLASSES[5]} text-sm`}>{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
-      <TableCell className={`${COL_CLASSES[6]} text-sm`}>{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
+      <TableCell className={`${COL_CLASSES[5]} text-xs`}>{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
+      <TableCell className={`${COL_CLASSES[6]} text-xs`}>{new Date(order.created_at).toLocaleDateString("pl-PL")}</TableCell>
+      <TableCell className={`${COL_CLASSES[7]} text-xs`}>{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
+      <TableCell className={`${COL_CLASSES[8]} text-xs`}>{order.completed_at ? new Date(order.completed_at).toLocaleDateString("pl-PL") : "—"}</TableCell>
     </TableRow>
   );
 }
@@ -467,7 +479,7 @@ export default function ServiceOrdersPage() {
 
       {/* Desktop view */}
       <div className="hidden md:block overflow-auto max-h-[calc(100vh-280px)]">
-        <div className="min-w-[1100px] space-y-0">
+        <div className="min-w-[1300px] space-y-0">
         {isLoading ? (
           <div className="text-center py-8 text-muted-foreground">Ładowanie...</div>
         ) : !orders?.length ? (
@@ -487,7 +499,9 @@ export default function ServiceOrdersPage() {
                     <TableHead className={COL_CLASSES[3]}>urządzenie</TableHead>
                     <TableHead className={COL_CLASSES[4]}>technik</TableHead>
                     <TableHead className={COL_CLASSES[5]}>priorytet</TableHead>
-                    <TableHead className={COL_CLASSES[6]}>data przyjęcia</TableHead>
+                    <TableHead className={COL_CLASSES[6]}>dodano</TableHead>
+                    <TableHead className={COL_CLASSES[7]}>przyjęcie</TableHead>
+                    <TableHead className={COL_CLASSES[8]}>zakończenie</TableHead>
                   </TableRow>
                 </TableHeader>
               </Table>
@@ -580,14 +594,16 @@ export default function ServiceOrdersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nr zlecenia</TableHead>
+                 <TableHead>Nr zlecenia</TableHead>
                   <TableHead>Dział</TableHead>
                   <TableHead>Klient</TableHead>
                   <TableHead>Urządzenie</TableHead>
                   <TableHead>Technik</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Priorytet</TableHead>
-                  <TableHead>Data przyjęcia</TableHead>
+                  <TableHead>Dodano</TableHead>
+                  <TableHead>Przyjęcie</TableHead>
+                  <TableHead>Zakończenie</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -819,6 +819,11 @@ export default function OrderDetailPage({ orderId: propOrderId, isDialog }: { or
               {(order as any).repair_approval_status === "APPROVED_BY_CUSTOMER" && <Badge className="bg-green-100 text-green-800 border-green-300">🟢 Klient zaakceptował</Badge>}
               {(order as any).repair_approval_status === "REJECTED_BY_CUSTOMER" && <Badge className="bg-red-100 text-red-800 border-red-300">🔴 Klient odrzucił</Badge>}
             </div>
+            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground flex-wrap">
+              <span>📥 Dodano: {new Date(order.created_at).toLocaleString("pl-PL")}</span>
+              <span>📦 Przyjęcie: {new Date(order.received_at).toLocaleString("pl-PL")}</span>
+              {order.completed_at && <span>✅ Zakończono: {new Date(order.completed_at).toLocaleString("pl-PL")}</span>}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
