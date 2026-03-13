@@ -263,7 +263,7 @@ export default function ServiceOrdersPage() {
 
       let query = supabase
         .from("service_orders")
-        .select("*, clients(display_name, address_city, address_street), devices(manufacturer, model)")
+        .select("*, clients(display_name, address_city, address_street, address_building), devices(manufacturer, model)")
         .order("received_at", { ascending: false });
 
       if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
