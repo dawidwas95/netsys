@@ -98,9 +98,19 @@ function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
         <span className="text-sm">{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</span>
       </div>
       <div className="mobile-card-row">
-        <span className="mobile-card-label">Data</span>
+        <span className="mobile-card-label">Dodano</span>
+        <span className="text-sm">{new Date(order.created_at).toLocaleDateString("pl-PL")}</span>
+      </div>
+      <div className="mobile-card-row">
+        <span className="mobile-card-label">Przyjęcie</span>
         <span className="text-sm">{new Date(order.received_at).toLocaleDateString("pl-PL")}</span>
       </div>
+      {order.completed_at && (
+        <div className="mobile-card-row">
+          <span className="mobile-card-label">Zakończenie</span>
+          <span className="text-sm">{new Date(order.completed_at).toLocaleDateString("pl-PL")}</span>
+        </div>
+      )}
     </Link>
   );
 }
