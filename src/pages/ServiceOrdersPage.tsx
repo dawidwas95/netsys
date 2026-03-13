@@ -489,7 +489,9 @@ export default function ServiceOrdersPage() {
                     <TableHead className={COL_CLASSES[3]}>urządzenie</TableHead>
                     <TableHead className={COL_CLASSES[4]}>technik</TableHead>
                     <TableHead className={COL_CLASSES[5]}>priorytet</TableHead>
-                    <TableHead className={COL_CLASSES[6]}>data przyjęcia</TableHead>
+                    <TableHead className={COL_CLASSES[6]}>dodano</TableHead>
+                    <TableHead className={COL_CLASSES[7]}>przyjęcie</TableHead>
+                    <TableHead className={COL_CLASSES[8]}>zakończenie</TableHead>
                   </TableRow>
                 </TableHeader>
               </Table>
