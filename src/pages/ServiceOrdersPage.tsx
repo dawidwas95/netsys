@@ -153,8 +153,10 @@ function DesktopOrderRow({ order, unread, onClientClick, onOrderClick }: { order
           <QuickAssignButton orderId={order.id} orderNumber={order.order_number} />
         </div>
       </TableCell>
-      <TableCell className={`${COL_CLASSES[5]} text-sm`}>{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
-      <TableCell className={`${COL_CLASSES[6]} text-sm`}>{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
+      <TableCell className={`${COL_CLASSES[5]} text-xs`}>{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
+      <TableCell className={`${COL_CLASSES[6]} text-xs`}>{new Date(order.created_at).toLocaleDateString("pl-PL")}</TableCell>
+      <TableCell className={`${COL_CLASSES[7]} text-xs`}>{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
+      <TableCell className={`${COL_CLASSES[8]} text-xs`}>{order.completed_at ? new Date(order.completed_at).toLocaleDateString("pl-PL") : "—"}</TableCell>
     </TableRow>
   );
 }
