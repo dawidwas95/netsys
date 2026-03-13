@@ -584,14 +584,16 @@ export default function ServiceOrdersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nr zlecenia</TableHead>
+                 <TableHead>Nr zlecenia</TableHead>
                   <TableHead>Dział</TableHead>
                   <TableHead>Klient</TableHead>
                   <TableHead>Urządzenie</TableHead>
                   <TableHead>Technik</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Priorytet</TableHead>
-                  <TableHead>Data przyjęcia</TableHead>
+                  <TableHead>Dodano</TableHead>
+                  <TableHead>Przyjęcie</TableHead>
+                  <TableHead>Zakończenie</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
