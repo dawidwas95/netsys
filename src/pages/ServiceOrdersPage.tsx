@@ -137,6 +137,16 @@ const COL_WIDTHS = "w-[14%] w-[10%] w-[15%] w-[13%] w-[14%] w-[8%] w-[9%] w-[9%]
 const COL_CLASSES = COL_WIDTHS.split(" ");
 
 function DesktopOrderRow({ order, unread, onClientClick, onOrderClick }: { order: any; unread: boolean; onClientClick?: (clientId: string) => void; onOrderClick?: (orderId: string) => void }) {
+  const queryClient = useQueryClient();
+  const updatePriority = useMutation({
+    mutationFn: async (priority: OrderPriority) => {
+      const { error } = await supabase.from("service_orders").update({ priority } as any).eq("id", order.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["service-orders"] }); toast.success("Priorytet zmieniony"); },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   return (
     <TableRow className={`hover:bg-muted/50 ${unread ? "bg-primary/5" : ""}`}>
       <TableCell className={COL_CLASSES[0]}>
@@ -164,7 +174,9 @@ function DesktopOrderRow({ order, unread, onClientClick, onOrderClick }: { order
           <QuickAssignButton orderId={order.id} orderNumber={order.order_number} />
         </div>
       </TableCell>
-      <TableCell className={`${COL_CLASSES[5]} text-xs`}><PriorityIndicator priority={order.priority as OrderPriority} /></TableCell>
+      <TableCell className={`${COL_CLASSES[5]} text-xs`}>
+        <PrioritySelector priority={order.priority as OrderPriority} onSelect={(p) => updatePriority.mutate(p)} />
+      </TableCell>
       <TableCell className={`${COL_CLASSES[6]} text-xs`}>{new Date(order.created_at).toLocaleDateString("pl-PL")}</TableCell>
       <TableCell className={`${COL_CLASSES[7]} text-xs`}>{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
       <TableCell className={`${COL_CLASSES[8]} text-xs`}>{order.completed_at ? new Date(order.completed_at).toLocaleDateString("pl-PL") : "—"}</TableCell>
