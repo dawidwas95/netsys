@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { TechnicianBadges, QuickAssignButton } from "@/components/TechnicianAssignment";
 import { ClientQuickViewDialog } from "@/components/ClientQuickViewDialog";
+import { PriorityIndicator } from "@/components/PriorityIndicator";
 import { OrderQuickEditDialog } from "@/components/OrderQuickEditDialog";
 
 import {
@@ -95,7 +96,7 @@ function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
       </div>
       <div className="mobile-card-row">
         <span className="mobile-card-label">Priorytet</span>
-        <span className="text-sm">{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</span>
+        <PriorityIndicator priority={order.priority as OrderPriority} />
       </div>
       <div className="mobile-card-row">
         <span className="mobile-card-label">Dodano</span>
@@ -163,7 +164,7 @@ function DesktopOrderRow({ order, unread, onClientClick, onOrderClick }: { order
           <QuickAssignButton orderId={order.id} orderNumber={order.order_number} />
         </div>
       </TableCell>
-      <TableCell className={`${COL_CLASSES[5]} text-xs`}>{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</TableCell>
+      <TableCell className={`${COL_CLASSES[5]} text-xs`}><PriorityIndicator priority={order.priority as OrderPriority} /></TableCell>
       <TableCell className={`${COL_CLASSES[6]} text-xs`}>{new Date(order.created_at).toLocaleDateString("pl-PL")}</TableCell>
       <TableCell className={`${COL_CLASSES[7]} text-xs`}>{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
       <TableCell className={`${COL_CLASSES[8]} text-xs`}>{order.completed_at ? new Date(order.completed_at).toLocaleDateString("pl-PL") : "—"}</TableCell>

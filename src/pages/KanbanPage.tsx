@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { PriorityIndicator } from "@/components/PriorityIndicator";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -312,11 +313,7 @@ function KanbanCardContent({
   order: ServiceOrderWithRelations;
   isDragging?: boolean;
 }) {
-  const priorityColors: Record<string, string> = {
-    NORMAL: "bg-priority-normal/10 text-priority-normal",
-    HIGH: "bg-priority-high/10 text-priority-high",
-    URGENT: "bg-priority-urgent/10 text-priority-urgent",
-  };
+  const priorityLabel = ORDER_PRIORITY_LABELS[order.priority] ?? order.priority;
 
   return (
     <Link
@@ -328,9 +325,7 @@ function KanbanCardContent({
         <span className="text-xs font-mono font-medium text-primary">
           {order.order_number}
         </span>
-        <span className={`status-badge text-[10px] ${priorityColors[order.priority]}`}>
-          {ORDER_PRIORITY_LABELS[order.priority]}
-        </span>
+        <PriorityIndicator priority={order.priority} />
       </div>
 
       <div className="flex items-center justify-between mb-1">
