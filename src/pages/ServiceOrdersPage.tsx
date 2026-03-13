@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { TechnicianBadges, QuickAssignButton } from "@/components/TechnicianAssignment";
 import { ClientQuickViewDialog } from "@/components/ClientQuickViewDialog";
+import { PriorityIndicator } from "@/components/PriorityIndicator";
 import { OrderQuickEditDialog } from "@/components/OrderQuickEditDialog";
 
 import {
