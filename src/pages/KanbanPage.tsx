@@ -325,9 +325,7 @@ function KanbanCardContent({
         <span className="text-xs font-mono font-medium text-primary">
           {order.order_number}
         </span>
-        <span className={`status-badge text-[10px] ${priorityColors[order.priority]}`}>
-          {ORDER_PRIORITY_LABELS[order.priority]}
-        </span>
+        <PriorityIndicator priority={order.priority} />
       </div>
 
       <div className="flex items-center justify-between mb-1">
