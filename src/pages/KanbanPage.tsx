@@ -313,11 +313,7 @@ function KanbanCardContent({
   order: ServiceOrderWithRelations;
   isDragging?: boolean;
 }) {
-  const priorityColors: Record<string, string> = {
-    NORMAL: "bg-priority-normal/10 text-priority-normal",
-    HIGH: "bg-priority-high/10 text-priority-high",
-    URGENT: "bg-priority-urgent/10 text-priority-urgent",
-  };
+  const priorityLabel = ORDER_PRIORITY_LABELS[order.priority] ?? order.priority;
 
   return (
     <Link
