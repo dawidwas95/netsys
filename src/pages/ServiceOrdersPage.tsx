@@ -133,7 +133,7 @@ function groupOrdersByAction(orders: any[]) {
   return actionGroups;
 }
 
-const COL_WIDTHS = "w-[15%] w-[10%] w-[18%] w-[12%] w-[12%] w-[12%] w-[21%]";
+const COL_WIDTHS = "w-[13%] w-[8%] w-[14%] w-[9%] w-[9%] w-[9%] w-[15%] w-[11%] w-[12%]";
 const COL_CLASSES = COL_WIDTHS.split(" ");
 
 function DesktopOrderRow({ order, unread, onClientClick, onOrderClick }: { order: any; unread: boolean; onClientClick?: (clientId: string) => void; onOrderClick?: (orderId: string) => void }) {
