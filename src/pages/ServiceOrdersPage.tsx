@@ -492,6 +492,7 @@ export default function ServiceOrdersPage() {
                     <TableHead className={COL_CLASSES[6]}>klient</TableHead>
                     <TableHead className={COL_CLASSES[7]}>miasto</TableHead>
                     <TableHead className={COL_CLASSES[8]}>adres</TableHead>
+                    <TableHead className={COL_CLASSES[9]}>telefon</TableHead>
                   </TableRow>
                 </TableHeader>
               </Table>
