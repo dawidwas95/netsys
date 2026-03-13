@@ -594,6 +594,7 @@ export default function ServiceOrdersPage() {
                   <TableHead>Klient</TableHead>
                   <TableHead>Miasto</TableHead>
                   <TableHead>Adres</TableHead>
+                  <TableHead>Telefon</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
