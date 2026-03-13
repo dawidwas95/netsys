@@ -242,29 +242,7 @@ export default function ServiceOrdersPage() {
         const assignedOrderIds = new Set((assignedRows ?? []).map((r: any) => r.order_id));
         let query = supabase
           .from("service_orders")
-          .select("*, clients(display_name, address_city, address_street, address_building), devices(manufacturer, model)")
-          .order("received_at", { ascending: false });
-        if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
-        if (deptFilter !== "all") query = query.eq("service_type", deptFilter as any);
-        if (search) query = query.or(`order_number.ilike.%${search}%,problem_description.ilike.%${search}%`);
-        const { data, error } = await query;
-        if (error) throw error;
-        return (data ?? []).filter((o: any) => !assignedOrderIds.has(o.id));
-      }
-
-      let techOrderIds: string[] | null = null;
-      if (techFilter !== "all") {
-        const { data: techRows } = await supabase
-          .from("order_technicians")
-          .select("order_id")
-          .eq("user_id", techFilter);
-        techOrderIds = (techRows ?? []).map((r: any) => r.order_id);
-        if (!techOrderIds.length) return [];
-      }
-
-      let query = supabase
-        .from("service_orders")
-        .select("*, clients(display_name, address_city, address_street, address_building), devices(manufacturer, model)")
+          .select("*, clients(display_name, address_city, address_street, address_building, phone), devices(manufacturer, model)")
         .order("received_at", { ascending: false });
 
       if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
