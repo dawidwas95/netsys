@@ -133,7 +133,7 @@ function groupOrdersByAction(orders: any[]) {
   return actionGroups;
 }
 
-const COL_WIDTHS = "w-[13%] w-[8%] w-[14%] w-[9%] w-[9%] w-[9%] w-[15%] w-[11%] w-[12%]";
+const COL_WIDTHS = "w-[12%] w-[7%] w-[13%] w-[8%] w-[8%] w-[8%] w-[14%] w-[9%] w-[11%] w-[10%]";
 const COL_CLASSES = COL_WIDTHS.split(" ");
 
 function DesktopOrderRow({ order, unread, onClientClick, onOrderClick }: { order: any; unread: boolean; onClientClick?: (clientId: string) => void; onOrderClick?: (orderId: string) => void }) {
@@ -178,6 +178,7 @@ function DesktopOrderRow({ order, unread, onClientClick, onOrderClick }: { order
       </TableCell>
       <TableCell className={`${COL_CLASSES[7]} text-xs`}>{order.clients?.address_city || "—"}</TableCell>
       <TableCell className={`${COL_CLASSES[8]} text-xs`}>{[order.clients?.address_street, order.clients?.address_building].filter(Boolean).join(" ") || "—"}</TableCell>
+      <TableCell className={`${COL_CLASSES[9]} text-xs`}>{order.clients?.phone || "—"}</TableCell>
     </TableRow>
   );
 }
