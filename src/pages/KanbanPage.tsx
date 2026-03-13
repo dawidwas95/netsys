@@ -313,7 +313,6 @@ function KanbanCardContent({
   isDragging?: boolean;
 }) {
   const priorityColors: Record<string, string> = {
-    LOW: "bg-priority-low/10 text-priority-low",
     NORMAL: "bg-priority-normal/10 text-priority-normal",
     HIGH: "bg-priority-high/10 text-priority-high",
     URGENT: "bg-priority-urgent/10 text-priority-urgent",

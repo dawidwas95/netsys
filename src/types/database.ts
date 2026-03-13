@@ -58,7 +58,6 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
 };
 
 export const ORDER_PRIORITY_LABELS: Record<OrderPriority, string> = {
-  LOW: "Niski",
   NORMAL: "Normalny",
   HIGH: "Wysoki",
   URGENT: "Pilny",

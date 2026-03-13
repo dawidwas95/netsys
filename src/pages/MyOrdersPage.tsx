@@ -27,7 +27,6 @@ import {
 import { toast } from "sonner";
 
 const PRIORITY_COLORS: Record<string, string> = {
-  LOW: "bg-muted text-muted-foreground",
   NORMAL: "bg-primary/10 text-primary",
   HIGH: "bg-warning/10 text-warning",
   URGENT: "bg-destructive/10 text-destructive",
