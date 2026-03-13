@@ -133,7 +133,7 @@ function groupOrdersByAction(orders: any[]) {
   return actionGroups;
 }
 
-const COL_WIDTHS = "w-[12%] w-[7%] w-[13%] w-[8%] w-[8%] w-[8%] w-[14%] w-[9%] w-[11%] w-[10%]";
+const COL_WIDTHS = "w-[11%] w-[6%] w-[11%] w-[7%] w-[7%] w-[7%] w-[12%] w-[8%] w-[10%] w-[9%] w-[12%]";
 const COL_CLASSES = COL_WIDTHS.split(" ");
 
 function DesktopOrderRow({ order, unread, onClientClick, onOrderClick }: { order: any; unread: boolean; onClientClick?: (clientId: string) => void; onOrderClick?: (orderId: string) => void }) {
@@ -179,6 +179,7 @@ function DesktopOrderRow({ order, unread, onClientClick, onOrderClick }: { order
       <TableCell className={`${COL_CLASSES[7]} text-xs`}>{order.clients?.address_city || "—"}</TableCell>
       <TableCell className={`${COL_CLASSES[8]} text-xs`}>{[order.clients?.address_street, order.clients?.address_building].filter(Boolean).join(" ") || "—"}</TableCell>
       <TableCell className={`${COL_CLASSES[9]} text-xs`}>{order.clients?.phone || "—"}</TableCell>
+      <TableCell className={`${COL_CLASSES[10]} text-xs`}>{order.devices ? `${order.devices.manufacturer || ""} ${order.devices.model || ""}`.trim() || "—" : "—"}</TableCell>
     </TableRow>
   );
 }
@@ -515,6 +516,7 @@ export default function ServiceOrdersPage() {
                     <TableHead className={COL_CLASSES[7]}>miasto</TableHead>
                     <TableHead className={COL_CLASSES[8]}>adres</TableHead>
                     <TableHead className={COL_CLASSES[9]}>telefon</TableHead>
+                    <TableHead className={COL_CLASSES[10]}>urządzenie</TableHead>
                   </TableRow>
                 </TableHeader>
               </Table>
