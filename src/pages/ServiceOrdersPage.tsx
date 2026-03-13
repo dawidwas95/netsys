@@ -177,7 +177,7 @@ function DesktopOrderRow({ order, unread, onClientClick, onOrderClick }: { order
         ) : (order.clients?.display_name ?? "—")}
       </TableCell>
       <TableCell className={`${COL_CLASSES[7]} text-xs`}>{order.clients?.address_city || "—"}</TableCell>
-      <TableCell className={`${COL_CLASSES[8]} text-xs`}>{order.clients?.address_street || "—"}</TableCell>
+      <TableCell className={`${COL_CLASSES[8]} text-xs`}>{[order.clients?.address_street, order.clients?.address_building].filter(Boolean).join(" ") || "—"}</TableCell>
     </TableRow>
   );
 }
