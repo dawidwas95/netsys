@@ -96,7 +96,7 @@ function MobileOrderCard({ order, unread }: { order: any; unread: boolean }) {
       </div>
       <div className="mobile-card-row">
         <span className="mobile-card-label">Priorytet</span>
-        <span className="text-sm">{ORDER_PRIORITY_LABELS[order.priority as OrderPriority]}</span>
+        <PriorityIndicator priority={order.priority as OrderPriority} />
       </div>
       <div className="mobile-card-row">
         <span className="mobile-card-label">Dodano</span>
