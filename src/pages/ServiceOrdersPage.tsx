@@ -602,15 +602,12 @@ export default function ServiceOrdersPage() {
               <TableHeader>
                 <TableRow>
                  <TableHead>Nr zlecenia</TableHead>
-                  <TableHead>Dział</TableHead>
-                  <TableHead>Klient</TableHead>
-                  <TableHead>Urządzenie</TableHead>
-                  <TableHead>Technik</TableHead>
-                  <TableHead>Status</TableHead>
                   <TableHead>Priorytet</TableHead>
+                  <TableHead>Technik</TableHead>
                   <TableHead>Dodano</TableHead>
                   <TableHead>Przyjęcie</TableHead>
                   <TableHead>Zakończenie</TableHead>
+                  <TableHead>Klient</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
