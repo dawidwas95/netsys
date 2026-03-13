@@ -503,14 +503,12 @@ export default function ServiceOrdersPage() {
                 <TableHeader>
                   <TableRow className="border-b-0 hover:bg-transparent">
                     <TableHead className={COL_CLASSES[0]}>nr zlecenia</TableHead>
-                    <TableHead className={COL_CLASSES[1]}>dział</TableHead>
-                    <TableHead className={COL_CLASSES[2]}>klient</TableHead>
-                    <TableHead className={COL_CLASSES[3]}>urządzenie</TableHead>
-                    <TableHead className={COL_CLASSES[4]}>technik</TableHead>
-                    <TableHead className={COL_CLASSES[5]}>priorytet</TableHead>
-                    <TableHead className={COL_CLASSES[6]}>dodano</TableHead>
-                    <TableHead className={COL_CLASSES[7]}>przyjęcie</TableHead>
-                    <TableHead className={COL_CLASSES[8]}>zakończenie</TableHead>
+                    <TableHead className={COL_CLASSES[1]}>priorytet</TableHead>
+                    <TableHead className={COL_CLASSES[2]}>technik</TableHead>
+                    <TableHead className={COL_CLASSES[3]}>dodano</TableHead>
+                    <TableHead className={COL_CLASSES[4]}>przyjęcie</TableHead>
+                    <TableHead className={COL_CLASSES[5]}>zakończenie</TableHead>
+                    <TableHead className={COL_CLASSES[6]}>klient</TableHead>
                   </TableRow>
                 </TableHeader>
               </Table>
