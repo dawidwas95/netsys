@@ -157,29 +157,25 @@ function DesktopOrderRow({ order, unread, onClientClick, onOrderClick }: { order
           </button>
         </div>
       </TableCell>
-      <TableCell className={`${COL_CLASSES[1]} text-xs`}>{DEPARTMENT_ICONS[order.service_type]} {DEPARTMENT_LABELS[order.service_type] || SERVICE_TYPE_LABELS[order.service_type as ServiceType]}</TableCell>
+      <TableCell className={`${COL_CLASSES[1]} text-xs`}>
+        <PrioritySelector priority={order.priority as OrderPriority} onSelect={(p) => updatePriority.mutate(p)} />
+      </TableCell>
       <TableCell className={COL_CLASSES[2]}>
+        <div className="flex items-center gap-1">
+          <TechnicianBadges orderId={order.id} compact />
+          <QuickAssignButton orderId={order.id} orderNumber={order.order_number} />
+        </div>
+      </TableCell>
+      <TableCell className={`${COL_CLASSES[3]} text-xs`}>{new Date(order.created_at).toLocaleDateString("pl-PL")}</TableCell>
+      <TableCell className={`${COL_CLASSES[4]} text-xs`}>{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
+      <TableCell className={`${COL_CLASSES[5]} text-xs`}>{order.completed_at ? new Date(order.completed_at).toLocaleDateString("pl-PL") : "—"}</TableCell>
+      <TableCell className={COL_CLASSES[6]}>
         {order.client_id ? (
           <button onClick={() => onClientClick?.(order.client_id)} className="text-primary hover:underline text-left">
             {order.clients?.display_name}
           </button>
         ) : (order.clients?.display_name ?? "—")}
       </TableCell>
-      <TableCell className={`${COL_CLASSES[3]} text-sm`}>
-        {order.devices ? `${order.devices.manufacturer} ${order.devices.model}` : "—"}
-      </TableCell>
-      <TableCell className={COL_CLASSES[4]}>
-        <div className="flex items-center gap-1">
-          <TechnicianBadges orderId={order.id} compact />
-          <QuickAssignButton orderId={order.id} orderNumber={order.order_number} />
-        </div>
-      </TableCell>
-      <TableCell className={`${COL_CLASSES[5]} text-xs`}>
-        <PrioritySelector priority={order.priority as OrderPriority} onSelect={(p) => updatePriority.mutate(p)} />
-      </TableCell>
-      <TableCell className={`${COL_CLASSES[6]} text-xs`}>{new Date(order.created_at).toLocaleDateString("pl-PL")}</TableCell>
-      <TableCell className={`${COL_CLASSES[7]} text-xs`}>{new Date(order.received_at).toLocaleDateString("pl-PL")}</TableCell>
-      <TableCell className={`${COL_CLASSES[8]} text-xs`}>{order.completed_at ? new Date(order.completed_at).toLocaleDateString("pl-PL") : "—"}</TableCell>
     </TableRow>
   );
 }
