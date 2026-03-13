@@ -176,6 +176,8 @@ function DesktopOrderRow({ order, unread, onClientClick, onOrderClick }: { order
           </button>
         ) : (order.clients?.display_name ?? "—")}
       </TableCell>
+      <TableCell className={`${COL_CLASSES[7]} text-xs`}>{order.clients?.address_city || "—"}</TableCell>
+      <TableCell className={`${COL_CLASSES[8]} text-xs`}>{order.clients?.address_street || "—"}</TableCell>
     </TableRow>
   );
 }
