@@ -46,31 +46,31 @@ export function PrioritySelector({
   priority: OrderPriority;
   onSelect: (p: OrderPriority) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const level = LEVEL_MAP[priority] ?? 1;
 
+  const handleClick = (clickedLevel: number) => {
+    const newPriority = PRIORITIES[clickedLevel - 1];
+    if (newPriority && newPriority !== priority) {
+      onSelect(newPriority);
+    }
+  };
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button className="hover:opacity-80 transition-opacity" title="Zmień priorytet">
-          <Flames level={level} />
+    <div className="flex items-center gap-0.5" title={ORDER_PRIORITY_LABELS[priority]}>
+      {[1, 2, 3].map((i) => (
+        <button
+          key={i}
+          type="button"
+          onClick={(e) => { e.stopPropagation(); handleClick(i); }}
+          className="hover:scale-125 transition-transform"
+        >
+          <Flame
+            className={cn("h-4 w-4", i <= level ? "text-destructive" : "text-muted-foreground/25")}
+            fill={i <= level ? "currentColor" : "none"}
+            strokeWidth={1.5}
+          />
         </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-2 space-y-1" align="start">
-        {PRIORITIES.map((p) => (
-          <button
-            key={p}
-            onClick={() => { onSelect(p); setOpen(false); }}
-            className={cn(
-              "flex items-center gap-2 w-full px-3 py-1.5 rounded text-sm hover:bg-muted transition-colors",
-              p === priority && "bg-muted font-medium"
-            )}
-          >
-            <Flames level={LEVEL_MAP[p]} size="h-3.5 w-3.5" />
-            <span>{ORDER_PRIORITY_LABELS[p]}</span>
-          </button>
-        ))}
-      </PopoverContent>
-    </Popover>
+      ))}
+    </div>
   );
 }
