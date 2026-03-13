@@ -479,7 +479,7 @@ export default function ServiceOrdersPage() {
 
       {/* Desktop view */}
       <div className="hidden md:block overflow-auto max-h-[calc(100vh-280px)]">
-        <div className="min-w-[1100px] space-y-0">
+        <div className="min-w-[1300px] space-y-0">
         {isLoading ? (
           <div className="text-center py-8 text-muted-foreground">Ładowanie...</div>
         ) : !orders?.length ? (
